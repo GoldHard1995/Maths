@@ -48,7 +48,6 @@
             background-color: white;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            /* padding 由 flex 自動控制，這裡取消固定 padding 以適應高度 */
             font-size: 1.4rem; /* 加大字體方便觸控 */
             font-weight: bold;
             color: #475569;
@@ -140,20 +139,19 @@
         </header>
 
         <!-- 主內容區：自適應剩餘高度 -->
-        <!-- md:grid-cols-12 讓 iPad 橫屏 (768px+) 啟用左右佈局 -->
         <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-4">
             
             <!-- 左側 Canvas 區 -->
             <div class="md:col-span-7 lg:col-span-8 flex flex-col justify-center items-center bg-white rounded-2xl shadow-lg border border-slate-200 p-2 relative h-full">
                 
-                <!-- 容器：用於限制 Canvas 大小，確保不溢出且保持正方形 -->
-                <div class="relative w-full h-full flex items-center justify-center overflow-hidden">
+                <!-- 容器：使用 flex-1 min-h-0 確保它能在 flex 容器中正確縮放 -->
+                <div class="relative w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden">
                     <div id="canvasWrapper" class="aspect-square h-full max-h-full max-w-full relative">
                         <canvas id="gameCanvas" class="w-full h-full block rounded-lg"></canvas>
                     </div>
                 </div>
 
-                <!-- 底部提示 (絕對定位或 flex 底部) -->
+                <!-- 底部提示 -->
                 <div class="w-full mt-2 pt-2 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500 gap-2 flex-none">
                     <span class="flex items-center gap-1 truncate">
                         💡 提示：先看橫軸(<span class="font-bold text-red-500">x</span>)，再看縱軸(<span class="font-bold text-blue-500">y</span>)
@@ -474,27 +472,28 @@
             }
         }
 
-        // 調整畫布大小
+        // 調整畫布大小 - 修復高解析度螢幕下的縮放問題
         function resizeCanvas() {
             // 使用 canvasWrapper 的尺寸來決定 canvas 大小
             const rect = canvasWrapper.getBoundingClientRect();
             const size = Math.floor(rect.width); // 確保是整數
             const dpr = window.devicePixelRatio || 1;
             
-            // 設定內部像素
+            // 設定內部像素（物理像素），解決模糊問題
             canvas.width = size * dpr;
             canvas.height = size * dpr;
             
-            state.width = canvas.width;
-            state.height = canvas.height;
-            state.origin = { x: state.width / 2, y: state.height / 2 };
-            state.gridSize = (Math.min(state.width, state.height) - 60 * dpr) / (state.maxRange * 2);
-
+            // 設定 canvas context 的縮放，讓後續繪圖指令使用邏輯像素（CSS 像素）
             ctx.scale(dpr, dpr);
-            // 邏輯尺寸重設為 CSS 顯示尺寸
+
+            // 重要修正：state 中的寬高和格子大小應該使用「邏輯像素」(size)，而不是物理像素 (size * dpr)
+            // 這樣在 ctx.scale(dpr, dpr) 之後，繪製的大小才會正確，不會被放大兩倍
             state.width = size;
             state.height = size;
             state.origin = { x: state.width / 2, y: state.height / 2 };
+            
+            // 計算格子大小：使用邏輯寬度減去 padding (60px)
+            state.gridSize = (Math.min(state.width, state.height) - 60) / (state.maxRange * 2);
             
             draw();
         }
