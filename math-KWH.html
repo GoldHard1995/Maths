@@ -29,11 +29,11 @@
         .stats-card {
             transition: all 0.3s ease;
         }
-        /* 數字鍵盤樣式 */
+        /* 數字鍵盤樣式 - 極致緊湊 */
         .numpad-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 6px; /* 減小間距 */
+            gap: 4px; /* 6px -> 4px */
             height: 100%; /* 填滿容器 */
         }
         /* 象限按鈕樣式 (2x2) */
@@ -41,18 +41,18 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(2, 1fr);
-            gap: 8px; /* 減小間距 */
+            gap: 6px; 
             height: 100%; /* 填滿容器 */
         }
         .num-btn {
             background-color: white;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1.25rem; /* 稍微減小字體 1.4 -> 1.25 */
+            border-radius: 6px; /* 稍微減小圓角 */
+            font-size: 1.15rem; /* 1.25 -> 1.15 */
             font-weight: bold;
             color: #475569;
             transition: all 0.1s;
-            box-shadow: 0 2px 0 #cbd5e1;
+            box-shadow: 0 1px 0 #cbd5e1;
             touch-action: manipulation;
             position: relative;
             display: flex;
@@ -63,10 +63,10 @@
         }
         .quad-btn {
             font-family: 'Times New Roman', serif;
-            font-size: 2.2rem; /* 稍微減小字體 */
+            font-size: 2rem; 
         }
         .num-btn:active, .num-btn.active-selection {
-            transform: translateY(2px);
+            transform: translateY(1px);
             box-shadow: none;
             background-color: #f1f5f9;
             border-color: #6366f1;
@@ -109,40 +109,40 @@
     </style>
 </head>
 <body class="h-screen w-screen overflow-hidden bg-[#f0f4f8] text-slate-800">
-    <div class="w-full h-full max-w-7xl mx-auto flex flex-col p-2">
+    <div class="w-full h-full max-w-7xl mx-auto flex flex-col p-2 safe-area-inset-bottom">
         
-        <!-- 標題與得分區 (高度固定 - 進一步壓縮) -->
-        <header class="flex-none flex flex-row justify-between items-center mb-1 md:mb-2 gap-2">
+        <!-- 標題與得分區 (高度固定 - 極致壓縮) -->
+        <header class="flex-none flex flex-row justify-between items-center mb-1 gap-2">
             <div class="flex-1 min-w-0">
-                <h1 class="text-lg md:text-2xl font-bold text-indigo-700 flex items-center gap-2 truncate">
+                <h1 class="text-base md:text-xl font-bold text-indigo-700 flex items-center gap-1 truncate">
                     📍 坐標寶藏獵人
                 </h1>
-                <p id="instructionText" class="text-xs md:text-sm text-slate-600 font-medium hidden md:block truncate">觀察紅點的位置，寫出它的坐標！</p>
+                <p id="instructionText" class="text-[10px] md:text-xs text-slate-600 font-medium hidden md:block truncate">觀察紅點的位置，寫出它的坐標！</p>
             </div>
             
-            <div class="flex gap-2 items-stretch flex-none">
+            <div class="flex gap-1.5 items-stretch flex-none">
                 <!-- 設定按鈕 -->
-                <button onclick="toggleSettings()" class="bg-white p-2 rounded-xl shadow-sm border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 transition-all text-slate-600 hover:text-indigo-600 flex flex-col items-center justify-center min-w-[50px] md:min-w-[60px]">
-                    <span class="text-xl md:text-2xl">⚙️</span>
-                    <span class="text-[10px] font-bold uppercase">設定</span>
+                <button onclick="toggleSettings()" class="bg-white p-1.5 rounded-lg shadow-sm border-b-2 border-slate-300 active:border-b-0 active:translate-y-0.5 transition-all text-slate-600 hover:text-indigo-600 flex flex-col items-center justify-center min-w-[45px]">
+                    <span class="text-lg">⚙️</span>
+                    <span class="text-[9px] font-bold uppercase">設定</span>
                 </button>
 
-                <div class="stats-card bg-white p-2 rounded-xl shadow-sm border-b-4 border-indigo-500 text-center min-w-[60px] md:min-w-[70px] flex flex-col justify-center">
-                    <p class="text-[10px] text-slate-500 uppercase font-bold leading-none mb-1">得分</p>
-                    <p id="score" class="text-lg md:text-xl font-black text-indigo-600 leading-none">0</p>
+                <div class="stats-card bg-white p-1.5 rounded-lg shadow-sm border-b-2 border-indigo-500 text-center min-w-[55px] flex flex-col justify-center">
+                    <p class="text-[9px] text-slate-500 uppercase font-bold leading-none mb-0.5">得分</p>
+                    <p id="score" class="text-base font-black text-indigo-600 leading-none">0</p>
                 </div>
-                <div class="stats-card bg-white p-2 rounded-xl shadow-sm border-b-4 border-emerald-500 text-center min-w-[60px] md:min-w-[70px] flex flex-col justify-center">
-                    <p class="text-[10px] text-slate-500 uppercase font-bold leading-none mb-1">Combo</p>
-                    <p id="combo" class="text-lg md:text-xl font-black text-emerald-600 leading-none">0</p>
+                <div class="stats-card bg-white p-1.5 rounded-lg shadow-sm border-b-2 border-emerald-500 text-center min-w-[55px] flex flex-col justify-center">
+                    <p class="text-[9px] text-slate-500 uppercase font-bold leading-none mb-0.5">Combo</p>
+                    <p id="combo" class="text-base font-black text-emerald-600 leading-none">0</p>
                 </div>
             </div>
         </header>
 
         <!-- 主內容區：自適應剩餘高度 -->
-        <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-3">
+        <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-2">
             
             <!-- 左側 Canvas 區 -->
-            <div class="md:col-span-7 lg:col-span-8 flex flex-col justify-center items-center bg-white rounded-2xl shadow-lg border border-slate-200 p-2 relative h-full">
+            <div class="md:col-span-7 lg:col-span-8 flex flex-col justify-center items-center bg-white rounded-xl shadow-md border border-slate-200 p-1 relative h-full">
                 
                 <!-- 容器：使用 flex-1 min-h-0 確保它能在 flex 容器中正確縮放 -->
                 <div class="relative w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden">
@@ -152,39 +152,39 @@
                 </div>
 
                 <!-- 底部提示 -->
-                <div class="w-full mt-1 pt-1 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500 gap-2 flex-none">
+                <div class="w-full mt-1 pt-1 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500 gap-1 flex-none">
                     <span class="flex items-center gap-1 truncate">
                         💡 提示：先看橫軸(<span class="font-bold text-red-500">x</span>)，再看縱軸(<span class="font-bold text-blue-500">y</span>)
                     </span>
-                    <span id="levelDisplay" class="font-bold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs whitespace-nowrap">第一象限</span>
+                    <span id="levelDisplay" class="font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] whitespace-nowrap">第一象限</span>
                 </div>
             </div>
 
             <!-- 右側 控制區 -->
             <div class="md:col-span-5 lg:col-span-4 flex flex-col h-full overflow-hidden">
-                <div class="control-panel p-2 md:p-3 rounded-2xl shadow-lg border border-white h-full flex flex-col justify-center overflow-y-auto">
+                <div class="control-panel p-2 rounded-xl shadow-md border border-white h-full flex flex-col justify-between overflow-hidden">
                     
                     <!-- 模式 A：輸入坐標 (預設顯示) -->
                     <div id="modeCoordinates" class="flex flex-col h-full">
-                        <div id="targetContainer" class="flex-none mb-2 p-2 bg-indigo-50 rounded-xl text-center border-2 border-dashed border-indigo-200 transition-colors">
-                            <span class="text-xs text-indigo-700 font-bold block mb-1">點 <span class="text-base">A</span> 的坐標：</span>
+                        <div id="targetContainer" class="flex-none mb-1 p-1.5 bg-indigo-50 rounded-lg text-center border-2 border-dashed border-indigo-200 transition-colors">
+                            <span class="text-[10px] text-indigo-700 font-bold block mb-0.5">點 <span class="text-sm">A</span> 的坐標：</span>
                             
-                            <div class="flex items-center justify-center gap-1 text-2xl font-mono font-bold text-slate-700">
+                            <div class="flex items-center justify-center gap-1 text-xl font-mono font-bold text-slate-700">
                                 <span>(</span>
                                 <div class="relative group">
-                                    <input type="text" id="inputX" class="w-14 text-center border-b-4 border-red-300 focus:border-red-500 focus:outline-none bg-white/50 rounded-t-lg py-1 transition-all cursor-pointer no-select" placeholder="x" autocomplete="off" readonly>
+                                    <input type="text" id="inputX" class="w-12 text-center border-b-2 border-red-300 focus:border-red-500 focus:outline-none bg-white/50 rounded-t py-0.5 transition-all cursor-pointer no-select" placeholder="x" autocomplete="off" readonly>
                                 </div>
                                 <span>,</span>
                                 <div class="relative group">
-                                    <input type="text" id="inputY" class="w-14 text-center border-b-4 border-blue-300 focus:border-blue-500 focus:outline-none bg-white/50 rounded-t-lg py-1 transition-all cursor-pointer no-select" placeholder="y" autocomplete="off" readonly>
+                                    <input type="text" id="inputY" class="w-12 text-center border-b-2 border-blue-300 focus:border-blue-500 focus:outline-none bg-white/50 rounded-t py-0.5 transition-all cursor-pointer no-select" placeholder="y" autocomplete="off" readonly>
                                 </div>
                                 <span>)</span>
                             </div>
                         </div>
 
                         <!-- 數字鍵盤 (flex-1 自動填滿高度) -->
-                        <div class="flex-1 min-h-0">
-                            <div class="numpad-grid no-select h-full pb-1">
+                        <div class="flex-1 min-h-0 py-1">
+                            <div class="numpad-grid no-select h-full">
                                 <button class="num-btn" onclick="handleNumpad('7')">7</button>
                                 <button class="num-btn" onclick="handleNumpad('8')">8</button>
                                 <button class="num-btn" onclick="handleNumpad('9')">9</button>
@@ -203,16 +203,16 @@
 
                     <!-- 模式 B：象限判斷 (預設隱藏) -->
                     <div id="modeQuadrant" class="hidden flex flex-col h-full">
-                        <div id="targetContainerQuad" class="flex-none mb-2 p-2 bg-indigo-50 rounded-xl text-center border-2 border-dashed border-indigo-200 transition-colors">
-                            <span class="text-xs text-indigo-700 font-bold block mb-1">點 <span class="text-base">A</span> 在哪個象限？</span>
-                            <div class="h-10 flex items-center justify-center">
-                                <span id="selectedQuadDisplay" class="text-2xl font-bold text-indigo-600 font-serif">?</span>
+                        <div id="targetContainerQuad" class="flex-none mb-1 p-1.5 bg-indigo-50 rounded-lg text-center border-2 border-dashed border-indigo-200 transition-colors">
+                            <span class="text-[10px] text-indigo-700 font-bold block mb-0.5">點 <span class="text-sm">A</span> 在哪個象限？</span>
+                            <div class="h-8 flex items-center justify-center">
+                                <span id="selectedQuadDisplay" class="text-xl font-bold text-indigo-600 font-serif">?</span>
                             </div>
                         </div>
 
                         <!-- 象限鍵盤 (flex-1 自動填滿高度) -->
-                        <div class="flex-1 min-h-0">
-                            <div class="quadpad-grid no-select h-full pb-1">
+                        <div class="flex-1 min-h-0 py-1">
+                            <div class="quadpad-grid no-select h-full">
                                 <button class="num-btn quad-btn" onclick="selectQuadrant('II')" id="btnQuadII">II</button>
                                 <button class="num-btn quad-btn" onclick="selectQuadrant('I')" id="btnQuadI">I</button>
                                 <button class="num-btn quad-btn" onclick="selectQuadrant('III')" id="btnQuadIII">III</button>
@@ -221,15 +221,18 @@
                         </div>
                     </div>
 
-                    <button id="checkBtn" class="flex-none w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 md:py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95 text-lg flex items-center justify-center gap-2 group mt-2">
-                        <span>確認</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </button>
+                    <!-- 確認按鈕區 - 確保高度固定且不被壓縮 -->
+                    <div class="flex-none pt-1">
+                         <button id="checkBtn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 rounded-lg shadow-md shadow-indigo-200 transition-all active:scale-95 text-base flex items-center justify-center gap-2 group">
+                            <span>確認</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </button>
+                    </div>
 
-                    <div id="feedback" class="flex-none mt-2 p-2 rounded-xl hidden text-center font-bold text-sm anim-pop shadow-inner">
-                        <!-- 回饋訊息 -->
+                    <div id="feedback" class="flex-none mt-1 p-1 rounded-lg hidden text-center font-bold text-xs anim-pop shadow-inner absolute bottom-14 left-4 right-4 z-10 md:static md:z-0">
+                        <!-- 回饋訊息 (絕對定位以免擠壓佈局，在大屏時恢復) -->
                     </div>
                 </div>
             </div>
@@ -649,8 +652,8 @@
                 targetContainerQuad.classList.add('bg-indigo-50', 'border-indigo-200');
             }
 
-            checkBtn.innerHTML = `<span>確認</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>`;
-            checkBtn.className = "flex-none w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 md:py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95 text-lg flex items-center justify-center gap-2 group mt-2";
+            checkBtn.innerHTML = `<span>確認</span><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>`;
+            checkBtn.className = "w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-2 rounded-lg shadow-md shadow-indigo-200 transition-all active:scale-95 text-base flex items-center justify-center gap-2 group";
             feedback.classList.add('hidden');
 
             // 隨機生成坐標
@@ -745,8 +748,8 @@
             targetEl.classList.remove('bg-indigo-50', 'border-indigo-200', 'bg-red-50', 'border-red-200');
             targetEl.classList.add('bg-emerald-50', 'border-emerald-200');
 
-            checkBtn.innerHTML = `<span>下一題</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>`;
-            checkBtn.className = "flex-none w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 md:py-3 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 text-lg flex items-center justify-center gap-2 mt-2";
+            checkBtn.innerHTML = `<span>下一題</span><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>`;
+            checkBtn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-lg shadow-md shadow-emerald-200 transition-all active:scale-95 text-base flex items-center justify-center gap-2";
             
             if (state.mode === 'coord') {
                 inputX.classList.remove('input-active');
@@ -783,9 +786,14 @@
             feedback.classList.remove('hidden');
             
             if (type === 'success') {
-                feedback.className = "flex-none mt-2 p-2 rounded-xl text-center font-bold text-sm anim-pop shadow-inner bg-emerald-100 text-emerald-700 border border-emerald-200";
+                feedback.className = "flex-none mt-1 p-1 rounded-lg hidden text-center font-bold text-xs anim-pop shadow-inner absolute bottom-14 left-4 right-4 z-10 md:static md:z-0 bg-emerald-100 text-emerald-700 border border-emerald-200";
+                // 強制顯示
+                feedback.classList.remove('hidden');
+                feedback.classList.add('block');
             } else {
-                feedback.className = "flex-none mt-2 p-2 rounded-xl text-center font-bold text-sm anim-pop shadow-inner bg-red-100 text-red-700 border border-red-200";
+                feedback.className = "flex-none mt-1 p-1 rounded-lg hidden text-center font-bold text-xs anim-pop shadow-inner absolute bottom-14 left-4 right-4 z-10 md:static md:z-0 bg-red-100 text-red-700 border border-red-200";
+                feedback.classList.remove('hidden');
+                feedback.classList.add('block');
             }
         }
 
