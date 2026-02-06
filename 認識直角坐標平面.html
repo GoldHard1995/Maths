@@ -226,7 +226,7 @@
                     <div class="flex-none">
                          <button id="checkBtn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 md:py-4 rounded-lg shadow-md shadow-indigo-200 transition-all active:scale-95 text-lg flex items-center justify-center gap-2 group">
                             <span>確認</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                             </svg>
                         </button>
@@ -808,6 +808,21 @@
         }
 
         function changeLevel(level) {
+            // 判斷目標模式與等級
+            let nextMode = 'coord';
+            let nextLevel = level;
+            
+            if (level === 'quad_quiz') {
+                nextMode = 'quiz';
+                nextLevel = 4;
+            }
+
+            // 如果選擇的難度與當前相同，則直接關閉選單，保留分數與進度
+            if (state.level === nextLevel && state.mode === nextMode) {
+                toggleSettings();
+                return;
+            }
+
             // 重置按鈕樣式
             document.querySelectorAll('.lvl-btn').forEach(btn => {
                 btn.classList.add('opacity-70', 'font-medium');
