@@ -96,16 +96,22 @@
             const generateQuestion = (selectedLevel) => {
                 // Determine axis alignment (0 for vertical, 1 for horizontal)
                 const axis = Math.random() > 0.5 ? 'x' : 'y';
-                // UPDATE: Increased range for random numbers to utilize -8 to 8 space
-                const fixedVal = getRandomInt(-6, 6); 
+                
+                // 設定隨機範圍：
+                // 程度 1：受限於畫布大小，保持在 -7 到 7 之間
+                // 程度 2：純計算，範圍擴大到 -30 到 30，避免題目重複
+                const rangeLimit = selectedLevel === 2 ? 30 : 7;
+                
+                const fixedVal = getRandomInt(-rangeLimit, rangeLimit); 
                 
                 let p1, p2;
                 
-                // Ensure points are not the same and fit in new canvas size
-                let val1 = getRandomInt(-7, 7);
-                let val2 = getRandomInt(-7, 7);
+                let val1 = getRandomInt(-rangeLimit, rangeLimit);
+                let val2 = getRandomInt(-rangeLimit, rangeLimit);
+                
+                // 確保兩點不重疊且距離至少為 2
                 while (val1 === val2 || Math.abs(val1 - val2) < 2) { 
-                val2 = getRandomInt(-7, 7);
+                    val2 = getRandomInt(-rangeLimit, rangeLimit);
                 }
 
                 // Sort so calculation logic is consistent visually if needed
