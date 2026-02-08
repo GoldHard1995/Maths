@@ -77,8 +77,9 @@
 
             // Canvas Refs
             const canvasRef = useRef(null);
-            const gridSize = 30; // pixels per unit
-            const canvasSize = 360; // Reduced to fit iPad landscape better
+            // UPDATE: Adjusted grid size and canvas size for 8x8 range (16 units total)
+            const gridSize = 25; // pixels per unit (Total 16 units * 25px = 400px)
+            const canvasSize = 400; // 400x400 pixels
             const center = canvasSize / 2;
 
             // Configuration Helper
@@ -95,15 +96,16 @@
             const generateQuestion = (selectedLevel) => {
                 // Determine axis alignment (0 for vertical, 1 for horizontal)
                 const axis = Math.random() > 0.5 ? 'x' : 'y';
-                const fixedVal = getRandomInt(-4, 4); 
+                // UPDATE: Increased range for random numbers to utilize -8 to 8 space
+                const fixedVal = getRandomInt(-6, 6); 
                 
                 let p1, p2;
                 
                 // Ensure points are not the same and fit in new canvas size
-                let val1 = getRandomInt(-5, 5);
-                let val2 = getRandomInt(-5, 5);
+                let val1 = getRandomInt(-7, 7);
+                let val2 = getRandomInt(-7, 7);
                 while (val1 === val2 || Math.abs(val1 - val2) < 2) { 
-                val2 = getRandomInt(-5, 5);
+                val2 = getRandomInt(-7, 7);
                 }
 
                 // Sort so calculation logic is consistent visually if needed
@@ -169,9 +171,16 @@
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
 
+                // Scale coordinates if canvas is resized by CSS
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                const canvasX = x * scaleX;
+                const canvasY = y * scaleY;
+
                 // Convert to grid coordinates
-                const gridX = Math.round((x - center) / gridSize);
-                const gridY = Math.round((center - y) / gridSize); // Invert Y
+                const gridX = Math.round((canvasX - center) / gridSize);
+                const gridY = Math.round((center - canvasY) / gridSize); // Invert Y
 
                 const clickedPoint = { x: gridX, y: gridY, label: step === 'plotting_A' ? 'A' : 'B' };
 
@@ -312,7 +321,8 @@
                 // Draw Numbers
                 ctx.font = 'bold 12px Arial'; // Bold for better readability
                 
-                for (let i = -6; i <= 6; i++) {
+                // UPDATE: Loop from -8 to 8 for the new 8x8 range
+                for (let i = -8; i <= 8; i++) {
                     if (i === 0) continue;
                     ctx.fillText(i, center + i * gridSize - 4, center + 16); // X axis numbers
                     ctx.fillText(i, center + 6, center - i * gridSize + 4); // Y axis numbers
@@ -473,7 +483,7 @@
                                 height={canvasSize}
                                 onClick={handleCanvasClick}
                                 className="w-full h-auto cursor-crosshair touch-none max-h-[50vh] md:max-h-none object-contain"
-                                style={{ maxWidth: '360px' }} 
+                                style={{ maxWidth: '400px' }} 
                             />
                             </div>
                         )}
