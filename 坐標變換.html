@@ -66,8 +66,8 @@
     
     .svg-text-halo {
       paint-order: stroke fill;
-      stroke: #020617; 
-      stroke-width: 5px;
+      stroke: #0f172a; /* 使用深色底色作為外框 */
+      stroke-width: 6px;
       stroke-linejoin: round;
     }
   </style>
@@ -352,68 +352,117 @@
       svg.innerHTML += `<text x="${toSvgX(0) + 6}" y="${toSvgY(8.5) - 6}" fill="white" fill-opacity="0.9" font-size="14" font-style="italic" font-weight="bold" class="eng-font">y</text>`;
     }
 
-    function getLabelAttrs(x, y, pointType = 'normal') {
-      let sx = toSvgX(x);
-      let sy = toSvgY(y);
-      let anchor = "start"; 
-      let dx = 14;          
-      let dy = -12;         
-      
-      if (pointType === 'P') {
-          anchor = "end"; dx = -14; dy = -12; 
-      } else if (pointType === 'M') {
-          anchor = "end"; dx = -14; dy = 24;  
-      } else if (pointType === 'T') {
-          anchor = "start"; dx = 14; dy = 24; 
-      }
-
-      if (x > 5 && anchor === "start") { anchor = "end"; dx = -14; }
-      if (x < -2 && anchor === "end") { anchor = "start"; dx = 14; }
-      if (y > 6 && dy > 0) { dy = -12; }
-      if (y < -3 && dy < 0) { dy = 24; }
-
-      return `x="${sx + dx}" y="${sy + dy}" text-anchor="${anchor}"`;
-    }
-
+    // 結合碰撞偵測的渲染函式
     function renderPoints(svgId, px, py, tx = null, ty = null, mx = null, my = null) {
       drawBaseGrid(svgId);
       const svg = document.getElementById(svgId);
-      const pAttrs = getLabelAttrs(px, py, 'P');
+      
+      // 1. 建立需要放置文字標籤的點清單 (優先順序: T -> P -> M)
+      let ptsToLabel = [];
+      if (tx !== null) {
+        ptsToLabel.push({ id: 'T', x: tx, y: ty, text: `P'(${tx}, ${ty})` });
+      }
+      ptsToLabel.push({ id: 'P', x: px, y: py, text: `P(${px}, ${py})` });
+      if (tx !== null && mx !== null && my !== null) {
+        ptsToLabel.push({ id: 'M', x: mx, y: my, text: `M(${mx}, ${my})` });
+      }
 
-      svg.innerHTML += `
-        <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="10" fill="#22d3ee" fill-opacity="0.2" class="pulse-glow" />
-        <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="5" fill="#22d3ee" stroke="white" stroke-width="2" />
-        <text ${pAttrs} fill="#22d3ee" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P(${px}, ${py})</text>
-      `;
+      // 2. 備選的排版方位 (dx, dy 為偏移量，anchor 為對齊方式)
+      const positions = [
+        {dx: 12, dy: -12, anchor: 'start'}, // 右上
+        {dx: -12, dy: -12, anchor: 'end'},  // 左上
+        {dx: 12, dy: 24, anchor: 'start'},  // 右下
+        {dx: -12, dy: 24, anchor: 'end'},   // 左下
+        {dx: 0, dy: -18, anchor: 'middle'}, // 正上
+        {dx: 0, dy: 30, anchor: 'middle'}   // 正下
+      ];
 
+      let placedBoxes = [];
+      let labelLayout = {};
+
+      // 3. AABB 碰撞偵測演算法 (避開標籤互相重疊)
+      for (let pt of ptsToLabel) {
+        let cx = toSvgX(pt.x);
+        let cy = toSvgY(pt.y);
+        let bestPos = null;
+        let width = pt.text.length * 11; // 預估字串在畫面上的寬度
+        
+        for (let pos of positions) {
+            let left = pos.anchor === 'start' ? cx + pos.dx : (pos.anchor === 'end' ? cx + pos.dx - width : cx + pos.dx - width/2);
+            let right = left + width;
+            let top = cy + pos.dy - 18;
+            let bottom = cy + pos.dy + 8;
+            let box = {left, right, top, bottom};
+            
+            // 檢查是否超出 SVG 畫布邊界
+            if (box.left < 5 || box.right > 415 || box.top < 5 || box.bottom > 415) continue;
+            
+            // 檢查是否與已放置的標籤框重疊
+            let overlap = false;
+            for (let pBox of placedBoxes) {
+                if (!(box.right < pBox.left - 4 || box.left > pBox.right + 4 || box.bottom < pBox.top - 4 || box.top > pBox.bottom + 4)) {
+                    overlap = true; break;
+                }
+            }
+            if (!overlap) { bestPos = { ...pos, box }; break; }
+        }
+        
+        // 如果所有方位都會碰撞，就退回第一個方位強制放置
+        if (!bestPos) {
+            bestPos = positions[0]; 
+            let left = bestPos.anchor === 'start' ? cx + bestPos.dx : (bestPos.anchor === 'end' ? cx + bestPos.dx - width : cx + bestPos.dx - width/2);
+            bestPos.box = {left, right: left+width, top: cy + bestPos.dy - 18, bottom: cy + bestPos.dy + 8};
+        }
+        placedBoxes.push(bestPos.box);
+        labelLayout[pt.id] = bestPos;
+      }
+
+      // 4. 開始實際繪製 (先畫底層路徑，再畫點，最後畫文字保證不被遮蓋)
+      let html = '';
+      
       if (tx !== null) {
         if (mx !== null && my !== null) {
+          // 有中繼點的兩段式路徑
           let pathD = `M ${toSvgX(px)} ${toSvgY(py)} L ${toSvgX(mx)} ${toSvgY(my)} L ${toSvgX(tx)} ${toSvgY(ty)}`;
           if (state.topic === 'rotation') {
              pathD = `M ${toSvgX(px)} ${toSvgY(py)} Q ${(toSvgX(px)+toSvgX(mx))/2} ${(toSvgY(py)+toSvgY(my))/2 - 30} ${toSvgX(mx)} ${toSvgY(my)} Q ${(toSvgX(mx)+toSvgX(tx))/2} ${(toSvgY(my)+toSvgY(ty))/2 - 30} ${toSvgX(tx)} ${toSvgY(ty)}`;
           }
-          svg.innerHTML += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
+          html += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
           
-          const mAttrs = getLabelAttrs(mx, my, 'M');
-          svg.innerHTML += `
+          let m = labelLayout['M'];
+          html += `
             <circle cx="${toSvgX(mx)}" cy="${toSvgY(my)}" r="5" fill="#fbbf24" stroke="white" />
-            <text ${mAttrs} fill="#fbbf24" font-weight="900" font-size="15" class="svg-text-halo pointer-events-none eng-font">M(${mx}, ${my})</text>
+            <text x="${toSvgX(mx) + m.dx}" y="${toSvgY(my) + m.dy}" text-anchor="${m.anchor}" fill="#fbbf24" font-weight="900" font-size="15" class="svg-text-halo pointer-events-none eng-font">M(${mx}, ${my})</text>
           `;
         } else {
+          // 單次變換路徑
           let pathD = `M ${toSvgX(px)} ${toSvgY(py)} L ${toSvgX(tx)} ${toSvgY(ty)}`;
           if (state.topic === 'rotation') {
               pathD = `M ${toSvgX(px)} ${toSvgY(py)} Q ${(toSvgX(px)+toSvgX(tx))/2} ${(toSvgY(py)+toSvgY(ty))/2 - 30} ${toSvgX(tx)} ${toSvgY(ty)}`;
           }
-          svg.innerHTML += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
+          html += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
         }
+      }
 
-        const tAttrs = getLabelAttrs(tx, ty, 'T');
-        svg.innerHTML += `
+      // 畫原始點 P
+      let p = labelLayout['P'];
+      html += `
+        <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="10" fill="#22d3ee" fill-opacity="0.2" class="pulse-glow" />
+        <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="5" fill="#22d3ee" stroke="white" stroke-width="2" />
+        <text x="${toSvgX(px) + p.dx}" y="${toSvgY(py) + p.dy}" text-anchor="${p.anchor}" fill="#22d3ee" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P(${px}, ${py})</text>
+      `;
+
+      // 畫目標點 P'
+      if (tx !== null) {
+        let t = labelLayout['T'];
+        html += `
           <circle cx="${toSvgX(tx)}" cy="${toSvgY(ty)}" r="6" fill="#10b981" stroke="white" />
           <circle cx="${toSvgX(tx)}" cy="${toSvgY(ty)}" r="6" fill="#10b981" class="pulse-correct" />
-          <text ${tAttrs} fill="#10b981" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P'(${tx}, ${ty})</text>
+          <text x="${toSvgX(tx) + t.dx}" y="${toSvgY(ty) + t.dy}" text-anchor="${t.anchor}" fill="#10b981" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P'(${tx}, ${ty})</text>
         `;
       }
+      
+      svg.innerHTML += html;
     }
 
     function newQuestion() {
@@ -450,13 +499,14 @@
           if (isBasic) {
             let dx = 0, dy = 0;
             if (Math.random() > 0.5) {
-                dx = Math.floor(Math.random() * 9) - 4;
-                if (Math.abs(dx) < 2) dx = dx >= 0 ? 2 : -2; 
+                dx = Math.floor(Math.random() * 8) + 1;
+                if (Math.random() > 0.5) dx = -dx;
             } else {
-                dy = Math.floor(Math.random() * 9) - 4;
-                if (Math.abs(dy) < 2) dy = dy >= 0 ? 2 : -2;
+                dy = Math.floor(Math.random() * 8) + 1;
+                if (Math.random() > 0.5) dy = -dy;
             }
             q.ax = ox + dx; q.ay = oy + dy;
+            
             if (isValid(q.ax, q.ay)) {
                 q.params = { step: 1, dx, dy };
                 let move = dx !== 0 ? (dx > 0 ? `向右平移 ${dx}` : `向左平移 ${Math.abs(dx)}`) : (dy > 0 ? `向上平移 ${dy}` : `向下平移 ${Math.abs(dy)}`);
@@ -464,10 +514,10 @@
                 localValid = true;
             }
           } else {
-            let dx = Math.floor(Math.random() * 7) - 3;
-            let dy = Math.floor(Math.random() * 7) - 3;
-            if (Math.abs(dx) < 2) dx = dx >= 0 ? 2 : -2; 
-            if (Math.abs(dy) < 2) dy = dy >= 0 ? 2 : -2;
+            let dx = Math.floor(Math.random() * 6) + 1;
+            if (Math.random() > 0.5) dx = -dx;
+            let dy = Math.floor(Math.random() * 6) + 1;
+            if (Math.random() > 0.5) dy = -dy;
             
             q.mx = ox + dx; q.my = oy; 
             q.ax = q.mx; q.ay = q.my + dy; 
@@ -560,6 +610,7 @@
             let distOk = true;
             for (let i = 0; i < pts.length; i++) {
                 for (let j = i + 1; j < pts.length; j++) {
+                    // 防止點與點之間距離小於1單位造成視覺干擾
                     if (Math.abs(pts[i].x - pts[j].x) < 2 && Math.abs(pts[i].y - pts[j].y) < 2) {
                         distOk = false;
                     }
