@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>座標變換挑戰 - 專業版</title>
+  <title>坐標變換挑戰 - 專業版</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
   <style>
@@ -78,7 +78,7 @@
     <!-- 主選單 -->
     <div id="main-menu" class="min-h-full flex flex-col items-center justify-center p-6">
       <div class="text-center mb-10">
-        <h1 class="title-font text-5xl md:text-7xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent float-animation">座標變換挑戰</h1>
+        <h1 class="title-font text-5xl md:text-7xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent float-animation">坐標變換挑戰</h1>
       </div>
       <div class="grid gap-6 w-full max-w-lg">
         <button onclick="selectTopic('translation')" class="btn-3d group bg-gradient-to-r from-emerald-500 to-teal-600 p-1 rounded-2xl shadow-xl">
@@ -114,14 +114,14 @@
           <div class="bg-green-500 p-4 rounded-2xl text-2xl">📊</div>
           <div>
             <div class="text-xl font-bold">基礎模式</div>
-            <div class="text-indigo-300 text-sm">提供座標圖助攻 (-5 ~ 8)</div>
+            <div class="text-indigo-300 text-sm">提供坐標圖助攻 (-5 ~ 8)</div>
           </div>
         </button>
         <button onclick="startGame(2)" class="btn-3d bg-white/10 hover:bg-white/20 border-2 border-white/20 p-6 rounded-3xl text-left flex items-center gap-6">
           <div class="bg-red-500 p-4 rounded-2xl text-2xl">🧠</div>
           <div>
             <div class="text-xl font-bold">專家模式</div>
-            <div class="text-indigo-300 text-sm">純邏輯運算，無座標圖</div>
+            <div class="text-indigo-300 text-sm">純邏輯運算，無坐標圖</div>
           </div>
         </button>
       </div>
@@ -146,7 +146,7 @@
       </div>
 
       <div class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 overflow-y-auto pb-8">
-        <!-- 座標圖面板 -->
+        <!-- 坐標圖面板 -->
         <div id="coord-panel" class="lg:w-1/2 bg-white/5 rounded-3xl p-4 backdrop-blur-md flex items-center justify-center border border-white/10">
           <div class="coordinate-grid w-full aspect-square max-w-[420px] relative">
             <svg id="coordinate-svg" viewBox="0 0 420 420" class="w-full h-full"></svg>
@@ -352,23 +352,34 @@
       svg.innerHTML += `<text x="${toSvgX(0) + 6}" y="${toSvgY(8.5) - 6}" fill="white" fill-opacity="0.9" font-size="14" font-style="italic" font-weight="bold" class="eng-font">y</text>`;
     }
 
-    function getLabelAttrs(x, y) {
+    function getLabelAttrs(x, y, pointType = 'normal') {
       let sx = toSvgX(x);
       let sy = toSvgY(y);
       let anchor = "start"; 
       let dx = 14;          
       let dy = -12;         
-      if (x > 3) { anchor = "end"; dx = -14; } 
-      if (y > 5) { dy = 24; }                  
+      
+      if (pointType === 'P') {
+          anchor = "end"; dx = -14; dy = -12; 
+      } else if (pointType === 'M') {
+          anchor = "end"; dx = -14; dy = 24;  
+      } else if (pointType === 'T') {
+          anchor = "start"; dx = 14; dy = 24; 
+      }
+
+      if (x > 5 && anchor === "start") { anchor = "end"; dx = -14; }
+      if (x < -2 && anchor === "end") { anchor = "start"; dx = 14; }
+      if (y > 6 && dy > 0) { dy = -12; }
+      if (y < -3 && dy < 0) { dy = 24; }
+
       return `x="${sx + dx}" y="${sy + dy}" text-anchor="${anchor}"`;
     }
 
     function renderPoints(svgId, px, py, tx = null, ty = null, mx = null, my = null) {
       drawBaseGrid(svgId);
       const svg = document.getElementById(svgId);
-      const pAttrs = getLabelAttrs(px, py);
+      const pAttrs = getLabelAttrs(px, py, 'P');
 
-      // 原始點 P
       svg.innerHTML += `
         <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="10" fill="#22d3ee" fill-opacity="0.2" class="pulse-glow" />
         <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="5" fill="#22d3ee" stroke="white" stroke-width="2" />
@@ -377,20 +388,18 @@
 
       if (tx !== null) {
         if (mx !== null && my !== null) {
-          // 有中繼點 M (進階題兩次變換)
           let pathD = `M ${toSvgX(px)} ${toSvgY(py)} L ${toSvgX(mx)} ${toSvgY(my)} L ${toSvgX(tx)} ${toSvgY(ty)}`;
           if (state.topic === 'rotation') {
              pathD = `M ${toSvgX(px)} ${toSvgY(py)} Q ${(toSvgX(px)+toSvgX(mx))/2} ${(toSvgY(py)+toSvgY(my))/2 - 30} ${toSvgX(mx)} ${toSvgY(my)} Q ${(toSvgX(mx)+toSvgX(tx))/2} ${(toSvgY(my)+toSvgY(ty))/2 - 30} ${toSvgX(tx)} ${toSvgY(ty)}`;
           }
           svg.innerHTML += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
           
-          const mAttrs = getLabelAttrs(mx, my);
+          const mAttrs = getLabelAttrs(mx, my, 'M');
           svg.innerHTML += `
             <circle cx="${toSvgX(mx)}" cy="${toSvgY(my)}" r="5" fill="#fbbf24" stroke="white" />
             <text ${mAttrs} fill="#fbbf24" font-weight="900" font-size="15" class="svg-text-halo pointer-events-none eng-font">M(${mx}, ${my})</text>
           `;
         } else {
-          // 只有一次變換
           let pathD = `M ${toSvgX(px)} ${toSvgY(py)} L ${toSvgX(tx)} ${toSvgY(ty)}`;
           if (state.topic === 'rotation') {
               pathD = `M ${toSvgX(px)} ${toSvgY(py)} Q ${(toSvgX(px)+toSvgX(tx))/2} ${(toSvgY(py)+toSvgY(ty))/2 - 30} ${toSvgX(tx)} ${toSvgY(ty)}`;
@@ -398,8 +407,7 @@
           svg.innerHTML += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
         }
 
-        // 正確點 P'
-        const tAttrs = getLabelAttrs(tx, ty);
+        const tAttrs = getLabelAttrs(tx, ty, 'T');
         svg.innerHTML += `
           <circle cx="${toSvgX(tx)}" cy="${toSvgY(ty)}" r="6" fill="#10b981" stroke="white" />
           <circle cx="${toSvgX(tx)}" cy="${toSvgY(ty)}" r="6" fill="#10b981" class="pulse-correct" />
@@ -436,38 +444,40 @@
         q.ox = ox; q.oy = oy;
         q.mx = null; q.my = null;
         
+        let localValid = false;
+        
         if (state.topic === 'translation') {
           if (isBasic) {
             let dx = 0, dy = 0;
             if (Math.random() > 0.5) {
                 dx = Math.floor(Math.random() * 9) - 4;
-                if (dx === 0) dx = 2;
+                if (Math.abs(dx) < 2) dx = dx >= 0 ? 2 : -2; 
             } else {
                 dy = Math.floor(Math.random() * 9) - 4;
-                if (dy === 0) dy = 2;
+                if (Math.abs(dy) < 2) dy = dy >= 0 ? 2 : -2;
             }
             q.ax = ox + dx; q.ay = oy + dy;
             if (isValid(q.ax, q.ay)) {
                 q.params = { step: 1, dx, dy };
                 let move = dx !== 0 ? (dx > 0 ? `向右平移 ${dx}` : `向左平移 ${Math.abs(dx)}`) : (dy > 0 ? `向上平移 ${dy}` : `向下平移 ${Math.abs(dy)}`);
                 q.text = `將點 P(${ox}, ${oy}) ${move} 單位。`;
-                valid = true;
+                localValid = true;
             }
           } else {
             let dx = Math.floor(Math.random() * 7) - 3;
             let dy = Math.floor(Math.random() * 7) - 3;
-            if (dx === 0) dx = 2; 
-            if (dy === 0) dy = -2;
+            if (Math.abs(dx) < 2) dx = dx >= 0 ? 2 : -2; 
+            if (Math.abs(dy) < 2) dy = dy >= 0 ? 2 : -2;
             
-            q.mx = ox + dx; q.my = oy; // 步驟一先走X
-            q.ax = q.mx; q.ay = q.my + dy; // 步驟二走Y
+            q.mx = ox + dx; q.my = oy; 
+            q.ax = q.mx; q.ay = q.my + dy; 
             
             if (isValid(q.mx, q.my) && isValid(q.ax, q.ay)) {
                 q.params = { step: 2, dx, dy };
                 let moveX = dx > 0 ? `向右平移 ${dx}` : `向左平移 ${Math.abs(dx)}`;
                 let moveY = dy > 0 ? `向上平移 ${dy}` : `向下平移 ${Math.abs(dy)}`;
                 q.text = `將點 P(${ox}, ${oy}) 先${moveX} 單位，再${moveY} 單位。`;
-                valid = true;
+                localValid = true;
             }
           }
         } 
@@ -479,11 +489,11 @@
             if (isValid(q.ax, q.ay)) {
                 q.params = { step: 1, mode };
                 q.text = `將點 P(${ox}, ${oy}) 對 ${mode} 軸進行反射。`;
-                valid = true;
+                localValid = true;
             }
           } else {
             let mode1 = Math.random() > 0.5 ? 'x' : 'y';
-            let mode2 = mode1 === 'x' ? 'y' : 'x'; // 連續反射不同軸
+            let mode2 = mode1 === 'x' ? 'y' : 'x'; 
             
             q.mx = mode1 === 'x' ? ox : -ox;
             q.my = mode1 === 'x' ? -oy : oy;
@@ -494,7 +504,7 @@
             if (isValid(q.mx, q.my) && isValid(q.ax, q.ay)) {
                 q.params = { step: 2, mode1, mode2 };
                 q.text = `將點 P(${ox}, ${oy}) 先對 ${mode1} 軸進行反射，再對 ${mode2} 軸進行反射。`;
-                valid = true;
+                localValid = true;
             }
           }
         }
@@ -517,7 +527,7 @@
             if (isValid(q.ax, q.ay)) {
                 q.params = { step: 1, angle, dir };
                 q.text = `將點 P(${ox}, ${oy}) 繞原點${dir}旋轉 ${angle}°。`;
-                valid = true;
+                localValid = true;
             }
           } else {
             let a1 = angles[Math.floor(Math.random() * angles.length)];
@@ -536,10 +546,26 @@
                 if ((ccw1 + ccw2) % 360 !== 0) {
                     q.params = { step: 2, a1, d1, a2, d2 };
                     q.text = `將點 P(${ox}, ${oy}) 先繞原點${d1}旋轉 ${a1}°，再繼續${d2}旋轉 ${a2}°。`;
-                    valid = true;
+                    localValid = true;
                 }
             }
           }
+        }
+
+        if (localValid) {
+            let pts = [{x: q.ox, y: q.oy}];
+            if (q.mx !== null) pts.push({x: q.mx, y: q.my});
+            pts.push({x: q.ax, y: q.ay});
+            
+            let distOk = true;
+            for (let i = 0; i < pts.length; i++) {
+                for (let j = i + 1; j < pts.length; j++) {
+                    if (Math.abs(pts[i].x - pts[j].x) < 2 && Math.abs(pts[i].y - pts[j].y) < 2) {
+                        distOk = false;
+                    }
+                }
+            }
+            if (distOk) valid = true;
         }
       }
 
@@ -593,7 +619,6 @@
         badge.className = "inline-block px-6 py-2 rounded-full text-2xl font-black tracking-widest w-max mb-4 bg-rose-500/20 text-rose-400 shadow-sm border border-rose-500/30";
       }
 
-      // 控制圖例的中繼點顯示
       if (q.params.step === 2) {
          legendMid.classList.remove('hidden');
          legendMid.classList.add('flex');
@@ -608,7 +633,7 @@
       if (state.topic === 'translation') {
         if (q.params.step === 1) {
           html = `
-            <div class="flex justify-between"><span>原始座標</span> <span class="text-white font-mono eng-font">(${q.ox}, ${q.oy})</span></div>
+            <div class="flex justify-between"><span>原始坐標</span> <span class="text-white font-mono eng-font">(${q.ox}, ${q.oy})</span></div>
             <div class="flex justify-between"><span>運算過程</span> <span class="text-white font-mono eng-font">(${q.ox}${q.params.dx>=0?'+':''}${q.params.dx}, ${q.oy}${q.params.dy>=0?'+':''}${q.params.dy})</span></div>
             <div class="pt-2 border-t border-white/5 flex justify-between font-bold"><span>最終答案</span> <span class="text-cyan-400 font-mono eng-font">(${q.ax}, ${q.ay})</span></div>
           `;
@@ -648,7 +673,6 @@
     function handleNext() {
       document.getElementById('feedback-overlay').classList.add('hidden');
       
-      // 關鍵新增邏輯：檢查第 5 題結束時的分數 (取得 4 或 5 分即可過關)
       if (state.qIndex === 5 && state.score < 4) {
         document.getElementById('fail-score').textContent = state.score;
         showScreen('fail-screen');
