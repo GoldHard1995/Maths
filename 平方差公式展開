@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>平方差公式展開挑戰賽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto+Sans+TC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .math-text {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="p-4 flex items-center justify-center">
+
+    <div id="app" class="w-full max-w-2xl glass-card p-8 relative min-h-[500px] flex flex-col justify-center">
+        
+        <div id="title-screen" class="text-center">
+            <h1 class="text-5xl font-extrabold text-indigo-700 mb-4 tracking-tight">平方差公式</h1>
+            <h2 class="text-2xl font-bold text-indigo-500 mb-12">展開運算挑戰賽</h2>
+            
+            <div class="space-y-6">
+                <button onclick="startGame()" class="group relative inline-flex items-center justify-center px-10 py-4 font-bold text-white transition-all duration-200 bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-lg">
+                    開始遊戲
+                </button>
+            </div>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-indigo-600 font-bold" id="progress-text">第 1 / 15 題</span>
+                <span class="text-orange-500 font-bold" id="score-text">得分: 0</span>
+            </div>
+            
+            <div class="bg-indigo-50 p-10 rounded-xl mb-6 text-center">
+                <p class="text-gray-500 text-sm mb-2">請將下列算式展開：</p>
+                <div id="question-display" class="text-4xl font-bold math-text text-gray-800"></div>
+            </div>
+
+            <div class="space-y-4">
+                <input type="text" id="answer-input" placeholder="輸入展開後的答案，如: x^2-4" 
+                    class="w-full p-4 text-xl text-center border-2 border-indigo-200 rounded-lg focus:border-indigo-500 outline-none math-text">
+                <p class="text-xs text-gray-400 text-center">提示：使用 ^ 表示次方（如 x² 寫作 x^2）。</p>
+                <button onclick="checkAnswer()" id="submit-btn" class="w-full bg-green-500 text-white py-4 rounded-lg font-bold text-xl hover:bg-green-600 transition">提交答案</button>
+            </div>
+            
+            <div id="feedback" class="mt-4 p-4 rounded-lg text-center font-bold hidden"></div>
+            
+            <div id="next-btn-container" class="mt-4 hidden">
+                <button onclick="goToNextQuestion()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                    下一題 <span class="text-xl">→</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="result-screen" class="hidden text-center">
+            <h2 id="result-title" class="text-3xl font-bold text-indigo-700 mb-2">挑戰完成！</h2>
+            <p id="final-score" class="text-2xl mb-8 font-semibold text-gray-800"></p>
+            
+            <button onclick="showTitle()" class="bg-indigo-100 text-indigo-700 px-8 py-3 rounded-full font-bold hover:bg-indigo-200 transition text-lg">回到主頁</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { q: "(x + 1)(x - 1)", a: "x^2-1", step: "x² - 1² = x² - 1" },
+            { q: "(y - 2)(y + 2)", a: "y^2-4", step: "y² - 2² = y² - 4" },
+            { q: "(a + 5)(a - 5)", a: "a^2-25", step: "a² - 5² = a² - 25" },
+            { q: "(3 + x)(3 - x)", a: "9-x^2", step: "3² - x² = 9 - x²" },
+            { q: "(2x + 1)(2x - 1)", a: "4x^2-1", step: "(2x)² - 1² = 4x² - 1" },
+            { q: "(3y - 4)(3y + 4)", a: "9y^2-16", step: "(3y)² - 4² = 9y² - 16" },
+            { q: "(5a + 2)(5a - 2)", a: "25a^2-4", step: "(5a)² - 2² = 25a² - 4" },
+            { q: "(x + 3y)(x - 3y)", a: "x^2-9y^2", step: "x² - (3y)² = x² - 9y²" },
+            { q: "(4a - 5b)(4a + 5b)", a: "16a^2-25b^2", step: "(4a)² - (5b)² = 16a² - 25b²" },
+            { q: "(2x^2 + 1)(2x^2 - 1)", a: "4x^4-1", step: "(2x²)² - 1² = 4x⁴ - 1" },
+            { q: "(xy + 6)(xy - 6)", a: "x^2y^2-36", step: "(xy)² - 6² = x²y² - 36" },
+            { q: "(10 - 7x)(10 + 7x)", a: "100-49x^2", step: "10² - (7x)² = 100 - 49x²" },
+            { q: "(-a + 3)(-a - 3)", a: "a^2-9", step: "(-a)² - 3² = a² - 9" },
+            { q: "(1/2x + 4)(1/2x - 4)", a: "1/4x^2-16", step: "(1/2x)² - 4² = 1/4x² - 16" },
+            { q: "(x^3 - y^3)(x^3 + y^3)", a: "x^6-y^6", step: "(x³)² - (y³)² = x⁶ - y⁶" }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let startTime;
+
+        function showTitle() {
+            hideAll();
+            document.getElementById('title-screen').classList.remove('hidden');
+        }
+
+        function hideAll() {
+            ['title-screen', 'game-screen', 'result-screen'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+        }
+
+        function startGame() {
+            currentQuestionIndex = 0;
+            score = 0;
+            startTime = Date.now();
+            document.getElementById('score-text').innerText = `得分: 0`;
+            hideAll();
+            document.getElementById('game-screen').classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = questions[currentQuestionIndex];
+            document.getElementById('question-display').innerText = q.q;
+            document.getElementById('progress-text').innerText = `第 ${currentQuestionIndex + 1} / 15 題`;
+            document.getElementById('answer-input').value = "";
+            document.getElementById('answer-input').disabled = false;
+            document.getElementById('answer-input').focus();
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('next-btn-container').classList.add('hidden');
+        }
+
+        function checkAnswer() {
+            const userAnsInput = document.getElementById('answer-input');
+            const userAns = userAnsInput.value.trim().toLowerCase().replace(/\s/g, '');
+            const currentQ = questions[currentQuestionIndex];
+            const correctAns = currentQ.a;
+            const feedback = document.getElementById('feedback');
+
+            if (userAns === "") return;
+
+            feedback.classList.remove('hidden');
+            userAnsInput.disabled = true;
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('submit-btn').classList.add('hidden');
+
+            if (userAns === correctAns) {
+                score += 10;
+                feedback.innerHTML = `<p class="text-green-600 text-xl">✅ 正確！</p>`;
+                feedback.className = "mt-4 p-4 rounded-lg text-center font-bold bg-green-50 border border-green-200";
+            } else {
+                feedback.innerHTML = `
+                    <p class="text-red-600 text-xl mb-2">❌ 錯誤</p>
+                    <div class="text-left text-gray-700 space-y-1">
+                        <p><span class="font-bold">正確步驟：</span> ${currentQ.step}</p>
+                        <p><span class="font-bold">正確答案：</span> <span class="math-text">${correctAns}</span></p>
+                    </div>
+                `;
+                feedback.className = "mt-4 p-4 rounded-lg text-center font-bold bg-red-50 border border-red-200";
+            }
+
+            document.getElementById('score-text').innerText = `得分: ${score}`;
+            document.getElementById('next-btn-container').classList.remove('hidden');
+        }
+
+        function goToNextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        document.getElementById('answer-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !document.getElementById('answer-input').disabled) {
+                checkAnswer();
+            } else if (e.key === 'Enter' && !document.getElementById('next-btn-container').classList.contains('hidden')) {
+                goToNextQuestion();
+            }
+        });
+
+        function endGame() {
+            const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+            hideAll();
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('result-title').innerText = "挑戰完成！";
+            document.getElementById('final-score').innerText = `最終得分：${score} / 150 (用時：${timeTaken}秒)`;
+        }
+    </script>
+</body>
+</html>
