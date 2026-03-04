@@ -1,850 +1,695 @@
-<!doctype html>
-<html lang="zh-TW" class="h-full">
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>坐標變換挑戰 - 專業版</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-  <style>
-    * { font-family: 'Noto Sans TC', sans-serif; touch-action: manipulation; }
-    .title-font { font-family: 'Noto Sans TC', sans-serif; } 
-    .eng-font { font-family: 'Orbitron', sans-serif; }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-    
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
-      50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8); }
-    }
-    
-    .float-animation { animation: float 3s ease-in-out infinite; }
-    .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-    
-    .btn-3d {
-      transform: translateY(0);
-      transition: all 0.1s ease;
-      cursor: pointer;
-    }
-    .btn-3d:active { transform: translateY(2px); filter: brightness(0.9); }
-    
-    .grid-pattern {
-      background-image: 
-        linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
-      background-size: 30px 30px;
-    }
-    
-    .coordinate-grid {
-      position: relative;
-      background: #0f172a;
-      border-radius: 20px;
-      overflow: hidden;
-      border: 2px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .no-select { user-select: none; -webkit-user-select: none; }
-
-    body, html { height: 100%; margin: 0; padding: 0; }
-    #app { height: 100%; overflow-y: auto; overflow-x: hidden; }
-    
-    #question-container {
-      min-height: 140px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .pulse-correct { animation: pulse-correct 1.5s infinite; }
-    @keyframes pulse-correct {
-      0% { r: 5; opacity: 1; }
-      100% { r: 15; opacity: 0; }
-    }
-    
-    .svg-text-halo {
-      paint-order: stroke fill;
-      stroke: #0f172a;
-      stroke-width: 6px;
-      stroke-linejoin: round;
-    }
-  </style>
-</head>
-<body class="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white">
-  <div id="app" class="w-full grid-pattern no-select">
-    
-    <!-- 主選單 -->
-    <div id="main-menu" class="min-h-full flex flex-col items-center justify-center p-6">
-      <div class="text-center mb-10">
-        <h1 class="title-font text-5xl md:text-7xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent float-animation">坐標變換挑戰</h1>
-      </div>
-      <div class="grid gap-6 w-full max-w-lg">
-        <button onclick="selectTopic('translation')" class="btn-3d group bg-gradient-to-r from-emerald-500 to-teal-600 p-1 rounded-2xl shadow-xl">
-          <div class="bg-slate-900/40 rounded-[14px] py-6 px-8 flex items-center justify-between group-hover:bg-transparent transition-all">
-             <span class="text-2xl md:text-3xl font-bold">平移 Translation</span>
-             <span class="text-4xl">➡️</span>
-          </div>
-        </button> 
-        <button onclick="selectTopic('reflection')" class="btn-3d group bg-gradient-to-r from-blue-500 to-indigo-600 p-1 rounded-2xl shadow-xl">
-          <div class="bg-slate-900/40 rounded-[14px] py-6 px-8 flex items-center justify-between group-hover:bg-transparent transition-all">
-            <span class="text-2xl md:text-3xl font-bold">反射 Reflection</span>
-            <span class="text-4xl">🪞</span>
-          </div>
-        </button> 
-        <button onclick="selectTopic('rotation')" class="btn-3d group bg-gradient-to-r from-purple-500 to-pink-600 p-1 rounded-2xl shadow-xl">
-          <div class="bg-slate-900/40 rounded-[14px] py-6 px-8 flex items-center justify-between group-hover:bg-transparent transition-all">
-            <span class="text-2xl md:text-3xl font-bold">旋轉 Rotation</span>
-            <span class="text-4xl">🔄</span>
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- 教學提示畫面 -->
-    <div id="tutorial-screen" class="min-h-full flex flex-col items-center justify-center p-6 hidden relative">
-      <button onclick="goToMainMenu()" class="absolute top-6 left-6 bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-      </button>
-
-      <div class="text-center mb-8">
-        <div id="tutorial-icon" class="text-6xl mb-4 float-animation"></div>
-        <h2 id="tutorial-title" class="text-4xl font-black title-font bg-clip-text text-transparent">教學提示</h2>
-      </div>
-
-      <div id="tutorial-content" class="w-full max-w-2xl">
-        <!-- 動態注入教學內容 -->
-      </div>
-
-      <button onclick="goToDifficulty()" class="btn-3d mt-10 bg-white text-slate-950 px-10 py-4 rounded-2xl text-xl font-black shadow-xl">
-        我了解了，開始選擇難度
-      </button>
-    </div>
-
-    <!-- 難度選擇 -->
-    <div id="difficulty-menu" class="min-h-full flex flex-col items-center justify-center p-6 hidden relative">
-      <button onclick="showScreen('tutorial-screen')" class="absolute top-6 left-6 bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-      </button>
-      <div id="topic-badge" class="mb-4 text-6xl float-animation"></div>
-      <h2 id="topic-title-display" class="text-4xl font-black mb-10">標題</h2>
-      <div class="grid gap-6 w-full max-w-md">
-        <button onclick="startGame(1)" class="btn-3d bg-white/10 hover:bg-white/20 border-2 border-white/20 p-6 rounded-3xl text-left flex items-center gap-6">
-          <div class="bg-green-500 p-4 rounded-2xl text-2xl">📊</div>
-          <div>
-            <div class="text-xl font-bold">基礎模式</div>
-            <div class="text-indigo-300 text-sm">提供坐標圖助攻 (-5 ~ 8)</div>
-          </div>
-        </button>
-        <button onclick="startGame(2)" class="btn-3d bg-white/10 hover:bg-white/20 border-2 border-white/20 p-6 rounded-3xl text-left flex items-center gap-6">
-          <div class="bg-red-500 p-4 rounded-2xl text-2xl">🧠</div>
-          <div>
-            <div class="text-xl font-bold">專家模式</div>
-            <div class="text-indigo-300 text-sm">純邏輯運算，無坐標圖</div>
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- 遊戲畫面 -->
-    <div id="game-screen" class="h-full flex flex-col p-4 md:p-6 hidden max-w-7xl mx-auto">
-      <div class="flex items-center justify-between mb-4">
-        <button onclick="goToMainMenu()" class="bg-white/10 p-2 rounded-xl hover:bg-rose-500/50 transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-        <div class="flex-1 mx-4">
-           <div class="flex justify-between text-[10px] font-bold mb-1">
-             <span class="text-indigo-400">挑戰進度 <span id="stage-info" class="text-white/50 ml-2">基礎題階</span></span>
-             <span id="score-text" class="eng-font tracking-wider">0 / 10</span>
-           </div>
-           <div class="bg-slate-800 h-2 rounded-full overflow-hidden">
-             <div id="progress-bar" class="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 transition-all duration-500" style="width: 0%"></div>
-           </div>
-        </div>
-        <div id="game-badge" class="bg-indigo-600 px-4 py-1 rounded-xl font-bold text-xs">平移</div>
-      </div>
-
-      <div class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 overflow-y-auto pb-8">
-        <!-- 坐標圖面板 -->
-        <div id="coord-panel" class="lg:w-1/2 bg-white/5 rounded-3xl p-4 backdrop-blur-md flex items-center justify-center border border-white/10">
-          <div class="coordinate-grid w-full aspect-square max-w-[420px] relative">
-            <svg id="coordinate-svg" viewBox="0 0 420 420" class="w-full h-full"></svg>
-          </div>
-        </div>
-
-        <!-- 答題區域 -->
-        <div id="interact-panel" class="flex-1 flex flex-col">
-          <div id="question-container" class="bg-slate-800/60 rounded-3xl p-6 border border-white/10 relative overflow-hidden">
-            <div class="absolute -top-2 -right-2 p-4 opacity-5 text-7xl font-black italic select-none eng-font" id="question-bg-num">01</div>
-            <div id="question-tag" class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 w-max">題目類型</div>
-            <h3 id="question-text" class="text-lg md:text-xl font-bold leading-snug text-white z-10">加載中...</h3>
-            
-            <div class="flex items-center gap-3 text-3xl md:text-4xl font-mono justify-center mt-6">
-              <span class="text-slate-500">(</span>
-              <div id="input-x" onclick="focusInput('x')" class="w-16 md:w-20 h-14 md:h-16 bg-slate-900 border-4 border-slate-700 rounded-xl flex items-center justify-center text-white transition-all cursor-pointer"></div>
-              <span class="text-slate-500">,</span>
-              <div id="input-y" onclick="focusInput('y')" class="w-16 md:w-20 h-14 md:h-16 bg-slate-900 border-4 border-slate-700 rounded-xl flex items-center justify-center text-white transition-all cursor-pointer"></div>
-              <span class="text-slate-500">)</span>
-            </div>
-          </div>
-
-          <!-- 數字鍵盤 -->
-          <div class="bg-slate-900/60 p-4 rounded-3xl border border-white/5 mt-4">
-            <div class="grid grid-cols-3 gap-2">
-              <button onclick="pressKey('1')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">1</button>
-              <button onclick="pressKey('2')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">2</button>
-              <button onclick="pressKey('3')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">3</button>
-              <button onclick="pressKey('4')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">4</button>
-              <button onclick="pressKey('5')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">5</button>
-              <button onclick="pressKey('6')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">6</button>
-              <button onclick="pressKey('7')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">7</button>
-              <button onclick="pressKey('8')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">8</button>
-              <button onclick="pressKey('9')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">9</button>
-              <button onclick="pressKey('-')" class="btn-3d bg-indigo-600 h-12 rounded-xl text-xl font-bold eng-font">-</button>
-              <button onclick="pressKey('0')" class="btn-3d bg-slate-800 h-12 rounded-xl text-xl font-bold eng-font">0</button>
-              <button onclick="pressKey('back')" class="btn-3d bg-red-900/40 h-12 rounded-xl flex items-center justify-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" stroke-width="2"/></svg>
-              </button>
-            </div>
-            <button onclick="checkAnswer()" class="btn-3d w-full bg-gradient-to-r from-cyan-500 to-indigo-600 py-4 rounded-xl mt-4 text-lg font-black shadow-lg">提交答案</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 反饋詳解彈窗 -->
-    <div id="feedback-overlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center z-50 p-4 hidden">
-      <div id="feedback-card" class="bg-slate-900 rounded-[32px] w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-white/10 shadow-2xl">
-        <div class="p-6 flex flex-col md:flex-row gap-6 overflow-y-auto">
-          
-          <div class="md:w-1/2 flex flex-col gap-4">
-             <div class="coordinate-grid w-full aspect-square bg-slate-950 rounded-2xl border border-white/5">
-                <svg id="explain-svg" viewBox="0 0 420 420" class="w-full h-full"></svg>
-             </div>
-             <div class="flex justify-center flex-wrap gap-4 text-[10px] font-bold">
-               <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-cyan-400"></div> 原始點 P</div>
-               <div id="legend-mid" class="hidden items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-400"></div> 中繼點 M</div>
-               <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-400"></div> 目標點 P'</div>
-               <div class="flex items-center gap-2"><div class="w-3 h-1 border-t-2 border-dashed border-white/50"></div> 變換路徑</div>
-             </div>
-          </div>
-
-          <div class="flex-1 flex flex-col text-left">
-            <div id="fb-status-badge" class="inline-block px-6 py-2 rounded-full text-2xl font-black tracking-widest w-max mb-4">答錯了</div>
-            <h2 id="feedback-title" class="text-3xl font-black mb-4">解析說明</h2>
-            
-            <div class="space-y-6">
-              <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
-                <div class="text-indigo-400 text-[10px] font-bold uppercase tracking-wider mb-2">題目重溫</div>
-                <div id="fb-q-text" class="text-md font-bold text-white leading-relaxed"></div>
-              </div>
-
-              <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
-                <div class="text-emerald-400 text-[10px] font-bold uppercase tracking-wider mb-3">運算步驟</div>
-                <div id="explanation-content" class="text-slate-300 space-y-3 text-sm"></div>
-              </div>
-            </div>
-
-            <button onclick="handleNext()" class="btn-3d w-full bg-white text-slate-900 py-5 rounded-2xl text-xl font-black mt-auto shadow-xl">下一題</button>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- 基礎失敗畫面 -->
-    <div id="fail-screen" class="min-h-full flex flex-col items-center justify-center p-8 hidden text-center">
-      <div class="text-8xl mb-6">⚠️</div>
-      <h2 class="title-font text-5xl font-black mb-4 text-rose-400">基礎考驗未通過</h2>
-      <p class="text-slate-300 text-xl mb-8">您在前 5 題獲得了 <span id="fail-score" class="text-white font-bold text-3xl mx-2 eng-font"></span> 分。<br><br>必須在基礎題取得<span class="text-emerald-400 font-bold mx-1">至少 4 分</span>，<br>才能解鎖第 6-10 題的「複合變換」進階挑戰！</p>
-      <button onclick="goToMainMenu()" class="btn-3d bg-white text-slate-950 px-8 py-4 rounded-2xl text-xl font-black">重新挑戰</button>
-    </div>
-
-    <!-- 勝利畫面 -->
-    <div id="victory-screen" class="min-h-full flex flex-col items-center justify-center p-8 hidden text-center">
-      <div class="text-8xl mb-6">🏆</div>
-      <h2 class="title-font text-5xl font-black mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">挑戰成功</h2>
-      <p class="text-slate-300 text-xl mb-8">恭喜完成所有變換挑戰！</p>
-      <button onclick="goToMainMenu()" class="btn-3d bg-white text-slate-950 px-8 py-4 rounded-2xl text-xl font-black">返回主選單</button>
-    </div>
-
-  </div>
-
-  <script>
-    let state = {
-      screen: 'main',
-      topic: '',
-      level: 1,
-      score: 0,
-      qIndex: 0,
-      currentQ: null,
-      activeInput: 'x',
-      inputs: { x: '', y: '' }
-    };
-
-    const config = {
-      translation: { title: '平移', icon: '➡️', badge: 'bg-emerald-600' },
-      reflection: { title: '反射', icon: '🪞', badge: 'bg-blue-600' },
-      rotation: { title: '旋轉', icon: '🔄', badge: 'bg-purple-600' }
-    };
-
-    const SCALE = 28; 
-    const OFFSET_X = 28; 
-    const OFFSET_Y = 392; 
-
-    function toSvgX(x) { return OFFSET_X + (x - (-5)) * SCALE; }
-    function toSvgY(y) { return OFFSET_Y - (y - (-5)) * SCALE; }
-
-    function showScreen(id) {
-      ['main-menu', 'tutorial-screen', 'difficulty-menu', 'game-screen', 'victory-screen', 'fail-screen'].forEach(s => {
-        document.getElementById(s).classList.add('hidden');
-      });
-      document.getElementById(id).classList.remove('hidden');
-    }
-
-    function selectTopic(topic) {
-      state.topic = topic;
-      document.getElementById('topic-badge').textContent = config[topic].icon;
-      document.getElementById('topic-title-display').textContent = config[topic].title;
-      
-      // 設定教學提示內容
-      document.getElementById('tutorial-icon').textContent = config[topic].icon;
-      const tutorialTitle = document.getElementById('tutorial-title');
-      tutorialTitle.textContent = config[topic].title + ' 祕笈';
-      
-      let gradient = '';
-      let content = '';
-      
-      if (topic === 'translation') {
-          gradient = 'bg-gradient-to-r from-emerald-400 to-teal-400';
-          content = `
-            <div class="bg-slate-800/80 p-6 md:p-8 rounded-3xl border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
-               <ul class="space-y-5 text-lg md:text-xl text-slate-200 font-medium">
-                 <li class="flex items-center justify-between border-b border-white/5 pb-4"><div class="flex items-center gap-3"><span class="text-3xl">➡️</span> <span>向右平移 a</span></div> <span class="text-emerald-400 font-bold eng-font tracking-wide">(x + a, y)</span></li>
-                 <li class="flex items-center justify-between border-b border-white/5 pb-4"><div class="flex items-center gap-3"><span class="text-3xl">⬅️</span> <span>向左平移 a</span></div> <span class="text-emerald-400 font-bold eng-font tracking-wide">(x - a, y)</span></li>
-                 <li class="flex items-center justify-between border-b border-white/5 pb-4"><div class="flex items-center gap-3"><span class="text-3xl">⬆️</span> <span>向上平移 b</span></div> <span class="text-emerald-400 font-bold eng-font tracking-wide">(x, y + b)</span></li>
-                 <li class="flex items-center justify-between"><div class="flex items-center gap-3"><span class="text-3xl">⬇️</span> <span>向下平移 b</span></div> <span class="text-emerald-400 font-bold eng-font tracking-wide">(x, y - b)</span></li>
-               </ul>
-            </div>
-          `;
-      } else if (topic === 'reflection') {
-          gradient = 'bg-gradient-to-r from-blue-400 to-indigo-400';
-          content = `
-            <div class="bg-slate-800/80 p-6 md:p-8 rounded-3xl border border-blue-500/30 shadow-lg shadow-blue-500/10">
-               <ul class="space-y-6 text-lg md:text-xl text-slate-200 font-medium">
-                 <li class="flex flex-col gap-3 pb-6 border-b border-white/5">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3"><span class="text-3xl">↔️</span> <span>對 y 軸反射</span></div> 
-                      <span class="text-blue-400 font-bold eng-font tracking-wide">(-x, y)</span>
-                    </div>
-                    <div class="text-sm text-slate-400 pl-11">左右翻轉：x 坐標變號，y 坐標不變。</div>
-                 </li>
-                 <li class="flex flex-col gap-3">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3"><span class="text-3xl">↕️</span> <span>對 x 軸反射</span></div> 
-                      <span class="text-blue-400 font-bold eng-font tracking-wide">(x, -y)</span>
-                    </div>
-                    <div class="text-sm text-slate-400 pl-11">上下翻轉：y 坐標變號，x 坐標不變。</div>
-                 </li>
-               </ul>
-            </div>
-          `;
-      } else if (topic === 'rotation') {
-          gradient = 'bg-gradient-to-r from-purple-400 to-pink-400';
-          content = `
-            <div class="bg-slate-800/80 p-6 md:p-8 rounded-3xl border border-purple-500/30 shadow-lg shadow-purple-500/10 text-left">
-               <div class="text-sm md:text-base text-purple-300 mb-6 bg-purple-500/10 p-4 rounded-xl border border-purple-500/20">
-                 💡 <span class="font-bold">記憶口訣</span>：90° 會讓 x, y 互換位置並變號其中一個；180° 則不換位置但全都變號。
-               </div>
-               <ul class="space-y-6 text-lg md:text-xl text-slate-200 font-medium">
-                 <li class="flex flex-col gap-3 pb-6 border-b border-white/5">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3"><span class="text-3xl">↺</span> <span>逆時針 90°</span></div> 
-                      <span class="text-purple-400 font-bold eng-font tracking-wide">(-y, x)</span>
-                    </div>
-                    <div class="text-sm text-slate-400 pl-11">等同於順時針 270°</div>
-                 </li>
-                 <li class="flex flex-col gap-3 pb-6 border-b border-white/5">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3"><span class="text-3xl">↻</span> <span>順時針 90°</span></div> 
-                      <span class="text-purple-400 font-bold eng-font tracking-wide">(y, -x)</span>
-                    </div>
-                    <div class="text-sm text-slate-400 pl-11">等同於逆時針 270°</div>
-                 </li>
-                 <li class="flex flex-col gap-3">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3"><span class="text-3xl">🔄</span> <span>旋轉 180°</span></div> 
-                      <span class="text-purple-400 font-bold eng-font tracking-wide">(-x, -y)</span>
-                    </div>
-                    <div class="text-sm text-slate-400 pl-11">順時針與逆時針結果相同</div>
-                 </li>
-               </ul>
-            </div>
-          `;
-      }
-      
-      tutorialTitle.className = `text-4xl font-black title-font bg-clip-text text-transparent ${gradient}`;
-      document.getElementById('tutorial-content').innerHTML = content;
-
-      showScreen('tutorial-screen');
-    }
-    
-    function goToDifficulty() {
-      showScreen('difficulty-menu');
-    }
-
-    function goToMainMenu() {
-      showScreen('main-menu');
-    }
-
-    function startGame(level) {
-      state.level = level;
-      state.score = 0;
-      state.qIndex = 0;
-      document.getElementById('coord-panel').style.display = level === 1 ? 'flex' : 'none';
-      document.getElementById('game-badge').className = `px-4 py-1 rounded-xl font-bold text-xs ${config[state.topic].badge}`;
-      document.getElementById('game-badge').textContent = config[state.topic].title;
-      updateProgress();
-      newQuestion();
-      showScreen('game-screen');
-    }
-
-    function updateProgress() {
-      document.getElementById('score-text').textContent = `${state.score} / 10`;
-      document.getElementById('progress-bar').style.width = `${(state.qIndex / 10) * 100}%`;
-      
-      const stageInfo = document.getElementById('stage-info');
-      if (state.qIndex <= 5) {
-         stageInfo.textContent = "(基礎考驗中)";
-         stageInfo.className = "text-cyan-400 ml-2";
-      } else {
-         stageInfo.textContent = "(進階挑戰)";
-         stageInfo.className = "text-purple-400 ml-2";
-      }
-    }
-
-    function drawBaseGrid(svgId) {
-      const svg = document.getElementById(svgId);
-      svg.innerHTML = '';
-      
-      for (let i = -5; i <= 8; i++) {
-        const xPos = toSvgX(i);
-        const yPos = toSvgY(i);
-        if (i !== 0) {
-            svg.innerHTML += `<line x1="${xPos}" y1="${toSvgY(-5.5)}" x2="${xPos}" y2="${toSvgY(8.5)}" stroke="white" stroke-opacity="0.1" stroke-width="1" />`;
-            svg.innerHTML += `<line x1="${toSvgX(-5.5)}" y1="${yPos}" x2="${toSvgX(8.5)}" y2="${yPos}" stroke="white" stroke-opacity="0.1" stroke-width="1" />`;
-        }
-      }
-
-      svg.innerHTML += `<line x1="${toSvgX(-5.5)}" y1="${toSvgY(0)}" x2="${toSvgX(8.5)}" y2="${toSvgY(0)}" stroke="white" stroke-opacity="0.6" stroke-width="2" />`;
-      svg.innerHTML += `<line x1="${toSvgX(0)}" y1="${toSvgY(-5.5)}" x2="${toSvgX(0)}" y2="${toSvgY(8.5)}" stroke="white" stroke-opacity="0.6" stroke-width="2" />`;
-
-      svg.innerHTML += `<polygon points="${toSvgX(8.8)},${toSvgY(0)} ${toSvgX(8.4)},${toSvgY(0)-4} ${toSvgX(8.4)},${toSvgY(0)+4}" fill="rgba(255,255,255,0.6)" />`;
-      svg.innerHTML += `<polygon points="${toSvgX(0)},${toSvgY(8.8)} ${toSvgX(0)-4},${toSvgY(8.4)} ${toSvgX(0)+4},${toSvgY(8.4)}" fill="rgba(255,255,255,0.6)" />`;
-
-      for (let i = -5; i <= 8; i++) {
-        const xPos = toSvgX(i);
-        const yPos = toSvgY(i);
-        if (i !== 0) {
-            svg.innerHTML += `<text x="${xPos}" y="${toSvgY(0) + 16}" fill="white" fill-opacity="0.8" font-size="11" text-anchor="middle" class="eng-font">${i}</text>`;
-            svg.innerHTML += `<text x="${toSvgX(0) - 8}" y="${yPos + 4}" fill="white" fill-opacity="0.8" font-size="11" text-anchor="end" class="eng-font">${i}</text>`;
-        }
-      }
-      svg.innerHTML += `<text x="${toSvgX(0) - 6}" y="${toSvgY(0) + 14}" fill="white" fill-opacity="0.8" font-size="11" text-anchor="end" class="eng-font">0</text>`;
-      svg.innerHTML += `<text x="${toSvgX(8.5) + 6}" y="${toSvgY(0) + 4}" fill="white" fill-opacity="0.9" font-size="14" font-style="italic" font-weight="bold" class="eng-font">x</text>`;
-      svg.innerHTML += `<text x="${toSvgX(0) + 6}" y="${toSvgY(8.5) - 6}" fill="white" fill-opacity="0.9" font-size="14" font-style="italic" font-weight="bold" class="eng-font">y</text>`;
-    }
-
-    function renderPoints(svgId, px, py, tx = null, ty = null, mx = null, my = null) {
-      drawBaseGrid(svgId);
-      const svg = document.getElementById(svgId);
-      
-      let ptsToLabel = [];
-      if (tx !== null) {
-        ptsToLabel.push({ id: 'T', x: tx, y: ty, text: `P'(${tx}, ${ty})` });
-      }
-      ptsToLabel.push({ id: 'P', x: px, y: py, text: `P(${px}, ${py})` });
-      if (tx !== null && mx !== null && my !== null) {
-        ptsToLabel.push({ id: 'M', x: mx, y: my, text: `M(${mx}, ${my})` });
-      }
-
-      const positions = [
-        {dx: 14, dy: 5, anchor: 'start'},    
-        {dx: 12, dy: -16, anchor: 'start'},  
-        {dx: 12, dy: 26, anchor: 'start'},   
-        {dx: -14, dy: 5, anchor: 'end'},     
-        {dx: -12, dy: -16, anchor: 'end'},   
-        {dx: -12, dy: 26, anchor: 'end'},    
-        {dx: 0, dy: -20, anchor: 'middle'},  
-        {dx: 0, dy: 30, anchor: 'middle'}    
-      ];
-
-      let placedBoxes = [];
-      let labelLayout = {};
-
-      for (let pt of ptsToLabel) {
-        let cx = toSvgX(pt.x);
-        let cy = toSvgY(pt.y);
-        let bestPos = null;
-        let width = pt.text.length * 9.5; 
-        
-        for (let pos of positions) {
-            let left, right, top, bottom;
-            
-            if (pos.anchor === 'start') {
-                left = cx + pos.dx;
-                right = left + width;
-            } else if (pos.anchor === 'end') {
-                right = cx + pos.dx;
-                left = right - width;
-            } else {
-                left = cx + pos.dx - width / 2;
-                right = cx + pos.dx + width / 2;
-            }
-            top = cy + pos.dy - 14; 
-            bottom = cy + pos.dy + 4;
-            
-            let box = {left, right, top, bottom};
-            
-            if (box.left < 2 || box.right > 418 || box.top < 2 || box.bottom > 418) continue;
-            
-            let overlap = false;
-            for (let pBox of placedBoxes) {
-                if (!(box.right < pBox.left - 2 || box.left > pBox.right + 2 || box.bottom < pBox.top - 2 || box.top > pBox.bottom + 2)) {
-                    overlap = true; break;
-                }
-            }
-            if (!overlap) { bestPos = { ...pos, box }; break; }
-        }
-        
-        if (!bestPos) {
-            if (cx > 210) { 
-                bestPos = {dx: -14, dy: 5, anchor: 'end'}; 
-            } else { 
-                bestPos = {dx: 14, dy: 5, anchor: 'start'}; 
-            }
-            let left = bestPos.anchor === 'start' ? cx + bestPos.dx : cx + bestPos.dx - width;
-            bestPos.box = {left, right: left+width, top: cy + bestPos.dy - 14, bottom: cy + bestPos.dy + 4};
-        }
-        
-        placedBoxes.push(bestPos.box);
-        labelLayout[pt.id] = bestPos;
-      }
-
-      let htmlPaths = '';
-      let htmlCircles = '';
-      let htmlTexts = '';
-      
-      if (tx !== null) {
-        if (mx !== null && my !== null) {
-          let pathD = `M ${toSvgX(px)} ${toSvgY(py)} L ${toSvgX(mx)} ${toSvgY(my)} L ${toSvgX(tx)} ${toSvgY(ty)}`;
-          if (state.topic === 'rotation') {
-             pathD = `M ${toSvgX(px)} ${toSvgY(py)} Q ${(toSvgX(px)+toSvgX(mx))/2} ${(toSvgY(py)+toSvgY(my))/2 - 30} ${toSvgX(mx)} ${toSvgY(my)} Q ${(toSvgX(mx)+toSvgX(tx))/2} ${(toSvgY(my)+toSvgY(ty))/2 - 30} ${toSvgX(tx)} ${toSvgY(ty)}`;
-          }
-          htmlPaths += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
-          
-          let m = labelLayout['M'];
-          htmlCircles += `<circle cx="${toSvgX(mx)}" cy="${toSvgY(my)}" r="5" fill="#fbbf24" stroke="white" />`;
-          htmlTexts += `<text x="${toSvgX(mx) + m.dx}" y="${toSvgY(my) + m.dy}" text-anchor="${m.anchor}" fill="#fbbf24" font-weight="900" font-size="15" class="svg-text-halo pointer-events-none eng-font">M(${mx}, ${my})</text>`;
-        } else {
-          let pathD = `M ${toSvgX(px)} ${toSvgY(py)} L ${toSvgX(tx)} ${toSvgY(ty)}`;
-          if (state.topic === 'rotation') {
-              pathD = `M ${toSvgX(px)} ${toSvgY(py)} Q ${(toSvgX(px)+toSvgX(tx))/2} ${(toSvgY(py)+toSvgY(ty))/2 - 30} ${toSvgX(tx)} ${toSvgY(ty)}`;
-          }
-          htmlPaths += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
-        }
-      }
-
-      let p = labelLayout['P'];
-      htmlCircles += `
-        <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="10" fill="#22d3ee" fill-opacity="0.2" class="pulse-glow" />
-        <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="5" fill="#22d3ee" stroke="white" stroke-width="2" />
-      `;
-      htmlTexts += `<text x="${toSvgX(px) + p.dx}" y="${toSvgY(py) + p.dy}" text-anchor="${p.anchor}" fill="#22d3ee" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P(${px}, ${py})</text>`;
-
-      if (tx !== null) {
-        let t = labelLayout['T'];
-        htmlCircles += `
-          <circle cx="${toSvgX(tx)}" cy="${toSvgY(ty)}" r="6" fill="#10b981" stroke="white" />
-          <circle cx="${toSvgX(tx)}" cy="${toSvgY(ty)}" r="6" fill="#10b981" class="pulse-correct" />
-        `;
-        htmlTexts += `<text x="${toSvgX(tx) + t.dx}" y="${toSvgY(ty) + t.dy}" text-anchor="${t.anchor}" fill="#10b981" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P'(${tx}, ${ty})</text>`;
-      }
-      
-      svg.innerHTML += htmlPaths + htmlCircles + htmlTexts;
-    }
-
-    function newQuestion() {
-      state.qIndex++;
-      state.inputs = { x: '', y: '' };
-      state.activeInput = 'x';
-      updateProgress();
-      updateInputDisplay();
-      
-      const isBasic = state.qIndex <= 5;
-      
-      const tagEl = document.getElementById('question-tag');
-      if (isBasic) {
-          tagEl.textContent = '基礎題 (單次變換)';
-          tagEl.className = 'inline-block bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full text-xs font-bold mb-3 w-max';
-      } else {
-          tagEl.textContent = '進階題 (複合兩次變換)';
-          tagEl.className = 'inline-block bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full text-xs font-bold mb-3 w-max';
-      }
-      
-      const isValid = (x, y) => x >= -5 && x <= 8 && y >= -5 && y <= 8;
-      let valid = false;
-      let q = { ox: 0, oy: 0, mx: null, my: null, ax: 0, ay: 0, text: '', params: {} };
-
-      while (!valid) {
-        let ox = Math.floor(Math.random() * 14) - 5; 
-        let oy = Math.floor(Math.random() * 14) - 5; 
-        q.ox = ox; q.oy = oy;
-        q.mx = null; q.my = null;
-        
-        let localValid = false;
-        
-        if (state.topic === 'translation') {
-          if (isBasic) {
-            let dx = 0, dy = 0;
-            if (Math.random() > 0.5) {
-                dx = Math.floor(Math.random() * 8) + 1;
-                if (Math.random() > 0.5) dx = -dx;
-            } else {
-                dy = Math.floor(Math.random() * 8) + 1;
-                if (Math.random() > 0.5) dy = -dy;
-            }
-            q.ax = ox + dx; q.ay = oy + dy;
-            
-            if (isValid(q.ax, q.ay)) {
-                q.params = { step: 1, dx, dy };
-                let move = dx !== 0 ? (dx > 0 ? `向右平移 ${dx}` : `向左平移 ${Math.abs(dx)}`) : (dy > 0 ? `向上平移 ${dy}` : `向下平移 ${Math.abs(dy)}`);
-                q.text = `將點 P(${ox}, ${oy}) ${move} 單位。`;
-                localValid = true;
-            }
-          } else {
-            let dx = Math.floor(Math.random() * 6) + 1;
-            if (Math.random() > 0.5) dx = -dx;
-            let dy = Math.floor(Math.random() * 6) + 1;
-            if (Math.random() > 0.5) dy = -dy;
-            
-            q.mx = ox + dx; q.my = oy; 
-            q.ax = q.mx; q.ay = q.my + dy; 
-            
-            if (isValid(q.mx, q.my) && isValid(q.ax, q.ay)) {
-                q.params = { step: 2, dx, dy };
-                let moveX = dx > 0 ? `向右平移 ${dx}` : `向左平移 ${Math.abs(dx)}`;
-                let moveY = dy > 0 ? `向上平移 ${dy}` : `向下平移 ${Math.abs(dy)}`;
-                q.text = `將點 P(${ox}, ${oy}) 先${moveX} 單位，再${moveY} 單位。`;
-                localValid = true;
-            }
-          }
-        } 
-        else if (state.topic === 'reflection') {
-          if (isBasic) {
-            let mode = Math.random() > 0.5 ? 'x' : 'y';
-            q.ax = mode === 'x' ? ox : -ox;
-            q.ay = mode === 'x' ? -oy : oy;
-            if (isValid(q.ax, q.ay)) {
-                q.params = { step: 1, mode };
-                q.text = `將點 P(${ox}, ${oy}) 對 ${mode} 軸進行反射。`;
-                localValid = true;
-            }
-          } else {
-            let mode1 = Math.random() > 0.5 ? 'x' : 'y';
-            let mode2 = mode1 === 'x' ? 'y' : 'x'; 
-            
-            q.mx = mode1 === 'x' ? ox : -ox;
-            q.my = mode1 === 'x' ? -oy : oy;
-            
-            q.ax = mode2 === 'x' ? q.mx : -q.mx;
-            q.ay = mode2 === 'x' ? -q.my : q.my;
-
-            if (isValid(q.mx, q.my) && isValid(q.ax, q.ay)) {
-                q.params = { step: 2, mode1, mode2 };
-                q.text = `將點 P(${ox}, ${oy}) 先對 ${mode1} 軸進行反射，再對 ${mode2} 軸進行反射。`;
-                localValid = true;
-            }
-          }
-        }
-        else {
-          const getRot = (x, y, angle, dir) => {
-              let ccw = dir === '逆時針' ? angle : (360 - angle) % 360;
-              if (ccw === 90) return {x: -y, y: x};
-              if (ccw === 180) return {x: -x, y: -y};
-              if (ccw === 270) return {x: y, y: -x};
-              return {x, y};
-          };
-          const angles = [90, 180, 270];
-
-          if (isBasic) {
-            let angle = angles[Math.floor(Math.random() * angles.length)];
-            let dir = Math.random() > 0.5 ? '順時針' : '逆時針';
-            let res = getRot(ox, oy, angle, dir);
-            q.ax = res.x; q.ay = res.y;
-            
-            if (isValid(q.ax, q.ay)) {
-                q.params = { step: 1, angle, dir };
-                q.text = `將點 P(${ox}, ${oy}) 繞原點${dir}旋轉 ${angle}°。`;
-                localValid = true;
-            }
-          } else {
-            let a1 = angles[Math.floor(Math.random() * angles.length)];
-            let d1 = Math.random() > 0.5 ? '順時針' : '逆時針';
-            let res1 = getRot(ox, oy, a1, d1);
-            q.mx = res1.x; q.my = res1.y;
-
-            let a2 = angles[Math.floor(Math.random() * angles.length)];
-            let d2 = Math.random() > 0.5 ? '順時針' : '逆時針';
-            let res2 = getRot(q.mx, q.my, a2, d2);
-            q.ax = res2.x; q.ay = res2.y;
-
-            if (isValid(q.mx, q.my) && isValid(q.ax, q.ay)) {
-                let ccw1 = d1 === '逆時針' ? a1 : (360 - a1) % 360;
-                let ccw2 = d2 === '逆時針' ? a2 : (360 - a2) % 360;
-                if ((ccw1 + ccw2) % 360 !== 0) {
-                    q.params = { step: 2, a1, d1, a2, d2 };
-                    q.text = `將點 P(${ox}, ${oy}) 先繞原點${d1}旋轉 ${a1}°，再繼續${d2}旋轉 ${a2}°。`;
-                    localValid = true;
-                }
-            }
-          }
-        }
-
-        if (localValid) {
-            let pts = [{x: q.ox, y: q.oy}];
-            if (q.mx !== null) pts.push({x: q.mx, y: q.my});
-            pts.push({x: q.ax, y: q.ay});
-            
-            let distOk = true;
-            for (let i = 0; i < pts.length; i++) {
-                for (let j = i + 1; j < pts.length; j++) {
-                    if (Math.abs(pts[i].x - pts[j].x) < 2 && Math.abs(pts[i].y - pts[j].y) < 2) {
-                        distOk = false;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>坐標距離學習遊戲</title>
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 引入 Babel 用於解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 設定 Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Segoe UI', 'Microsoft JhengHei', 'sans-serif'],
+                    },
+                    animation: {
+                        'bounce-short': 'bounce 0.5s ease-in-out 2',
+                        'spin-slow': 'spin 3s linear infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
                     }
                 }
             }
-            if (distOk) valid = true;
         }
-      }
-
-      state.currentQ = q;
-      document.getElementById('question-text').textContent = q.text;
-      document.getElementById('question-bg-num').textContent = state.qIndex.toString().padStart(2, '0');
-      if (state.level === 1) renderPoints('coordinate-svg', q.ox, q.oy);
-    }
-
-    function focusInput(target) {
-      state.activeInput = target;
-      updateInputDisplay();
-    }
-
-    function pressKey(key) {
-      let current = state.inputs[state.activeInput];
-      if (key === 'back') state.inputs[state.activeInput] = current.slice(0, -1);
-      else if (key === '-') { if (current === '') state.inputs[state.activeInput] = '-'; }
-      else { if (current.length < 3) state.inputs[state.activeInput] += key; }
-      updateInputDisplay();
-    }
-
-    function updateInputDisplay() {
-      ['x', 'y'].forEach(axis => {
-        const el = document.getElementById(`input-${axis}`);
-        el.textContent = state.inputs[axis];
-        el.className = `w-16 md:w-20 h-14 md:h-16 bg-slate-900 border-4 rounded-xl flex items-center justify-center text-xl md:text-2xl font-mono eng-font transition-all cursor-pointer ${state.activeInput === axis ? 'border-cyan-400 bg-cyan-400/10' : 'border-slate-700'}`;
-      });
-    }
-
-    function checkAnswer() {
-      if (state.inputs.x === '' || state.inputs.y === '' || state.inputs.x === '-' || state.inputs.y === '-') return;
-      const isCorrect = parseInt(state.inputs.x) === state.currentQ.ax && parseInt(state.inputs.y) === state.currentQ.ay;
-      
-      const overlay = document.getElementById('feedback-overlay');
-      const badge = document.getElementById('fb-status-badge');
-      const expContent = document.getElementById('explanation-content');
-      const legendMid = document.getElementById('legend-mid');
-      const q = state.currentQ;
-
-      overlay.classList.remove('hidden');
-      document.getElementById('fb-q-text').textContent = q.text;
-      
-      if (isCorrect) {
-        state.score++;
-        document.getElementById('score-text').textContent = `${state.score} / 10`;
-        badge.textContent = "回答正確";
-        badge.className = "inline-block px-6 py-2 rounded-full text-2xl font-black tracking-widest w-max mb-4 bg-emerald-500/20 text-emerald-400 shadow-sm border border-emerald-500/30";
-      } else {
-        badge.textContent = "回答錯誤";
-        badge.className = "inline-block px-6 py-2 rounded-full text-2xl font-black tracking-widest w-max mb-4 bg-rose-500/20 text-rose-400 shadow-sm border border-rose-500/30";
-      }
-
-      if (q.params.step === 2) {
-         legendMid.classList.remove('hidden');
-         legendMid.classList.add('flex');
-      } else {
-         legendMid.classList.add('hidden');
-         legendMid.classList.remove('flex');
-      }
-
-      renderPoints('explain-svg', q.ox, q.oy, q.ax, q.ay, q.mx, q.my);
-
-      let html = '';
-      if (state.topic === 'translation') {
-        if (q.params.step === 1) {
-          html = `
-            <div class="flex justify-between"><span>原始坐標</span> <span class="text-white font-mono eng-font">(${q.ox}, ${q.oy})</span></div>
-            <div class="flex justify-between"><span>運算過程</span> <span class="text-white font-mono eng-font">(${q.ox}${q.params.dx>=0?'+':''}${q.params.dx}, ${q.oy}${q.params.dy>=0?'+':''}${q.params.dy})</span></div>
-            <div class="pt-2 border-t border-white/5 flex justify-between font-bold"><span>最終答案</span> <span class="text-cyan-400 font-mono eng-font">(${q.ax}, ${q.ay})</span></div>
-          `;
-        } else {
-          html = `
-            <div class="flex justify-between text-slate-400"><span>第一步</span> <span class="eng-font">(${q.ox}${q.params.dx>=0?'+':''}${q.params.dx}, ${q.oy}) ➡️ M(${q.mx}, ${q.my})</span></div>
-            <div class="flex justify-between text-slate-400 mb-2"><span>第二步</span> <span class="eng-font">(${q.mx}, ${q.my}${q.params.dy>=0?'+':''}${q.params.dy}) ➡️ P'(${q.ax}, ${q.ay})</span></div>
-            <div class="pt-2 border-t border-white/5 flex justify-between font-bold"><span>最終答案</span> <span class="text-cyan-400 font-mono eng-font">(${q.ax}, ${q.ay})</span></div>
-          `;
+    </script>
+    <style>
+        body {
+            touch-action: manipulation; /* 防止雙擊縮放 */
         }
-      } else if (state.topic === 'reflection') {
-        if (q.params.step === 1) {
-          html = `<div class="text-white mb-2">${q.params.mode === 'x' ? 'x 軸反射：(x, y) ➡️ (x, -y)' : 'y 軸反射：(x, y) ➡️ (-x, y)'}</div>
-                  <div class="flex justify-between font-bold"><span>最終答案</span> <span class="text-cyan-400 font-mono eng-font">(${q.ax}, ${q.ay})</span></div>`;
-        } else {
-          html = `
-            <div class="text-slate-400 mb-1">1. 對 ${q.params.mode1} 軸反射 <span class="eng-font">➡️ M(${q.mx}, ${q.my})</span></div>
-            <div class="text-slate-400 mb-2">2. 對 ${q.params.mode2} 軸反射 <span class="eng-font">➡️ P'(${q.ax}, ${q.ay})</span></div>
-            <div class="pt-2 border-t border-white/5 flex justify-between font-bold"><span>最終答案</span> <span class="text-cyan-400 font-mono eng-font">(${q.ax}, ${q.ay})</span></div>
-          `;
-        }
-      } else {
-        if (q.params.step === 1) {
-          html = `<div class="text-xs text-slate-400 mb-2">旋轉規則：90° 逆時針 (-y, x) | 180° (-x, -y) | 270° 逆時針 (y, -x)</div>
-                  <div class="flex justify-between font-bold"><span>最終答案</span> <span class="text-cyan-400 font-mono eng-font">(${q.ax}, ${q.ay})</span></div>`;
-        } else {
-          html = `
-            <div class="text-slate-400 mb-1">1. ${q.params.d1} ${q.params.a1}° <span class="eng-font">➡️ M(${q.mx}, ${q.my})</span></div>
-            <div class="text-slate-400 mb-2">2. ${q.params.d2} ${q.params.a2}° <span class="eng-font">➡️ P'(${q.ax}, ${q.ay})</span></div>
-            <div class="pt-2 border-t border-white/5 flex justify-between font-bold"><span>最終答案</span> <span class="text-cyan-400 font-mono eng-font">(${q.ax}, ${q.ay})</span></div>
-          `;
-        }
-      }
-      expContent.innerHTML = html;
-    }
+    </style>
+</head>
+<body class="bg-slate-900">
+    <div id="root"></div>
 
-    function handleNext() {
-      document.getElementById('feedback-overlay').classList.add('hidden');
-      
-      if (state.qIndex === 5 && state.score < 4) {
-        document.getElementById('fail-score').textContent = state.score;
-        showScreen('fail-screen');
-        return;
-      }
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-      if (state.qIndex >= 10) {
-        showScreen('victory-screen'); 
-      } else {
-        newQuestion();
-      }
-    }
-  </script>
+        // --- 圖標組件 (Inline SVGs) ---
+        const Icon = ({ children, className, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
+        );
+        const Target = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></Icon>;
+        const ArrowLeft = (props) => <Icon {...props}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></Icon>;
+        const CheckCircle = (props) => <Icon {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+        const XCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></Icon>;
+        const RefreshCw = (props) => <Icon {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></Icon>;
+        const Home = (props) => <Icon {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+        const RotateCcw = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
+        const ArrowUpDown = (props) => <Icon {...props}><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></Icon>;
+        const ArrowLeftRight = (props) => <Icon {...props}><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></Icon>; 
+        
+        // --- 主遊戲組件 ---
+        const CoordinateGame = () => {
+            // Game State
+            const [level, setLevel] = useState(null); // 1 or 2
+            const [score, setScore] = useState(0);
+            const [questionCount, setQuestionCount] = useState(1);
+            const [gameState, setGameState] = useState('menu'); // menu, playing, result
+            
+            // Question State
+            const [targetPoints, setTargetPoints] = useState([]);
+            const [plottedPoints, setPlottedPoints] = useState([]);
+            // Step: plotting_A -> plotting_B -> judging -> answering -> feedback
+            const [step, setStep] = useState('menu'); 
+            const [userAnswer, setUserAnswer] = useState('');
+            const [feedbackMsg, setFeedbackMsg] = useState('');
+            const [isCorrect, setIsCorrect] = useState(null);
+            const [attempts, setAttempts] = useState(0); 
+
+            // Canvas Refs
+            const canvasRef = useRef(null);
+            const gridSize = 25; // pixels per unit 
+            const canvasSize = 400; // 400x400 pixels
+            const center = canvasSize / 2;
+
+            // Configuration Helper
+            const getMaxQuestions = () => {
+                return level === 2 ? 10 : 5;
+            };
+
+            // --- Logic Helpers ---
+
+            const getRandomInt = (min, max) => {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            };
+
+            const generateQuestion = (selectedLevel) => {
+                
+                // Determine axis alignment (0 for vertical, 1 for horizontal)
+                const axis = Math.random() > 0.5 ? 'x' : 'y';
+                
+                // 設定隨機範圍：
+                // 程度 1：固定在 -7 到 7 (原本是 -8 到 8)
+                // 程度 2：擴大至 -15 到 15
+                const rangeLimit = selectedLevel === 2 ? 15 : 7;
+                
+                const fixedVal = getRandomInt(-rangeLimit, rangeLimit); 
+                
+                let val1 = getRandomInt(-rangeLimit, rangeLimit);
+                let val2 = getRandomInt(-rangeLimit, rangeLimit);
+                
+                // 確保兩點不重疊且距離至少為 2
+                while (val1 === val2 || Math.abs(val1 - val2) < 2) { 
+                    val2 = getRandomInt(-rangeLimit, rangeLimit);
+                }
+
+                // 排序數值
+                const v1 = Math.min(val1, val2);
+                const v2 = Math.max(val1, val2);
+
+                let p1, p2;
+                if (axis === 'x') {
+                    // Vertical line: x is constant
+                    p1 = { x: fixedVal, y: v1, label: 'A' };
+                    p2 = { x: fixedVal, y: v2, label: 'B' };
+                } else {
+                    // Horizontal line: y is constant
+                    p1 = { x: v1, y: fixedVal, label: 'A' };
+                    p2 = { x: v2, y: fixedVal, label: 'B' };
+                }
+
+                setTargetPoints([p1, p2]);
+                setPlottedPoints([]);
+                setUserAnswer('');
+                setFeedbackMsg('');
+                setIsCorrect(null);
+                setAttempts(0); 
+                
+                // 設定初始步驟
+                if (selectedLevel === 1) {
+                    setStep('plotting_A');
+                } else {
+                    setStep('judging'); // 程度 2 直接開始判斷
+                }
+            };
+
+            const startGame = (lvl) => {
+                setLevel(lvl);
+                setScore(0);
+                setQuestionCount(1);
+                setGameState('playing');
+                generateQuestion(lvl);
+            };
+
+            const handleNextQuestion = () => {
+                if (questionCount >= getMaxQuestions()) {
+                    setGameState('result');
+                } else {
+                    setQuestionCount(prev => prev + 1);
+                    generateQuestion(level);
+                }
+            };
+
+            const returnToMenu = () => {
+                setGameState('menu');
+                setLevel(null);
+                setStep('menu');
+            };
+
+            // --- Interaction Logic ---
+
+            const handleCanvasClick = (e) => {
+                if (level !== 1 || (step !== 'plotting_A' && step !== 'plotting_B')) return;
+
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                const canvasX = x * scaleX;
+                const canvasY = y * scaleY;
+
+                const gridX = Math.round((canvasX - center) / gridSize);
+                const gridY = Math.round((center - canvasY) / gridSize); 
+
+                const clickedPoint = { x: gridX, y: gridY, label: step === 'plotting_A' ? 'A' : 'B' };
+                const target = step === 'plotting_A' ? targetPoints[0] : targetPoints[1];
+
+                if (clickedPoint.x === target.x && clickedPoint.y === target.y) {
+                    setPlottedPoints([...plottedPoints, clickedPoint]);
+                    setFeedbackMsg('');
+                    setIsCorrect(null);
+
+                    if (step === 'plotting_A') {
+                        setStep('plotting_B');
+                    } else {
+                        // 點完 B 點後，進入判斷題階段
+                        setStep('judging');
+                    }
+                } else {
+                    setFeedbackMsg(`位置不對喔！你點到了 (${clickedPoint.x}, ${clickedPoint.y})`);
+                    setIsCorrect(false);
+                    setTimeout(() => {
+                        setFeedbackMsg('');
+                        setIsCorrect(null);
+                    }, 1500);
+                }
+            };
+
+            const handleNumPadClick = (num) => {
+                if (step === 'feedback') return;
+                setUserAnswer(prev => prev + num);
+            };
+
+            const handleNumPadDelete = () => {
+                if (step === 'feedback') return;
+                setUserAnswer(prev => prev.slice(0, -1));
+            };
+
+            // 判斷線型題目 - 檢查答案
+            const checkOrientation = (selectedType) => {
+                const p1 = targetPoints[0];
+                const p2 = targetPoints[1];
+                const isVertical = p1.x === p2.x;
+                const correctType = isVertical ? 'vertical' : 'horizontal';
+                
+                if (selectedType === correctType) {
+                    // Correct
+                    const addedScore = 5; // 判斷正確得 5 分
+                    setScore(prev => prev + addedScore);
+                    setFeedbackMsg(`判斷正確！這是一條${isVertical ? '鉛垂線' : '水平線'}。現在請計算距離。`);
+                    setIsCorrect(true);
+                    
+                    // 進入下一階段：計算距離
+                    setStep('answering');
+                    setAttempts(0); // 重置計算題的嘗試次數
+                    
+                    // 3秒後清除正確提示，以免干擾作答，或者保留在上方
+                    // 這裡選擇保留 feedbackMsg 讓學生知道上一部做對了
+                } else {
+                    // Incorrect
+                    setFeedbackMsg(`答錯了。${isVertical ? 'x 坐標相同，所以是鉛垂線' : 'y 坐標相同，所以是水平線'}。再試一次！`);
+                    setIsCorrect(false);
+                    // 不切換步驟，讓學生重選
+                }
+            };
+
+            // 計算距離題目 - 檢查答案
+            const checkDistance = () => {
+                if (!userAnswer) return;
+
+                const p1 = targetPoints[0];
+                const p2 = targetPoints[1];
+                const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+                const inputVal = parseFloat(userAnswer);
+
+                if (Math.abs(inputVal - dist) < 0.01) {
+                    // 計算題給 15 分 (加上判斷題的 5 分，總共 20 分/題)
+                    // 如果有用過提示 (attempts > 0)，分數減半
+                    const addedScore = attempts > 0 ? 8 : 15; 
+                    setScore(prev => prev + addedScore);
+                    setFeedbackMsg(`答對了！距離是 ${dist}`);
+                    setIsCorrect(true);
+                    setStep('feedback');
+                } else {
+                    setUserAnswer(''); 
+
+                    if (level === 2) {
+                        const newAttempts = attempts + 1;
+                        setAttempts(newAttempts);
+
+                        const isVertical = p1.x === p2.x;
+                        const v1 = isVertical ? p1.y : p1.x;
+                        const v2 = isVertical ? p2.y : p2.x;
+                        
+                        const maxVal = Math.max(v1, v2);
+                        const minVal = Math.min(v1, v2);
+                        const minValStr = minVal < 0 ? `(${minVal})` : `${minVal}`;
+
+                        if (newAttempts === 1) {
+                            const hintText = `提示：利用「大減細」：${maxVal} - ${minValStr} = ?`;
+                            setFeedbackMsg(hintText);
+                            setIsCorrect(false);
+                        } else {
+                            const formula = `${maxVal} - ${minValStr}`;
+                            setFeedbackMsg(`還是不對。公式：${formula} = ${dist}`);
+                            setIsCorrect(false);
+                            setStep('feedback');
+                        }
+                    } else {
+                        setFeedbackMsg(`答案不對。正確距離是 ${dist}`);
+                        setIsCorrect(false);
+                        setStep('feedback');
+                    }
+                }
+            };
+
+            // --- Drawing Logic ---
+            useEffect(() => {
+                if (level !== 1) return;
+
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+
+                ctx.clearRect(0, 0, canvasSize, canvasSize);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#cbd5e1'; 
+                ctx.lineWidth = 1;
+
+                for (let i = 0; i <= canvasSize; i += gridSize) {
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, canvasSize);
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(canvasSize, i);
+                }
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#334155'; 
+                ctx.lineWidth = 2;
+                ctx.moveTo(center, 0);
+                ctx.lineTo(center, canvasSize);
+                ctx.moveTo(0, center);
+                ctx.lineTo(canvasSize, center);
+                ctx.stroke();
+
+                ctx.font = 'bold 14px Arial'; 
+                ctx.fillStyle = '#0047AB'; 
+                ctx.fillText('y', center + 6, 14);
+                ctx.fillText('x', canvasSize - 14, center - 6);
+                ctx.fillText('0', center + 4, center + 18);
+
+                ctx.font = 'bold 12px Arial'; 
+                
+                for (let i = -8; i <= 8; i++) {
+                    if (i === 0) continue;
+                    ctx.fillText(i, center + i * gridSize - 4, center + 16); 
+                    ctx.fillText(i, center + 6, center - i * gridSize + 4); 
+                }
+
+                plottedPoints.forEach(p => drawPoint(ctx, p, '#3b82f6')); 
+
+                // 在判斷階段、回答階段、或回饋階段，如果是在 Level 1 都要把點畫出來
+                if (step === 'judging' || step === 'answering' || step === 'feedback') {
+                     // 確保如果有 plottedPoints 就畫出來，如果沒有(例如剛進入)則顯示
+                     // Level 1: 已經 plot 完了，所以 plottedPoints 應該有值
+                     // 但如果是 answering/feedback，我們也可以畫出目標點(綠色)
+                }
+
+                if (step === 'feedback' || (level === 1 && plottedPoints.length === 2)) {
+                    // Draw dashed line connecting points
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#f59e0b'; // Amber
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([6, 6]);
+                    
+                    // Use plotted points for user feedback, or target points for final result
+                    const p1 = plottedPoints.length === 2 ? plottedPoints[0] : targetPoints[0];
+                    const p2 = plottedPoints.length === 2 ? plottedPoints[1] : targetPoints[1];
+                    
+                    if(p1 && p2) {
+                        ctx.moveTo(center + p1.x * gridSize, center - p1.y * gridSize);
+                        ctx.lineTo(center + p2.x * gridSize, center - p2.y * gridSize);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+                
+                if (step === 'feedback') {
+                    targetPoints.forEach(p => drawPoint(ctx, p, '#22c55e')); // Green
+                }
+
+            }, [plottedPoints, step, targetPoints, level, gameState, attempts]);
+
+            const drawPoint = (ctx, point, color) => {
+                const cx = center + point.x * gridSize;
+                const cy = center - point.y * gridSize;
+                
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText(`${point.label}`, cx + 8, cy - 8);
+            };
+
+            // --- Components ---
+
+            const Numpad = () => (
+                <div className="grid grid-cols-3 gap-2 mt-auto">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                        <button 
+                        key={num} 
+                        onClick={() => handleNumPadClick(num.toString())}
+                        className="bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-bold py-2 md:py-3 rounded-lg transition-colors border border-white/10 shadow-sm text-lg"
+                        >
+                        {num}
+                        </button>
+                    ))}
+                    <button 
+                        onClick={() => handleNumPadClick('0')}
+                        className="col-span-2 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-bold py-2 md:py-3 rounded-lg transition-colors border border-white/10 shadow-sm text-lg"
+                    >
+                        0
+                    </button>
+                    <button 
+                        onClick={handleNumPadDelete}
+                        className="bg-rose-500/80 hover:bg-rose-600 active:bg-rose-700 text-white font-bold py-2 md:py-3 rounded-lg transition-colors shadow-sm"
+                    >
+                        ⌫
+                    </button>
+                </div>
+            );
+
+            // 方向選擇按鈕組件
+            const OrientationSelector = () => (
+                <div className="flex flex-col gap-3 mt-auto h-full justify-center">
+                    <button 
+                        onClick={() => checkOrientation('horizontal')}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl text-xl flex flex-col items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                    >
+                        <div className="flex items-center gap-2">
+                             <ArrowLeftRight className="w-8 h-8" />
+                             <span>水平線 (Horizontal)</span>
+                        </div>
+                        <span className="text-sm opacity-80 font-normal">y 坐標相同</span>
+                    </button>
+                    <button 
+                        onClick={() => checkOrientation('vertical')}
+                        className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 rounded-xl text-xl flex flex-col items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                    >
+                        <div className="flex items-center gap-2">
+                            <ArrowUpDown className="w-8 h-8" />
+                            <span>鉛垂線 (Vertical)</span>
+                        </div>
+                        <span className="text-sm opacity-80 font-normal">x 坐標相同</span>
+                    </button>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white font-sans selection:bg-purple-500 selection:text-white flex flex-col items-center justify-center p-2 md:p-4">
+                
+                {gameState === 'menu' && (
+                    <div className="max-w-2xl w-full mx-auto animate-fade-in p-4">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tight drop-shadow-lg">
+                        📐 坐標距離學習
+                        </h1>
+                        <p className="text-purple-200 text-base md:text-lg">練習在坐標平面上計算點與點之間的距離</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <button 
+                        onClick={() => startGame(1)}
+                        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white p-5 rounded-2xl shadow-xl transform transition-all hover:scale-[1.01] group"
+                        >
+                        <div className="flex items-center justify-center gap-4 md:gap-6">
+                            <span className="text-4xl md:text-5xl group-hover:scale-110 transition-transform">🎯</span>
+                            <div className="text-left">
+                            <div className="text-xl md:text-2xl font-bold mb-1">程度 1：數格子</div>
+                            <div className="text-emerald-100 text-sm md:text-base">範圍 -7~7，視覺輔助</div>
+                            </div>
+                        </div>
+                        </button>
+                        
+                        <button 
+                        onClick={() => startGame(2)}
+                        className="w-full bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 text-white p-5 rounded-2xl shadow-xl transform transition-all hover:scale-[1.01] group"
+                        >
+                        <div className="flex items-center justify-center gap-4 md:gap-6">
+                            <span className="text-4xl md:text-5xl group-hover:scale-110 transition-transform">🧮</span>
+                            <div className="text-left">
+                            <div className="text-xl md:text-2xl font-bold mb-1">程度 2：直接計算</div>
+                            <div className="text-orange-100 text-sm md:text-base">10 題挑戰 (範圍 -15~15)</div>
+                            </div>
+                        </div>
+                        </button>
+                    </div>
+                    </div>
+                )}
+
+                {gameState === 'playing' && (
+                    <div className="w-full max-w-5xl mx-auto animate-fade-in flex flex-col h-full md:h-auto justify-center">
+                    
+                    <div className="flex justify-between items-center mb-4 gap-2 px-1">
+                        <button 
+                        onClick={returnToMenu}
+                        className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-xs md:text-sm font-medium backdrop-blur-sm"
+                        >
+                        <ArrowLeft className="w-4 h-4" /> 返回
+                        </button>
+                        
+                        <div className="flex items-center gap-2 text-xs md:text-sm">
+                        <div className="bg-emerald-500/20 px-3 py-1.5 rounded-lg backdrop-blur-sm border border-emerald-500/30 text-emerald-200">
+                            <span className="opacity-70 mr-1">分</span>
+                            <span className="font-bold text-emerald-400">{score}</span>
+                        </div>
+                        <div className="bg-purple-500/20 px-3 py-1.5 rounded-lg backdrop-blur-sm border border-purple-500/30 text-purple-200">
+                            <span className="opacity-70 mr-1">題</span>
+                            <span className="font-bold text-purple-300">{questionCount}/{getMaxQuestions()}</span>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-xl p-3 mb-4 text-center shadow-lg mx-1">
+                        <div className="text-lg md:text-xl font-medium">
+                            {step === 'plotting_A' && <span>點出 <span className="font-bold text-rose-400">點 A ({targetPoints[0]?.x}, {targetPoints[0]?.y})</span></span>}
+                            {step === 'plotting_B' && <span>點出 <span className="font-bold text-blue-400">點 B ({targetPoints[1]?.x}, {targetPoints[1]?.y})</span></span>}
+                            {step === 'judging' && <span className="text-yellow-300 font-bold">步驟 1：請問線段 AB 是水平線還是鉛垂線？</span>}
+                            {(step === 'answering' || step === 'feedback') && <span>步驟 2：計算 A 與 B 的距離</span>}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] gap-4 md:gap-6 items-start">
+                        
+                        <div className="flex flex-col items-center justify-center min-h-0">
+                        
+                        {/* LEVEL 1: Canvas Visual */}
+                        {level === 1 && (
+                            <div className="bg-white rounded-xl p-1 shadow-2xl overflow-hidden inline-block">
+                            <canvas 
+                                ref={canvasRef}
+                                width={canvasSize}
+                                height={canvasSize}
+                                onClick={handleCanvasClick}
+                                className="w-full h-auto cursor-crosshair touch-none max-h-[50vh] md:max-h-none object-contain"
+                                style={{ maxWidth: '400px' }} 
+                            />
+                            </div>
+                        )}
+
+                        {/* LEVEL 2: Large Cards Visual */}
+                        {level === 2 && (
+                            <div className="flex flex-col gap-6 w-full max-w-[400px] justify-center py-8">
+                                <div className="w-full bg-rose-500/90 backdrop-blur rounded-2xl p-6 text-center shadow-lg transform transition-transform hover:scale-105">
+                                    <div className="text-sm text-rose-100 mb-2 font-bold uppercase tracking-wider">點 A 坐標</div>
+                                    <div className="text-5xl font-bold font-mono text-white drop-shadow-md">
+                                        ({targetPoints[0]?.x}, {targetPoints[0]?.y})
+                                    </div>
+                                </div>
+                                
+                                <div className="w-full bg-blue-500/90 backdrop-blur rounded-2xl p-6 text-center shadow-lg transform transition-transform hover:scale-105">
+                                    <div className="text-sm text-blue-100 mb-2 font-bold uppercase tracking-wider">點 B 坐標</div>
+                                    <div className="text-5xl font-bold font-mono text-white drop-shadow-md">
+                                        ({targetPoints[1]?.x}, {targetPoints[1]?.y})
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        </div>
+
+                        {/* Right Column: Interaction Panel */}
+                        <div className="flex flex-col gap-3 w-full md:w-auto h-full min-h-[400px] md:min-h-0">
+                        
+                        <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex flex-col shadow-xl h-full">
+                            
+                            {/* Input Display (Only for distance questions) */}
+                            {step === 'answering' || step === 'feedback' ? (
+                                <div className="mb-3">
+                                    {step === 'plotting_A' || step === 'plotting_B' ? (
+                                        <div className="text-white/60 py-4 flex flex-col items-center text-sm">
+                                            <Target className="w-8 h-8 mb-2 opacity-50 animate-pulse" />
+                                            <span>請先在地圖上標記點...</span>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <div className="flex gap-2">
+                                                <div className="flex-1 bg-black/20 rounded-xl border-2 border-white/10 h-12 flex items-center justify-center text-2xl font-bold tracking-widest font-mono">
+                                                    {userAnswer}
+                                                    <span className="w-0.5 h-5 bg-purple-400 ml-1 animate-pulse"></span>
+                                                </div>
+                                                <button 
+                                                    onClick={checkDistance}
+                                                    disabled={step === 'feedback' || !userAnswer}
+                                                    className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:opacity-50 text-white font-bold px-4 rounded-xl transition-colors text-sm"
+                                                >
+                                                    確認
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
+
+                            {/* Feedback Message Area */}
+                            <div className="min-h-[60px] flex items-center justify-center text-center mb-2 px-1">
+                                {feedbackMsg && (
+                                    <div className={`flex flex-col items-center gap-1 ${isCorrect === false ? 'text-rose-300' : 'text-emerald-300'} font-bold text-sm md:text-base animate-bounce-short`}>
+                                    <div className="flex items-center gap-2">
+                                        {isCorrect ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                                        <span>{feedbackMsg.split('公式')[0].split('提示')[0].split('。')[0]}</span>
+                                    </div>
+                                    {/* Show extra details */}
+                                    {feedbackMsg.includes('。') && !feedbackMsg.includes('公式') && !feedbackMsg.includes('提示') && (
+                                         <div className="text-sm opacity-90">{feedbackMsg.split('。')[1]}</div>
+                                    )}
+                                    {/* Show formula on new line if exists */}
+                                    {feedbackMsg.includes('公式') && (
+                                        <div className="text-base bg-black/30 px-3 py-1 rounded text-white/90 font-mono mt-1">
+                                            {feedbackMsg.split('公式')[1]}
+                                        </div>
+                                    )}
+                                    {/* Show hint formula on new line */}
+                                    {feedbackMsg.includes('提示：') && (
+                                        <div className="text-base bg-black/30 px-3 py-1 rounded text-yellow-300 font-mono mt-1">
+                                            {feedbackMsg.split('提示：')[1]}
+                                        </div>
+                                    )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Controls: Next Button OR Keypad OR Orientation Select */}
+                            {step === 'feedback' ? (
+                                <button 
+                                    onClick={handleNextQuestion}
+                                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl text-lg flex items-center justify-center gap-2 shadow-lg transition-all mt-auto"
+                                >
+                                    <RefreshCw className={`w-5 h-5 ${questionCount < getMaxQuestions() ? "animate-spin-slow" : ""}`} />
+                                    {questionCount >= getMaxQuestions() ? "查看結果" : "下一題"}
+                                </button>
+                            ) : (
+                                <div className={`mt-auto h-full flex flex-col ${step === 'plotting_A' || step === 'plotting_B' ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
+                                    {step === 'judging' ? (
+                                        <OrientationSelector />
+                                    ) : (
+                                        <Numpad />
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        </div>
+
+                    </div>
+                    </div>
+                )}
+
+                {gameState === 'result' && (
+                    <div className="max-w-md w-full mx-auto text-center animate-fade-in p-4">
+                    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+                        <div className="text-6xl mb-4 filter drop-shadow-lg">
+                            {score >= (getMaxQuestions() * 20 * 0.8) ? '🏆' : score >= (getMaxQuestions() * 20 * 0.6) ? '🎉' : '💪'}
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">挑戰完成！</h2>
+                        <div className="text-purple-200 mb-6">
+                            程度 {level} • 總共 {getMaxQuestions()} 題
+                        </div>
+                        
+                        <div className="bg-black/20 rounded-2xl p-4 mb-6 border border-white/5">
+                            <div className="text-sm text-white/60 mb-1">最終得分</div>
+                            <div className={`text-5xl font-bold ${score >= (getMaxQuestions() * 20 * 0.8) ? 'text-yellow-400' : 'text-emerald-400'} font-mono`}>
+                                {score}
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <button 
+                                onClick={() => startGame(level)}
+                                className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-emerald-500/20"
+                            >
+                                <RotateCcw className="w-5 h-5" /> 再玩一次
+                            </button>
+                            <button 
+                                onClick={returnToMenu}
+                                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
+                            >
+                                <Home className="w-5 h-5" /> 返回選單
+                            </button>
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<CoordinateGame />);
+    </script>
 </body>
 </html>
