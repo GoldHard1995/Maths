@@ -66,7 +66,7 @@
     
     .svg-text-halo {
       paint-order: stroke fill;
-      stroke: #0f172a; /* 使用深色底色作為外框 */
+      stroke: #0f172a;
       stroke-width: 6px;
       stroke-linejoin: round;
     }
@@ -102,12 +102,32 @@
       </div>
     </div>
 
-    <!-- 難度選擇 -->
-    <div id="difficulty-menu" class="min-h-full flex flex-col items-center justify-center p-6 hidden">
-      <button onclick="goToMainMenu()" class="absolute top-6 left-6 bg-white/10 hover:bg-white/20 p-3 rounded-full">
+    <!-- 教學提示畫面 -->
+    <div id="tutorial-screen" class="min-h-full flex flex-col items-center justify-center p-6 hidden relative">
+      <button onclick="goToMainMenu()" class="absolute top-6 left-6 bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
       </button>
-      <div id="topic-badge" class="mb-4 text-6xl"></div>
+
+      <div class="text-center mb-8">
+        <div id="tutorial-icon" class="text-6xl mb-4 float-animation"></div>
+        <h2 id="tutorial-title" class="text-4xl font-black title-font bg-clip-text text-transparent">教學提示</h2>
+      </div>
+
+      <div id="tutorial-content" class="w-full max-w-2xl">
+        <!-- 動態注入教學內容 -->
+      </div>
+
+      <button onclick="goToDifficulty()" class="btn-3d mt-10 bg-white text-slate-950 px-10 py-4 rounded-2xl text-xl font-black shadow-xl">
+        我了解了，開始選擇難度
+      </button>
+    </div>
+
+    <!-- 難度選擇 -->
+    <div id="difficulty-menu" class="min-h-full flex flex-col items-center justify-center p-6 hidden relative">
+      <button onclick="showScreen('tutorial-screen')" class="absolute top-6 left-6 bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+      </button>
+      <div id="topic-badge" class="mb-4 text-6xl float-animation"></div>
       <h2 id="topic-title-display" class="text-4xl font-black mb-10">標題</h2>
       <div class="grid gap-6 w-full max-w-md">
         <button onclick="startGame(1)" class="btn-3d bg-white/10 hover:bg-white/20 border-2 border-white/20 p-6 rounded-3xl text-left flex items-center gap-6">
@@ -130,7 +150,7 @@
     <!-- 遊戲畫面 -->
     <div id="game-screen" class="h-full flex flex-col p-4 md:p-6 hidden max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <button onclick="goToMainMenu()" class="bg-white/10 p-2 rounded-xl">
+        <button onclick="goToMainMenu()" class="bg-white/10 p-2 rounded-xl hover:bg-rose-500/50 transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
         <div class="flex-1 mx-4">
@@ -277,7 +297,7 @@
     function toSvgY(y) { return OFFSET_Y - (y - (-5)) * SCALE; }
 
     function showScreen(id) {
-      ['main-menu', 'difficulty-menu', 'game-screen', 'victory-screen', 'fail-screen'].forEach(s => {
+      ['main-menu', 'tutorial-screen', 'difficulty-menu', 'game-screen', 'victory-screen', 'fail-screen'].forEach(s => {
         document.getElementById(s).classList.add('hidden');
       });
       document.getElementById(id).classList.remove('hidden');
@@ -287,6 +307,90 @@
       state.topic = topic;
       document.getElementById('topic-badge').textContent = config[topic].icon;
       document.getElementById('topic-title-display').textContent = config[topic].title;
+      
+      // 設定教學提示內容
+      document.getElementById('tutorial-icon').textContent = config[topic].icon;
+      const tutorialTitle = document.getElementById('tutorial-title');
+      tutorialTitle.textContent = config[topic].title + ' 祕笈';
+      
+      let gradient = '';
+      let content = '';
+      
+      if (topic === 'translation') {
+          gradient = 'bg-gradient-to-r from-emerald-400 to-teal-400';
+          content = `
+            <div class="bg-slate-800/80 p-6 md:p-8 rounded-3xl border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
+               <ul class="space-y-5 text-lg md:text-xl text-slate-200 font-medium">
+                 <li class="flex items-center justify-between border-b border-white/5 pb-4"><div class="flex items-center gap-3"><span class="text-3xl">➡️</span> <span>向右平移 a</span></div> <span class="text-emerald-400 font-bold eng-font tracking-wide">(x + a, y)</span></li>
+                 <li class="flex items-center justify-between border-b border-white/5 pb-4"><div class="flex items-center gap-3"><span class="text-3xl">⬅️</span> <span>向左平移 a</span></div> <span class="text-emerald-400 font-bold eng-font tracking-wide">(x - a, y)</span></li>
+                 <li class="flex items-center justify-between border-b border-white/5 pb-4"><div class="flex items-center gap-3"><span class="text-3xl">⬆️</span> <span>向上平移 b</span></div> <span class="text-emerald-400 font-bold eng-font tracking-wide">(x, y + b)</span></li>
+                 <li class="flex items-center justify-between"><div class="flex items-center gap-3"><span class="text-3xl">⬇️</span> <span>向下平移 b</span></div> <span class="text-emerald-400 font-bold eng-font tracking-wide">(x, y - b)</span></li>
+               </ul>
+            </div>
+          `;
+      } else if (topic === 'reflection') {
+          gradient = 'bg-gradient-to-r from-blue-400 to-indigo-400';
+          content = `
+            <div class="bg-slate-800/80 p-6 md:p-8 rounded-3xl border border-blue-500/30 shadow-lg shadow-blue-500/10">
+               <ul class="space-y-6 text-lg md:text-xl text-slate-200 font-medium">
+                 <li class="flex flex-col gap-3 pb-6 border-b border-white/5">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3"><span class="text-3xl">↔️</span> <span>對 y 軸反射</span></div> 
+                      <span class="text-blue-400 font-bold eng-font tracking-wide">(-x, y)</span>
+                    </div>
+                    <div class="text-sm text-slate-400 pl-11">左右翻轉：x 坐標變號，y 坐標不變。</div>
+                 </li>
+                 <li class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3"><span class="text-3xl">↕️</span> <span>對 x 軸反射</span></div> 
+                      <span class="text-blue-400 font-bold eng-font tracking-wide">(x, -y)</span>
+                    </div>
+                    <div class="text-sm text-slate-400 pl-11">上下翻轉：y 坐標變號，x 坐標不變。</div>
+                 </li>
+               </ul>
+            </div>
+          `;
+      } else if (topic === 'rotation') {
+          gradient = 'bg-gradient-to-r from-purple-400 to-pink-400';
+          content = `
+            <div class="bg-slate-800/80 p-6 md:p-8 rounded-3xl border border-purple-500/30 shadow-lg shadow-purple-500/10 text-left">
+               <div class="text-sm md:text-base text-purple-300 mb-6 bg-purple-500/10 p-4 rounded-xl border border-purple-500/20">
+                 💡 <span class="font-bold">記憶口訣</span>：90° 會讓 x, y 互換位置並變號其中一個；180° 則不換位置但全都變號。
+               </div>
+               <ul class="space-y-6 text-lg md:text-xl text-slate-200 font-medium">
+                 <li class="flex flex-col gap-3 pb-6 border-b border-white/5">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3"><span class="text-3xl">↺</span> <span>逆時針 90°</span></div> 
+                      <span class="text-purple-400 font-bold eng-font tracking-wide">(-y, x)</span>
+                    </div>
+                    <div class="text-sm text-slate-400 pl-11">等同於順時針 270°</div>
+                 </li>
+                 <li class="flex flex-col gap-3 pb-6 border-b border-white/5">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3"><span class="text-3xl">↻</span> <span>順時針 90°</span></div> 
+                      <span class="text-purple-400 font-bold eng-font tracking-wide">(y, -x)</span>
+                    </div>
+                    <div class="text-sm text-slate-400 pl-11">等同於逆時針 270°</div>
+                 </li>
+                 <li class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3"><span class="text-3xl">🔄</span> <span>旋轉 180°</span></div> 
+                      <span class="text-purple-400 font-bold eng-font tracking-wide">(-x, -y)</span>
+                    </div>
+                    <div class="text-sm text-slate-400 pl-11">順時針與逆時針結果相同</div>
+                 </li>
+               </ul>
+            </div>
+          `;
+      }
+      
+      tutorialTitle.className = `text-4xl font-black title-font bg-clip-text text-transparent ${gradient}`;
+      document.getElementById('tutorial-content').innerHTML = content;
+
+      showScreen('tutorial-screen');
+    }
+    
+    function goToDifficulty() {
       showScreen('difficulty-menu');
     }
 
@@ -352,12 +456,10 @@
       svg.innerHTML += `<text x="${toSvgX(0) + 6}" y="${toSvgY(8.5) - 6}" fill="white" fill-opacity="0.9" font-size="14" font-style="italic" font-weight="bold" class="eng-font">y</text>`;
     }
 
-    // 結合碰撞偵測的渲染函式
     function renderPoints(svgId, px, py, tx = null, ty = null, mx = null, my = null) {
       drawBaseGrid(svgId);
       const svg = document.getElementById(svgId);
       
-      // 1. 建立需要放置文字標籤的點清單 (優先順序: T -> P -> M)
       let ptsToLabel = [];
       if (tx !== null) {
         ptsToLabel.push({ id: 'T', x: tx, y: ty, text: `P'(${tx}, ${ty})` });
@@ -367,102 +469,110 @@
         ptsToLabel.push({ id: 'M', x: mx, y: my, text: `M(${mx}, ${my})` });
       }
 
-      // 2. 備選的排版方位 (dx, dy 為偏移量，anchor 為對齊方式)
       const positions = [
-        {dx: 12, dy: -12, anchor: 'start'}, // 右上
-        {dx: -12, dy: -12, anchor: 'end'},  // 左上
-        {dx: 12, dy: 24, anchor: 'start'},  // 右下
-        {dx: -12, dy: 24, anchor: 'end'},   // 左下
-        {dx: 0, dy: -18, anchor: 'middle'}, // 正上
-        {dx: 0, dy: 30, anchor: 'middle'}   // 正下
+        {dx: 14, dy: 5, anchor: 'start'},    
+        {dx: 12, dy: -16, anchor: 'start'},  
+        {dx: 12, dy: 26, anchor: 'start'},   
+        {dx: -14, dy: 5, anchor: 'end'},     
+        {dx: -12, dy: -16, anchor: 'end'},   
+        {dx: -12, dy: 26, anchor: 'end'},    
+        {dx: 0, dy: -20, anchor: 'middle'},  
+        {dx: 0, dy: 30, anchor: 'middle'}    
       ];
 
       let placedBoxes = [];
       let labelLayout = {};
 
-      // 3. AABB 碰撞偵測演算法 (避開標籤互相重疊)
       for (let pt of ptsToLabel) {
         let cx = toSvgX(pt.x);
         let cy = toSvgY(pt.y);
         let bestPos = null;
-        let width = pt.text.length * 11; // 預估字串在畫面上的寬度
+        let width = pt.text.length * 9.5; 
         
         for (let pos of positions) {
-            let left = pos.anchor === 'start' ? cx + pos.dx : (pos.anchor === 'end' ? cx + pos.dx - width : cx + pos.dx - width/2);
-            let right = left + width;
-            let top = cy + pos.dy - 18;
-            let bottom = cy + pos.dy + 8;
+            let left, right, top, bottom;
+            
+            if (pos.anchor === 'start') {
+                left = cx + pos.dx;
+                right = left + width;
+            } else if (pos.anchor === 'end') {
+                right = cx + pos.dx;
+                left = right - width;
+            } else {
+                left = cx + pos.dx - width / 2;
+                right = cx + pos.dx + width / 2;
+            }
+            top = cy + pos.dy - 14; 
+            bottom = cy + pos.dy + 4;
+            
             let box = {left, right, top, bottom};
             
-            // 檢查是否超出 SVG 畫布邊界
-            if (box.left < 5 || box.right > 415 || box.top < 5 || box.bottom > 415) continue;
+            if (box.left < 2 || box.right > 418 || box.top < 2 || box.bottom > 418) continue;
             
-            // 檢查是否與已放置的標籤框重疊
             let overlap = false;
             for (let pBox of placedBoxes) {
-                if (!(box.right < pBox.left - 4 || box.left > pBox.right + 4 || box.bottom < pBox.top - 4 || box.top > pBox.bottom + 4)) {
+                if (!(box.right < pBox.left - 2 || box.left > pBox.right + 2 || box.bottom < pBox.top - 2 || box.top > pBox.bottom + 2)) {
                     overlap = true; break;
                 }
             }
             if (!overlap) { bestPos = { ...pos, box }; break; }
         }
         
-        // 如果所有方位都會碰撞，就退回第一個方位強制放置
         if (!bestPos) {
-            bestPos = positions[0]; 
-            let left = bestPos.anchor === 'start' ? cx + bestPos.dx : (bestPos.anchor === 'end' ? cx + bestPos.dx - width : cx + bestPos.dx - width/2);
-            bestPos.box = {left, right: left+width, top: cy + bestPos.dy - 18, bottom: cy + bestPos.dy + 8};
+            if (cx > 210) { 
+                bestPos = {dx: -14, dy: 5, anchor: 'end'}; 
+            } else { 
+                bestPos = {dx: 14, dy: 5, anchor: 'start'}; 
+            }
+            let left = bestPos.anchor === 'start' ? cx + bestPos.dx : cx + bestPos.dx - width;
+            bestPos.box = {left, right: left+width, top: cy + bestPos.dy - 14, bottom: cy + bestPos.dy + 4};
         }
+        
         placedBoxes.push(bestPos.box);
         labelLayout[pt.id] = bestPos;
       }
 
-      // 4. 開始實際繪製 (先畫底層路徑，再畫點，最後畫文字保證不被遮蓋)
-      let html = '';
+      let htmlPaths = '';
+      let htmlCircles = '';
+      let htmlTexts = '';
       
       if (tx !== null) {
         if (mx !== null && my !== null) {
-          // 有中繼點的兩段式路徑
           let pathD = `M ${toSvgX(px)} ${toSvgY(py)} L ${toSvgX(mx)} ${toSvgY(my)} L ${toSvgX(tx)} ${toSvgY(ty)}`;
           if (state.topic === 'rotation') {
              pathD = `M ${toSvgX(px)} ${toSvgY(py)} Q ${(toSvgX(px)+toSvgX(mx))/2} ${(toSvgY(py)+toSvgY(my))/2 - 30} ${toSvgX(mx)} ${toSvgY(my)} Q ${(toSvgX(mx)+toSvgX(tx))/2} ${(toSvgY(my)+toSvgY(ty))/2 - 30} ${toSvgX(tx)} ${toSvgY(ty)}`;
           }
-          html += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
+          htmlPaths += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
           
           let m = labelLayout['M'];
-          html += `
-            <circle cx="${toSvgX(mx)}" cy="${toSvgY(my)}" r="5" fill="#fbbf24" stroke="white" />
-            <text x="${toSvgX(mx) + m.dx}" y="${toSvgY(my) + m.dy}" text-anchor="${m.anchor}" fill="#fbbf24" font-weight="900" font-size="15" class="svg-text-halo pointer-events-none eng-font">M(${mx}, ${my})</text>
-          `;
+          htmlCircles += `<circle cx="${toSvgX(mx)}" cy="${toSvgY(my)}" r="5" fill="#fbbf24" stroke="white" />`;
+          htmlTexts += `<text x="${toSvgX(mx) + m.dx}" y="${toSvgY(my) + m.dy}" text-anchor="${m.anchor}" fill="#fbbf24" font-weight="900" font-size="15" class="svg-text-halo pointer-events-none eng-font">M(${mx}, ${my})</text>`;
         } else {
-          // 單次變換路徑
           let pathD = `M ${toSvgX(px)} ${toSvgY(py)} L ${toSvgX(tx)} ${toSvgY(ty)}`;
           if (state.topic === 'rotation') {
               pathD = `M ${toSvgX(px)} ${toSvgY(py)} Q ${(toSvgX(px)+toSvgX(tx))/2} ${(toSvgY(py)+toSvgY(ty))/2 - 30} ${toSvgX(tx)} ${toSvgY(ty)}`;
           }
-          html += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
+          htmlPaths += `<path d="${pathD}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-dasharray="4" stroke-width="2" />`;
         }
       }
 
-      // 畫原始點 P
       let p = labelLayout['P'];
-      html += `
+      htmlCircles += `
         <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="10" fill="#22d3ee" fill-opacity="0.2" class="pulse-glow" />
         <circle cx="${toSvgX(px)}" cy="${toSvgY(py)}" r="5" fill="#22d3ee" stroke="white" stroke-width="2" />
-        <text x="${toSvgX(px) + p.dx}" y="${toSvgY(py) + p.dy}" text-anchor="${p.anchor}" fill="#22d3ee" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P(${px}, ${py})</text>
       `;
+      htmlTexts += `<text x="${toSvgX(px) + p.dx}" y="${toSvgY(py) + p.dy}" text-anchor="${p.anchor}" fill="#22d3ee" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P(${px}, ${py})</text>`;
 
-      // 畫目標點 P'
       if (tx !== null) {
         let t = labelLayout['T'];
-        html += `
+        htmlCircles += `
           <circle cx="${toSvgX(tx)}" cy="${toSvgY(ty)}" r="6" fill="#10b981" stroke="white" />
           <circle cx="${toSvgX(tx)}" cy="${toSvgY(ty)}" r="6" fill="#10b981" class="pulse-correct" />
-          <text x="${toSvgX(tx) + t.dx}" y="${toSvgY(ty) + t.dy}" text-anchor="${t.anchor}" fill="#10b981" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P'(${tx}, ${ty})</text>
         `;
+        htmlTexts += `<text x="${toSvgX(tx) + t.dx}" y="${toSvgY(ty) + t.dy}" text-anchor="${t.anchor}" fill="#10b981" font-weight="900" font-size="18" class="svg-text-halo pointer-events-none eng-font">P'(${tx}, ${ty})</text>`;
       }
       
-      svg.innerHTML += html;
+      svg.innerHTML += htmlPaths + htmlCircles + htmlTexts;
     }
 
     function newQuestion() {
@@ -610,7 +720,6 @@
             let distOk = true;
             for (let i = 0; i < pts.length; i++) {
                 for (let j = i + 1; j < pts.length; j++) {
-                    // 防止點與點之間距離小於1單位造成視覺干擾
                     if (Math.abs(pts[i].x - pts[j].x) < 2 && Math.abs(pts[i].y - pts[j].y) < 2) {
                         distOk = false;
                     }
