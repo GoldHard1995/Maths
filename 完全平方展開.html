@@ -184,7 +184,7 @@
               ]
             });
           } else {
-            // k(-c ± k1 v1)^2 (對應你的 6(-3 + 2x)^2 要求)
+            // k(-c ± k1 v1)^2 
             q.push({
               text: `${k}(-${c} ${midSign} ${k1}${v1})^2`,
               a: [`-${c}`],
@@ -444,26 +444,28 @@
     // UI 渲染模板
     // ----------------------------------------------------------------------
     const renderHome = () => `
-      <div class="min-h-screen bg-green-50 flex flex-col items-center justify-center p-8">
-        <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-10 text-center border-4 border-green-200">
-          <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6">完全平方的展開</h1>
+      <div class="min-h-screen bg-green-50 flex flex-col items-center justify-center p-4 sm:p-8">
+        <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-6 sm:p-10 text-center border-4 border-green-200">
+          <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 mb-6">完全平方的展開</h1>
           
-          <div class="bg-yellow-100 rounded-2xl p-6 mb-10 shadow-inner">
+          <div class="bg-yellow-100 rounded-2xl p-4 sm:p-6 mb-10 shadow-inner w-full overflow-hidden">
             <p class="text-gray-600 mb-4 font-medium text-lg">請緊記恆等式公式：</p>
-            <div class="text-3xl md:text-4xl font-bold text-blue-700 space-y-4">
+            
+            <!-- 加入了 whitespace-nowrap, overflow-x-auto 和 scrollbar-hide 防止公式換行 -->
+            <div class="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 space-y-4 w-full overflow-x-auto scrollbar-hide whitespace-nowrap pb-2">
               <div>${renderMath("(a + b)^2 ≡ a^2 + 2ab + b^2")}</div>
               <div>${renderMath("(a - b)^2 ≡ a^2 - 2ab + b^2")}</div>
             </div>
           </div>
 
           <div class="space-y-4 flex flex-col items-center">
-            <button data-action="start" data-level="1" class="w-full max-w-md bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            <button data-action="start" data-level="1" class="w-full max-w-md bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
               等級一 (初階)
             </button>
-            <button data-action="start" data-level="2" class="w-full max-w-md bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            <button data-action="start" data-level="2" class="w-full max-w-md bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
               等級二 (進階)
             </button>
-            <button data-action="start" data-level="3" class="w-full max-w-md bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            <button data-action="start" data-level="3" class="w-full max-w-md bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
               等級三 (挑戰)
             </button>
           </div>
