@@ -63,7 +63,12 @@
             terms.forEach((t, i) => {
                 const isFirst = i === 0;
                 if (t.isVar) {
-                    str += (isFirst ? '' : ' + ') + t.val + t.type;
+                    let vStr = String(t.val);
+                    if (vStr.startsWith('-')) {
+                        str += (isFirst ? '-' : ' - ') + vStr.substring(1) + t.type;
+                    } else {
+                        str += (isFirst ? '' : ' + ') + vStr + t.type;
+                    }
                 } else {
                     let c = t.val;
                     let absC = Math.abs(c);
@@ -139,7 +144,7 @@
         };
 
         const generateLevel2 = () => {
-            const t = Math.floor(Math.random() * 4);
+            const t = Math.floor(Math.random() * 5); // 增加到了 5 種題型
             let n1 = randInt(-5, 5), n2 = randInt(-5, 5);
             let ans = {}, req = ['A', 'B'], lhs = '', rhs = '', expLhs = '', expRhs = '', steps = [];
 
@@ -153,25 +158,60 @@
             } else if (t === 1) {
                 ans.B = randInt(-5, 5); ans.A = n2; n1 = n2 * ans.B;
                 lhs = `Ax² ${n1 < 0 ? '-' : '+'} ${Math.abs(n1)}x`;
-                rhs = `${n2 === 1 ? '' : n2 === -1 ? '-' : n2}x(x ${ans.B < 0 ? '-' : '+'} ${Math.abs(ans.B)})`;
+                rhs = `${n2 === 1 ? '' : n2 === -1 ? '-' : n2}x(x + B)`;
                 expLhs = fmtTerm('A', 'x²', true, 'r') + fmtTerm(n1, 'x', false, 'b');
-                expRhs = fmtTerm(n2, 'x²', true, 'r') + fmtTerm(n2*ans.B, 'x', false, 'b');
+                expRhs = fmtTerm(n2, 'x²', true, 'r') + fmtTerm(`${n2 === 1 ? '' : n2 === -1 ? '-' : n2}B`, 'x', false, 'b');
                 steps = [`<r>比較 x² 項：\nA = ${n2}</r>`, `<b>比較 x 項：\n${n1} = ${n2 === 1 ? '' : n2 === -1 ? '-' : n2}B\nB = ${ans.B}</b>`];
             } else if (t === 2) {
                 ans.A = randInt(-5, 5); ans.B = randInt(-9, 9);
                 let n3 = n1 * ans.A, n4 = n1 * n2 + ans.B;
                 lhs = `${n1 === 1 ? '' : n1 === -1 ? '-' : n1}(Ax ${n2 < 0 ? '-' : '+'} ${Math.abs(n2)}) + B`;
                 rhs = `${n3 === 1 ? '' : n3 === -1 ? '-' : n3}x ${n4 < 0 ? '-' : '+'} ${Math.abs(n4)}`;
-                expLhs = fmtTerm(`${n1 === 1 ? '' : n1 === -1 ? '-' : n1}A`, 'x', true, 'b') + fmtTerm(`${n1*n2} + B`, '', false, 'g');
+                expLhs = fmtTerm(`${n1 === 1 ? '' : n1 === -1 ? '-' : n1}A`, 'x', true, 'b') + fmtTerm(n1*n2, '', false, 'g') + fmtTerm('B', '', false, 'g');
                 expRhs = fmtTerm(n3, 'x', true, 'b') + fmtTerm(n4, '', false, 'g');
                 steps = [`<b>比較 x 項：\n${n1 === 1 ? '' : n1 === -1 ? '-' : n1}A = ${n3}\nA = ${ans.A}</b>`, `<g>比較常數項：\n${n1*n2} + B = ${n4}\nB = ${ans.B}</g>`];
-            } else {
+            } else if (t === 3) {
                 ans.A = randInt(-5, 5); let n3 = ans.A * n1; ans.B = ans.A * n2;
                 lhs = `A(${n1 === 1 ? '' : n1 === -1 ? '-' : n1}x ${n2 < 0 ? '-' : '+'} ${Math.abs(n2)})`;
                 rhs = `${n3 === 1 ? '' : n3 === -1 ? '-' : n3}x + B`;
                 expLhs = fmtTerm(`${n1 === 1 ? '' : n1 === -1 ? '-' : n1}A`, 'x', true, 'b') + fmtTerm(`${n2 === 1 ? '' : n2 === -1 ? '-' : n2}A`, '', false, 'g');
                 expRhs = fmtTerm(n3, 'x', true, 'b') + fmtTerm('B', '', false, 'g');
                 steps = [`<b>比較 x 項：\n${n1 === 1 ? '' : n1 === -1 ? '-' : n1}A = ${n3}\nA = ${ans.A}</b>`, `<g>比較常數項：\n${n2 === 1 ? '' : n2 === -1 ? '-' : n2}A = B\nB = ${ans.B}</g>`];
+            } else if (t === 4) {
+                // 新增手寫題型：2Ax² + Bx + 3C ≡ -9 + 5x + 8x²
+                let c1 = randInt(-4, 4), c2 = randInt(-4, 4), c3 = randInt(-4, 4);
+                ans.A = randInt(-5, 5); ans.B = randInt(-5, 5); ans.C = randInt(-5, 5);
+                req = ['A', 'B', 'C']; // 這題需要求三個未知數
+                
+                let n3 = c1 * ans.A, n4 = c2 * ans.B, n5 = c3 * ans.C;
+
+                let lhsTerms = [
+                    { val: (c1 === 1 ? '' : c1 === -1 ? '-' : c1) + 'A', isVar: true, type: 'x²' },
+                    { val: (c2 === 1 ? '' : c2 === -1 ? '-' : c2) + 'B', isVar: true, type: 'x' },
+                    { val: (c3 === 1 ? '' : c3 === -1 ? '-' : c3) + 'C', isVar: true, type: '' }
+                ].sort(() => Math.random() - 0.5);
+
+                let rhsTerms = [
+                    { val: n3, isVar: false, type: 'x²' },
+                    { val: n4, isVar: false, type: 'x' },
+                    { val: n5, isVar: false, type: '' }
+                ].sort(() => Math.random() - 0.5);
+
+                lhs = formatExpr(lhsTerms);
+                rhs = formatExpr(rhsTerms);
+
+                expLhs = fmtTerm((c1 === 1 ? '' : c1 === -1 ? '-' : c1) + 'A', 'x²', true, 'r') + 
+                         fmtTerm((c2 === 1 ? '' : c2 === -1 ? '-' : c2) + 'B', 'x', false, 'b') + 
+                         fmtTerm((c3 === 1 ? '' : c3 === -1 ? '-' : c3) + 'C', '', false, 'g');
+                expRhs = fmtTerm(n3, 'x²', true, 'r') + 
+                         fmtTerm(n4, 'x', false, 'b') + 
+                         fmtTerm(n5, '', false, 'g');
+
+                steps = [
+                    `<r>比較 x² 項：\n${c1 === 1 ? '' : c1 === -1 ? '-' : c1}A = ${n3}${c1 === 1 ? '' : '\nA = ' + ans.A}</r>`,
+                    `<b>比較 x 項：\n${c2 === 1 ? '' : c2 === -1 ? '-' : c2}B = ${n4}${c2 === 1 ? '' : '\nB = ' + ans.B}</b>`,
+                    `<g>比較常數項：\n${c3 === 1 ? '' : c3 === -1 ? '-' : c3}C = ${n5}${c3 === 1 ? '' : '\nC = ' + ans.C}</g>`
+                ];
             }
             return { lhs, rhs, ans, req, expLhs, expRhs, steps };
         };
@@ -198,7 +238,7 @@
                 lhs = `x(Ax ${n1 < 0 ? '-' : '+'} ${Math.abs(n1)})`;
                 rhs = `${n2 === 1 ? '' : n2 === -1 ? '-' : n2}(${n3 === 1 ? '' : n3 === -1 ? '-' : n3}x² + Bx) ${n4 < 0 ? '-' : '+'} ${Math.abs(n4)}x ${n5 < 0 ? '-' : '+'} ${Math.abs(n5)} + C`;
                 expLhs = fmtTerm('A', 'x²', true, 'r') + fmtTerm(n1, 'x', false, 'b');
-                expRhs = fmtTerm(ans.A, 'x²', true, 'r') + fmtTerm(n1, 'x', false, 'b') + fmtTerm(`${n5} + C`, '', false, 'g');
+                expRhs = fmtTerm(ans.A, 'x²', true, 'r') + fmtTerm(`${n2 === 1 ? '' : n2 === -1 ? '-' : n2}B`, 'x', false, 'b') + fmtTerm(n4, 'x', false, 'b') + fmtTerm(n5, '', false, 'g') + fmtTerm('C', '', false, 'g');
                 steps = [
                     `<r>比較 x² 項：\nA = ${n2} × ${n3}\nA = ${ans.A}</r>`,
                     `<b>比較 x 項：\n${n1} = ${n2 === 1 ? '' : n2 === -1 ? '-' : n2}B ${n4 < 0 ? '-' : '+'} ${Math.abs(n4)}\n${n2 === 1 ? '' : n2 === -1 ? '-' : n2}B = ${n1 - n4}\nB = ${ans.B}</b>`,
