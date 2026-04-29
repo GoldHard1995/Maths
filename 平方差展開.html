@@ -95,7 +95,7 @@
     };
 
     // ----------------------------------------------------------------------
-    // 狀態管理 (類似 React 的 State)
+    // 狀態管理 
     // ----------------------------------------------------------------------
     let state = {
       screen: 'home',
@@ -148,20 +148,20 @@
       } else if (key === '確定') {
         if (state.step === 1) checkStep1();
         else checkStep2();
+        return; // checkStep1 和 2 會自己呼叫 renderApp
       } else {
         state.inputs[state.activeField] += key;
       }
       
-      // 清除之前的反饋 (除非剛按了確定)
-      if (key !== '確定') {
-        state.feedback = { message: '', type: '' };
-      }
+      // 清除之前的反饋 
+      state.feedback = { message: '', type: '' };
       renderApp();
     };
 
     const checkStep1 = () => {
       if (!state.inputs.a || !state.inputs.b) {
         state.feedback = { message: '請填寫 a 和 b 的數值！', type: 'error' };
+        renderApp(); // 更新畫面顯示錯誤
         return;
       }
 
@@ -184,11 +184,13 @@
           state.feedback = { message: 'a 或 b 的數值不正確，請再試一次！', type: 'error' };
         }
       }
+      renderApp(); // 完成檢查後更新畫面
     };
 
     const checkStep2 = () => {
       if (!state.inputs.ans) {
         state.feedback = { message: '請填寫答案！', type: 'error' };
+        renderApp(); // 更新畫面顯示錯誤
         return;
       }
 
@@ -213,6 +215,7 @@
           state.feedback = { message: '答案不對，請再檢查一下正負號或平方！', type: 'error' };
         }
       }
+      renderApp(); // 完成檢查後更新畫面
     };
 
     const nextQuestion = () => {
