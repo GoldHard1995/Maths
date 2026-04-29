@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>平方差展開遊戲</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 隱藏滾動條的工具類 */
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans text-gray-800">
+  <!-- 應用的主要掛載點 -->
+  <div id="app" class="h-screen w-screen overflow-hidden"></div>
+
+  <script>
+    // ----------------------------------------------------------------------
+    // 題目生成器
+    // ----------------------------------------------------------------------
+    const generateLevel1 = () => {
+      const vars = ['x', 'y', 'm', 'n'];
+      const q = [];
+      for (let i = 0; i < 10; i++) {
+        const v = vars[Math.floor(Math.random() * vars.length)];
+        const c = Math.floor(Math.random() * 9) + 2; // 2 to 10
+        const type = Math.random() > 0.5 ? 1 : 2;
+        
+        if (type === 1) {
+          q.push({
+            text: `(${v} + ${c})(${v} - ${c})`,
+            a: [v],
+            b: [`${c}`],
+            intermediate: `(${v})^2 - (${c})^2`,
+            ans: [`${v}^2-${c * c}`, `-${c * c}+${v}^2`]
+          });
+        } else {
+          q.push({
+            text: `(${c} - ${v})(${c} + ${v})`,
+            a: [`${c}`],
+            b: [v],
+            intermediate: `(${c})^2 - (${v})^2`,
+            ans: [`${c * c}-${v}^2`, `-${v}^2+${c * c}`]
+          });
+        }
+      }
+      return q;
+    };
+
+    const generateLevel2 = () => {
+      const q = [];
+      for (let i = 0; i < 10; i++) {
+        const r = Math.random();
+        if (r < 0.33) {
+          const k1 = Math.floor(Math.random() * 4) + 2;
+          const c = Math.floor(Math.random() * 8) + 2;
+          q.push({
+            text: `(${k1}x + ${c})(${k1}x - ${c})`,
+            a: [`${k1}x`],
+            b: [`${c}`],
+            intermediate: `(${k1}x)^2 - (${c})^2`,
+            ans: [`${k1 * k1}x^2-${c * c}`, `-${c * c}+${k1 * k1}x^2`]
+          });
+        } else if (r < 0.66) {
+          const k1 = Math.floor(Math.random() * 4) + 2;
+          let k2 = Math.floor(Math.random() * 4) + 2;
+          while (k1 === k2) k2 = Math.floor(Math.random() * 4) + 2;
+          q.push({
+            text: `(${k1}x - ${k2}y)(${k2}y + ${k1}x)`,
+            a: [`${k1}x`],
+            b: [`${k2}y`],
+            intermediate: `(${k1}x)^2 - (${k2}y)^2`,
+            ans: [`${k1 * k1}x^2-${k2 * k2}y^2`, `-${k2 * k2}y^2+${k1 * k1}x^2`]
+          });
+        } else {
+          const k = Math.floor(Math.random() * 3) + 2;
+          const c = Math.floor(Math.random() * 6) + 2;
+          const varName = Math.random() > 0.5 ? 'x' : 'y';
+          q.push({
+            text: `${k}(-${varName} - ${c})(-${varName} + ${c})`,
+            a: [`-${varName}`],
+            b: [`${c}`],
+            intermediate: `${k}[(-${varName})^2 - (${c})^2]`,
+            ans: [`${k}${varName}^2-${k * c * c}`, `-${k * c * c}+${k}${varName}^2`]
+          });
+        }
+      }
+      return q;
+    };
+
+    // ----------------------------------------------------------------------
+    // 狀態管理 (類似 React 的 State)
+    // ----------------------------------------------------------------------
+    let state = {
+      screen: 'home',
+      level: 1,
+      questions: [],
+      qIndex: 0,
+      step: 1,
+      inputs: { a: '', b: '', ans: '' },
+      activeField: 'a',
+      feedback: { message: '', type: '', showColoredHint: false, showIntermediate: false, praise: '' },
+      score: 0,
+      attempts: 0
+    };
+
+    const keyboardKeys = [
+      ['1', '2', '3', 'x', 'y'],
+      ['4', '5', '6', 'm', 'n'],
+      ['7', '8', '9', '+', '-'],
+      ['0', '^2', '⌫', 'C', '確定']
+    ];
+
+    // ----------------------------------------------------------------------
+    // 邏輯函數
+    // ----------------------------------------------------------------------
+    const startGame = (lvl) => {
+      state.level = lvl;
+      state.questions = lvl === 1 ? generateLevel1() : generateLevel2();
+      state.qIndex = 0;
+      state.step = 1;
+      state.inputs = { a: '', b: '', ans: '' };
+      state.activeField = 'a';
+      state.score = 0;
+      state.attempts = 0;
+      state.feedback = { message: '', type: '' };
+      state.screen = 'game';
+      renderApp();
+    };
+
+    const goHome = () => {
+      state.screen = 'home';
+      renderApp();
+    };
+
+    const handleKeyPress = (key) => {
+      if (state.step === 3) return; // 鎖定鍵盤
+      if (key === '⌫') {
+        state.inputs[state.activeField] = state.inputs[state.activeField].slice(0, -1);
+      } else if (key === 'C') {
+        state.inputs[state.activeField] = '';
+      } else if (key === '確定') {
+        if (state.step === 1) checkStep1();
+        else checkStep2();
+      } else {
+        state.inputs[state.activeField] += key;
+      }
+      
+      // 清除之前的反饋 (除非剛按了確定)
+      if (key !== '確定') {
+        state.feedback = { message: '', type: '' };
+      }
+      renderApp();
+    };
+
+    const checkStep1 = () => {
+      if (!state.inputs.a || !state.inputs.b) {
+        state.feedback = { message: '請填寫 a 和 b 的數值！', type: 'error' };
+        return;
+      }
+
+      const q = state.questions[state.qIndex];
+      const cleanA = state.inputs.a.replace(/\s+/g, '');
+      const cleanB = state.inputs.b.replace(/\s+/g, '');
+      const isACorrect = q.a.includes(cleanA);
+      const isBCorrect = q.b.includes(cleanB);
+
+      if (isACorrect && isBCorrect) {
+        state.step = 2;
+        state.activeField = 'ans';
+        state.feedback = { message: '正確！請輸入展開後的答案。', type: 'success' };
+        state.attempts = 0;
+      } else {
+        state.attempts++;
+        if (state.attempts >= 2) {
+          state.feedback = { message: 'a 或 b 的數值還是不太對喔。請看尋找秘訣並自己輸入一次：', type: 'warning', showColoredHint: true };
+        } else {
+          state.feedback = { message: 'a 或 b 的數值不正確，請再試一次！', type: 'error' };
+        }
+      }
+    };
+
+    const checkStep2 = () => {
+      if (!state.inputs.ans) {
+        state.feedback = { message: '請填寫答案！', type: 'error' };
+        return;
+      }
+
+      const q = state.questions[state.qIndex];
+      const cleanAns = state.inputs.ans.replace(/\s+/g, '');
+      const isAnsCorrect = q.ans.includes(cleanAns);
+
+      if (isAnsCorrect) {
+        state.score++;
+        const praises = ["太棒了！", "做得好！", "完美！", "你真聰明！", "數學小天才！"];
+        state.feedback = { 
+          message: '完全正確！', 
+          type: 'success', 
+          praise: praises[Math.floor(Math.random() * praises.length)] 
+        };
+        state.step = 3; 
+      } else {
+        state.attempts++;
+        if (state.attempts >= 2) {
+          state.feedback = { message: `試試看利用提示的步驟，自己計算出最終結果：`, type: 'info', showIntermediate: true };
+        } else {
+          state.feedback = { message: '答案不對，請再檢查一下正負號或平方！', type: 'error' };
+        }
+      }
+    };
+
+    const nextQuestion = () => {
+      if (state.qIndex < 9) {
+        state.qIndex++;
+        state.step = 1;
+        state.inputs = { a: '', b: '', ans: '' };
+        state.activeField = 'a';
+        state.feedback = { message: '', type: '' };
+        state.attempts = 0;
+        renderApp();
+      } else {
+        state.screen = 'result';
+        renderApp();
+      }
+    };
+
+    const setActiveField = (field) => {
+      if (state.step === 1 && (field === 'a' || field === 'b')) {
+        state.activeField = field;
+        renderApp();
+      } else if (state.step === 2 && field === 'ans') {
+        state.activeField = field;
+        renderApp();
+      }
+    };
+
+    // ----------------------------------------------------------------------
+    // 渲染輔助函數
+    // ----------------------------------------------------------------------
+    const renderMath = (str) => {
+      if (!str) return '<span></span>';
+      const parts = str.split('^2');
+      let html = '<span class="font-mono tracking-wider">';
+      parts.forEach((part, index) => {
+        html += part;
+        if (index < parts.length - 1) {
+          html += '<sup class="text-[0.6em] relative -top-2">2</sup>';
+        }
+      });
+      html += '</span>';
+      return html;
+    };
+
+    // ----------------------------------------------------------------------
+    // UI 渲染模板
+    // ----------------------------------------------------------------------
+    const renderHome = () => `
+      <div class="min-h-screen bg-green-50 flex flex-col items-center justify-center p-8">
+        <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-10 text-center border-4 border-green-200">
+          <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6">平方差的展開</h1>
+          
+          <div class="bg-yellow-100 rounded-2xl p-6 mb-10 shadow-inner">
+            <p class="text-gray-600 mb-2 font-medium">請緊記恆等式公式：</p>
+            <div class="text-4xl font-bold text-blue-700">
+              ${renderMath("(a + b)(a - b) ≡ a^2 - b^2")}
+            </div>
+          </div>
+
+          <div class="space-y-6 flex flex-col items-center">
+            <button data-action="start" data-level="1" class="w-full max-w-md bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+              等級一 (初階)
+            </button>
+            <button data-action="start" data-level="2" class="w-full max-w-md bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+              等級二 (進階)
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const renderResult = () => `
+      <div class="min-h-screen bg-blue-50 flex flex-col items-center justify-center p-8">
+        <div class="max-w-xl w-full bg-white rounded-3xl shadow-2xl p-10 text-center">
+          <h1 class="text-4xl font-bold text-gray-800 mb-6">遊戲完成！</h1>
+          <div class="text-8xl mb-6">${state.score >= 8 ? '🌟' : state.score >= 5 ? '👍' : '💪'}</div>
+          <p class="text-2xl text-gray-600 mb-8">
+            你的得分： <span class="text-4xl font-bold text-blue-600">${state.score}</span> / 10
+          </p>
+          <button data-action="home" class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transition-all active:scale-95">
+            返回主畫面
+          </button>
+        </div>
+      </div>
+    `;
+
+    const renderGame = () => {
+      const currentQ = state.questions[state.qIndex];
+      
+      // 處理 Feedback 樣式和內容
+      let feedbackHTML = '';
+      if (state.feedback.message) {
+        let fbClasses = 'p-4 rounded-xl text-lg font-bold text-center border-2 shrink-0 transition-colors flex flex-col items-center ';
+        if (state.feedback.type === 'error') fbClasses += 'bg-red-50 text-red-600 border-red-200';
+        else if (state.feedback.type === 'success') fbClasses += 'bg-green-50 text-green-600 border-green-200';
+        else if (state.feedback.type === 'warning') fbClasses += 'bg-yellow-50 text-yellow-700 border-yellow-300';
+        else fbClasses += 'bg-blue-50 text-blue-600 border-blue-200';
+
+        let extraHints = '';
+        if (state.feedback.showColoredHint) {
+          extraHints = `
+            <div class="mt-4 bg-white p-5 rounded-xl inline-block shadow-sm border-2 border-blue-200 text-left w-full max-w-md">
+              <div class="text-gray-700 mb-3 font-bold text-center text-xl border-b pb-2">💡 尋找 a 和 b 的秘訣</div>
+              <div class="text-gray-600 text-lg space-y-2">
+                <p>👉 括號內<span class="text-blue-600 font-bold">符號相同</span>的項是 <span class="font-serif italic font-bold text-blue-600">a</span></p>
+                <p>👉 括號內<span class="text-green-600 font-bold">符號相反</span>的項是 <span class="font-serif italic font-bold text-green-600">b</span></p>
+              </div>
+            </div>`;
+        }
+        if (state.feedback.showIntermediate) {
+          extraHints += `
+            <div class="mt-4 bg-white p-5 rounded-xl inline-block shadow-sm border-2 border-purple-200 text-left w-full max-w-md">
+               <div class="text-gray-700 mb-3 font-bold text-center text-xl border-b pb-2">💡 展開公式提示</div>
+               <div class="flex flex-col gap-3 font-mono text-gray-800 text-2xl bg-purple-50 p-4 rounded-lg overflow-x-auto scrollbar-hide">
+                 <div class="whitespace-nowrap">${renderMath(currentQ.text)}</div>
+                 <div class="whitespace-nowrap text-purple-700 font-bold ml-4">${renderMath(`= ${currentQ.intermediate}`)}</div>
+                 <div class="whitespace-nowrap text-purple-700 font-bold ml-4 flex items-center gap-2">
+                   = <span class="inline-block w-16 border-b-2 border-purple-700 border-dashed"></span>
+                 </div>
+               </div>
+            </div>`;
+        }
+
+        feedbackHTML = `<div class="${fbClasses}"><div>${state.feedback.message}</div>${extraHints}</div>`;
+      }
+
+      // Step 1 UI
+      const step1Class = state.step === 1 ? 'border-blue-400 ring-4 ring-blue-100' : 'border-gray-200 opacity-60';
+      const aFieldClass = state.activeField === 'a' ? 'border-blue-500 bg-blue-50 shadow-inner' : 'border-gray-300 bg-gray-50';
+      const bFieldClass = state.activeField === 'b' ? 'border-blue-500 bg-blue-50 shadow-inner' : 'border-gray-300 bg-gray-50';
+      
+      let step1BtnHTML = '';
+      if (state.step === 1) {
+        step1BtnHTML = `<button data-action="check1" class="ml-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow active:scale-95">檢查</button>`;
+      }
+
+      // Step 2 UI
+      let step2HTML = '';
+      if (state.step >= 2) {
+        const step2Class = state.step === 2 ? 'border-purple-400 ring-4 ring-purple-100' : 'border-gray-200 opacity-80';
+        const ansFieldClass = state.step === 3 ? 'border-green-400 bg-green-50' : 
+                              state.activeField === 'ans' ? 'border-purple-500 bg-purple-50 shadow-inner cursor-pointer' : 'border-gray-300 bg-gray-50 cursor-pointer';
+        
+        let step2BtnHTML = '';
+        if (state.step !== 3) {
+          step2BtnHTML = `<button data-action="check2" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow active:scale-95 text-xl shrink-0 transition-transform">提交</button>`;
+        } else {
+          step2BtnHTML = `<div class="bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow text-xl shrink-0 flex items-center gap-2"><span>✓</span> 正確</div>`;
+        }
+
+        step2HTML = `
+          <div class="bg-white rounded-3xl shadow-lg p-6 border-2 shrink-0 transition-all ${step2Class}">
+            <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+              <span class="bg-purple-100 text-purple-700 w-8 h-8 rounded-full inline-flex items-center justify-center mr-3">2</span>
+              計算 a² - b²，寫出最終答案
+            </h3>
+            <div class="flex items-center justify-center gap-4">
+              <span class="text-3xl font-bold text-gray-600">答案 = </span>
+              <div data-action="set-field" data-field="ans" class="flex-1 max-w-md h-16 rounded-xl border-2 flex items-center px-4 text-3xl font-mono overflow-hidden transition-colors ${ansFieldClass}">
+                ${renderMath(state.inputs.ans)}
+              </div>
+              ${step2BtnHTML}
+            </div>
+          </div>
+        `;
+      }
+
+      // Keyboard UI
+      const keyboardHTML = keyboardKeys.map(row => `
+        <div class="flex gap-3 justify-center">
+          ${row.map(key => {
+            let btnClass = "flex-1 h-16 md:h-20 bg-white rounded-2xl shadow shadow-gray-400 flex items-center justify-center text-2xl font-bold text-gray-800 active:bg-gray-100 active:scale-95 transition-all select-none";
+            if (key === '確定') btnClass = "flex-1 h-16 md:h-20 bg-green-500 text-white rounded-2xl shadow shadow-green-700 flex items-center justify-center text-xl font-bold active:bg-green-600 active:scale-95 transition-all select-none";
+            else if (key === '⌫' || key === 'C') btnClass = "flex-1 h-16 md:h-20 bg-red-100 text-red-600 rounded-2xl shadow shadow-red-300 flex items-center justify-center text-2xl font-bold active:bg-red-200 active:scale-95 transition-all select-none";
+            else if (key === '^2') btnClass = "flex-1 h-16 md:h-20 bg-blue-100 text-blue-800 rounded-2xl shadow shadow-blue-300 flex items-center justify-center text-2xl font-bold font-mono active:bg-blue-200 active:scale-95 transition-all select-none";
+            else if (['+', '-', 'x', 'y', 'm', 'n'].includes(key)) btnClass = "flex-1 h-16 md:h-20 bg-gray-100 text-gray-800 rounded-2xl shadow shadow-gray-400 flex items-center justify-center text-2xl font-bold font-mono active:bg-gray-200 active:scale-95 transition-all select-none";
+
+            let displayKey = key === '^2' ? '<span><span class="opacity-0">.</span><sup>2</sup></span>' : key;
+            return `<button data-action="key" data-key="${key}" class="${btnClass}" style="touch-action: manipulation;">${displayKey}</button>`;
+          }).join('')}
+        </div>
+      `).join('');
+
+      let successOverlay = '';
+      if (state.step === 3) {
+        successOverlay = `
+          <div class="absolute bottom-8 left-6 right-6 bg-white p-6 rounded-2xl shadow-2xl border-4 border-yellow-400 flex flex-col items-center">
+            <p class="text-3xl font-bold text-orange-500 mb-6 flex items-center gap-2">
+              🌟 ${state.feedback.praise} 🌟
+            </p>
+            <button data-action="next" class="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-4 px-8 rounded-xl shadow-md active:scale-95 text-2xl transition-all">
+              下一題 ➡️
+            </button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="min-h-screen bg-slate-100 flex flex-col font-sans h-screen overflow-hidden">
+          <!-- 頂部導航 -->
+          <div class="bg-white shadow-md px-6 py-4 flex justify-between items-center z-10 shrink-0">
+            <button data-action="home" class="text-gray-500 hover:text-gray-800 font-bold px-4 py-2 bg-gray-100 rounded-lg active:scale-95">
+              放棄並返回
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800">
+              等級 ${state.level} <span class="text-gray-400 mx-2">|</span> 第 ${state.qIndex + 1} / 10 題
+            </h2>
+            <div class="text-xl font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg">
+              得分: ${state.score}
+            </div>
+          </div>
+
+          <!-- 主要內容區 (左右分欄) -->
+          <div class="flex-1 flex flex-row p-6 gap-6 overflow-hidden">
+            <!-- 左側：題目與輸入區 -->
+            <div class="w-3/5 flex flex-col gap-6 overflow-y-auto pr-2 pb-20">
+              <div class="bg-white rounded-3xl shadow-lg p-8 flex flex-col items-center justify-center border-t-8 border-blue-400 shrink-0 max-w-full overflow-hidden">
+                <p class="text-gray-500 font-bold text-lg mb-2">展開下列算式：</p>
+                <div class="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 py-4 whitespace-nowrap overflow-x-auto w-full text-center scrollbar-hide">
+                  ${renderMath(currentQ.text)}
+                </div>
+              </div>
+
+              ${feedbackHTML}
+
+              <div class="bg-white rounded-3xl shadow-lg p-6 border-2 transition-all shrink-0 ${step1Class}">
+                <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                  <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full inline-flex items-center justify-center mr-3">1</span>
+                  根據 (a+b)(a-b) = a²-b²，找出 a 和 b
+                </h3>
+                <div class="flex flex-col sm:flex-row gap-4 items-center justify-center">
+                  <div class="flex items-center text-3xl">
+                    <span class="font-serif italic mr-3">a = </span>
+                    <div data-action="set-field" data-field="a" class="w-32 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-mono cursor-pointer transition-all ${aFieldClass}">
+                      ${renderMath(state.inputs.a)}
+                    </div>
+                  </div>
+                  <div class="flex items-center text-3xl">
+                    <span class="font-serif italic mr-3 ml-4">b = </span>
+                    <div data-action="set-field" data-field="b" class="w-32 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-mono cursor-pointer transition-all ${bFieldClass}">
+                      ${renderMath(state.inputs.b)}
+                    </div>
+                  </div>
+                  ${step1BtnHTML}
+                </div>
+              </div>
+
+              ${step2HTML}
+            </div>
+
+            <!-- 右側：專屬數學鍵盤 -->
+            <div class="w-2/5 flex flex-col bg-gray-200 rounded-3xl p-4 shadow-inner shrink-0 relative">
+              <div class="text-center mb-4 text-gray-500 font-bold">自定義數學鍵盤</div>
+              <div class="flex flex-col gap-3 transition-opacity duration-300 ${state.step === 3 ? 'opacity-30 pointer-events-none' : ''}">
+                ${keyboardHTML}
+              </div>
+              ${successOverlay}
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    // ----------------------------------------------------------------------
+    // 渲染控制器與事件委派
+    // ----------------------------------------------------------------------
+    const renderApp = () => {
+      const app = document.getElementById('app');
+      if (state.screen === 'home') app.innerHTML = renderHome();
+      else if (state.screen === 'game') app.innerHTML = renderGame();
+      else if (state.screen === 'result') app.innerHTML = renderResult();
+    };
+
+    document.getElementById('app').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+
+      const action = btn.getAttribute('data-action');
+      if (action === 'start') startGame(parseInt(btn.getAttribute('data-level')));
+      else if (action === 'home') goHome();
+      else if (action === 'key') handleKeyPress(btn.getAttribute('data-key'));
+      else if (action === 'check1') checkStep1();
+      else if (action === 'check2') checkStep2();
+      else if (action === 'next') nextQuestion();
+      else if (action === 'set-field') setActiveField(btn.getAttribute('data-field'));
+    });
+
+    // 初始化應用程式
+    renderApp();
+  </script>
+</body>
+</html>
