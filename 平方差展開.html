@@ -17,36 +17,40 @@
   </style>
 </head>
 <body class="bg-slate-100 font-sans text-gray-800">
-  <!-- 應用的主要掛載點 -->
   <div id="app" class="h-screen w-screen overflow-hidden"></div>
 
   <script>
     // ----------------------------------------------------------------------
-    // 題目生成器
+    // 題目生成器 (平方差)
+    // 公式: (a + b)(a - b) = a^2 - b^2
     // ----------------------------------------------------------------------
+    const vars = ['x', 'y', 'm', 'n'];
+
     const generateLevel1 = () => {
-      const vars = ['x', 'y', 'm', 'n'];
       const q = [];
       for (let i = 0; i < 10; i++) {
         const v = vars[Math.floor(Math.random() * vars.length)];
         const c = Math.floor(Math.random() * 9) + 2; // 2 to 10
-        const type = Math.random() > 0.5 ? 1 : 2;
+        const varFirst = Math.random() > 0.5;
+        const plusFirst = Math.random() > 0.5; // (a+b)(a-b) 或 (a-b)(a+b)
         
-        if (type === 1) {
+        if (varFirst) {
+          // (v + c)(v - c)
           q.push({
-            text: `(${v} + ${c})(${v} - ${c})`,
+            text: plusFirst ? `(${v} + ${c})(${v} - ${c})` : `(${v} - ${c})(${v} + ${c})`,
             a: [v],
             b: [`${c}`],
             intermediate: `(${v})^2 - (${c})^2`,
-            ans: [`${v}^2-${c * c}`, `-${c * c}+${v}^2`]
+            ans: [`${v}^2-${c * c}`]
           });
         } else {
+          // (c + v)(c - v)
           q.push({
-            text: `(${c} - ${v})(${c} + ${v})`,
+            text: plusFirst ? `(${c} + ${v})(${c} - ${v})` : `(${c} - ${v})(${c} + ${v})`,
             a: [`${c}`],
             b: [v],
             intermediate: `(${c})^2 - (${v})^2`,
-            ans: [`${c * c}-${v}^2`, `-${v}^2+${c * c}`]
+            ans: [`${c * c}-${v}^2`]
           });
         }
       }
@@ -57,37 +61,82 @@
       const q = [];
       for (let i = 0; i < 10; i++) {
         const r = Math.random();
-        if (r < 0.33) {
-          const k1 = Math.floor(Math.random() * 4) + 2;
-          const c = Math.floor(Math.random() * 8) + 2;
+        const plusFirst = Math.random() > 0.5;
+        const v1 = vars[Math.floor(Math.random() * vars.length)];
+
+        if (r < 0.5) {
+          // (k1 v1 + c)(k1 v1 - c)
+          const k1 = Math.floor(Math.random() * 4) + 2; // 2 to 5
+          const c = Math.floor(Math.random() * 8) + 2; // 2 to 9
           q.push({
-            text: `(${k1}x + ${c})(${k1}x - ${c})`,
-            a: [`${k1}x`],
+            text: plusFirst ? `(${k1}${v1} + ${c})(${k1}${v1} - ${c})` : `(${k1}${v1} - ${c})(${k1}${v1} + ${c})`,
+            a: [`${k1}${v1}`],
             b: [`${c}`],
-            intermediate: `(${k1}x)^2 - (${c})^2`,
-            ans: [`${k1 * k1}x^2-${c * c}`, `-${c * c}+${k1 * k1}x^2`]
-          });
-        } else if (r < 0.66) {
-          const k1 = Math.floor(Math.random() * 4) + 2;
-          let k2 = Math.floor(Math.random() * 4) + 2;
-          while (k1 === k2) k2 = Math.floor(Math.random() * 4) + 2;
-          q.push({
-            text: `(${k1}x - ${k2}y)(${k2}y + ${k1}x)`,
-            a: [`${k1}x`],
-            b: [`${k2}y`],
-            intermediate: `(${k1}x)^2 - (${k2}y)^2`,
-            ans: [`${k1 * k1}x^2-${k2 * k2}y^2`, `-${k2 * k2}y^2+${k1 * k1}x^2`]
+            intermediate: `(${k1}${v1})^2 - (${c})^2`,
+            ans: [`${k1 * k1}${v1}^2-${c * c}`]
           });
         } else {
-          const k = Math.floor(Math.random() * 3) + 2;
-          const c = Math.floor(Math.random() * 6) + 2;
-          const varName = Math.random() > 0.5 ? 'x' : 'y';
+          // (k1 v1 + k2 v2)(k1 v1 - k2 v2)
+          let v2 = vars[Math.floor(Math.random() * vars.length)];
+          while (v1 === v2) v2 = vars[Math.floor(Math.random() * vars.length)];
+          const k1 = Math.floor(Math.random() * 4) + 2;
+          const k2 = Math.floor(Math.random() * 4) + 2;
+          
           q.push({
-            text: `${k}(-${varName} - ${c})(-${varName} + ${c})`,
-            a: [`-${varName}`],
+            text: plusFirst ? `(${k1}${v1} + ${k2}${v2})(${k1}${v1} - ${k2}${v2})` : `(${k1}${v1} - ${k2}${v2})(${k1}${v1} + ${k2}${v2})`,
+            a: [`${k1}${v1}`],
+            b: [`${k2}${v2}`],
+            intermediate: `(${k1}${v1})^2 - (${k2}${v2})^2`,
+            ans: [`${k1 * k1}${v1}^2-${k2 * k2}${v2}^2`]
+          });
+        }
+      }
+      return q;
+    };
+
+    const generateLevel3 = () => {
+      const q = [];
+      for (let i = 0; i < 10; i++) {
+        const r = Math.random();
+        const v1 = vars[Math.floor(Math.random() * vars.length)];
+        const plusFirst = Math.random() > 0.5;
+        
+        if (r < 0.33) {
+          // (-v1 + c)(-v1 - c)
+          const c = Math.floor(Math.random() * 8) + 2; 
+          q.push({
+            text: plusFirst ? `(-${v1} + ${c})(-${v1} - ${c})` : `(-${v1} - ${c})(-${v1} + ${c})`,
+            a: [`-${v1}`],
             b: [`${c}`],
-            intermediate: `${k}[(-${varName})^2 - (${c})^2]`,
-            ans: [`${k}${varName}^2-${k * c * c}`, `-${k * c * c}+${k}${varName}^2`]
+            intermediate: `(-${v1})^2 - (${c})^2`,
+            ans: [`${v1}^2-${c * c}`]
+          });
+        } else if (r < 0.66) {
+          // 陷阱題：(c - v1)(c + v1) 寫成 (-v1 + c)(v1 + c) 的形式，但我們簡化為括號外有常數 k
+          // k(k1 v1 + c)(k1 v1 - c)
+          const k = Math.floor(Math.random() * 4) + 2; // 外圍係數 2 to 5
+          const k1 = Math.floor(Math.random() * 4) + 2; 
+          const c = Math.floor(Math.random() * 8) + 2; 
+          q.push({
+            text: plusFirst ? `${k}(${k1}${v1} + ${c})(${k1}${v1} - ${c})` : `${k}(${k1}${v1} - ${c})(${k1}${v1} + ${c})`,
+            a: [`${k1}${v1}`],
+            b: [`${c}`],
+            intermediate: `${k}[(${k1}${v1})^2 - (${c})^2]`,
+            ans: [`${k * k1 * k1}${v1}^2-${k * c * c}`]
+          });
+        } else {
+          // k(k1 v1 + k2 v2)(k1 v1 - k2 v2)
+          let v2 = vars[Math.floor(Math.random() * vars.length)];
+          while (v1 === v2) v2 = vars[Math.floor(Math.random() * vars.length)];
+          const k = Math.floor(Math.random() * 3) + 2;
+          const k1 = Math.floor(Math.random() * 4) + 2;
+          const k2 = Math.floor(Math.random() * 4) + 2;
+          q.push({
+            text: plusFirst ? `${k}(${k1}${v1} + ${k2}${v2})(${k1}${v1} - ${k2}${v2})` : `${k}(${k1}${v1} - ${k2}${v2})(${k1}${v1} + ${k2}${v2})`,
+            a: [`${k1}${v1}`],
+            b: [`${k2}${v2}`],
+            intermediate: `${k}[(${k1}${v1})^2 - (${k2}${v2})^2]`,
+            ans: [`${k * k1 * k1}${v1}^2-${k * k2 * k2}${v2}^2`]
           });
         }
       }
@@ -105,6 +154,7 @@
       step: 1,
       inputs: { a: '', b: '', ans: '' },
       activeField: 'a',
+      cursorPos: null, 
       feedback: { message: '', type: '', showColoredHint: false, showIntermediate: false, praise: '' },
       score: 0,
       attempts: 0
@@ -114,7 +164,8 @@
       ['1', '2', '3', 'x', 'y'],
       ['4', '5', '6', 'm', 'n'],
       ['7', '8', '9', '+', '-'],
-      ['0', '^2', '⌫', 'C', '確定']
+      ['0', '^2', '⬅️', '➡️', '⌫'],
+      ['C', '確定']
     ];
 
     // ----------------------------------------------------------------------
@@ -122,11 +173,15 @@
     // ----------------------------------------------------------------------
     const startGame = (lvl) => {
       state.level = lvl;
-      state.questions = lvl === 1 ? generateLevel1() : generateLevel2();
+      if (lvl === 1) state.questions = generateLevel1();
+      else if (lvl === 2) state.questions = generateLevel2();
+      else state.questions = generateLevel3();
+      
       state.qIndex = 0;
       state.step = 1;
       state.inputs = { a: '', b: '', ans: '' };
       state.activeField = 'a';
+      state.cursorPos = null;
       state.score = 0;
       state.attempts = 0;
       state.feedback = { message: '', type: '' };
@@ -140,28 +195,53 @@
     };
 
     const handleKeyPress = (key) => {
-      if (state.step === 3) return; // 鎖定鍵盤
+      if (state.step === 3) return; 
+      
+      let str = state.inputs[state.activeField] || '';
+      let pos = state.cursorPos !== null ? state.cursorPos : str.length;
+
       if (key === '⌫') {
-        state.inputs[state.activeField] = state.inputs[state.activeField].slice(0, -1);
+        if (pos > 0) {
+          if (pos >= 2 && str.substring(pos - 2, pos) === '^2') {
+            state.inputs[state.activeField] = str.slice(0, pos - 2) + str.slice(pos);
+            state.cursorPos = pos - 2;
+          } else {
+            state.inputs[state.activeField] = str.slice(0, pos - 1) + str.slice(pos);
+            state.cursorPos = pos - 1;
+          }
+        }
       } else if (key === 'C') {
         state.inputs[state.activeField] = '';
+        state.cursorPos = 0;
       } else if (key === '確定') {
         if (state.step === 1) checkStep1();
         else checkStep2();
-        return; // checkStep1 和 2 會自己呼叫 renderApp
+        return; 
+      } else if (key === '⬅️') {
+        if (pos > 0) {
+          if (pos >= 2 && str.substring(pos - 2, pos) === '^2') state.cursorPos = pos - 2;
+          else state.cursorPos = pos - 1;
+        }
+      } else if (key === '➡️') {
+        if (pos < str.length) {
+          if (str.substring(pos, pos + 2) === '^2') state.cursorPos = pos + 2;
+          else state.cursorPos = pos + 1;
+        }
       } else {
-        state.inputs[state.activeField] += key;
+        state.inputs[state.activeField] = str.slice(0, pos) + key + str.slice(pos);
+        state.cursorPos = pos + key.length;
       }
       
-      // 清除之前的反饋 
-      state.feedback = { message: '', type: '' };
+      if (key !== '⬅️' && key !== '➡️') {
+        state.feedback = { message: '', type: '' };
+      }
       renderApp();
     };
 
     const checkStep1 = () => {
       if (!state.inputs.a || !state.inputs.b) {
         state.feedback = { message: '請填寫 a 和 b 的數值！', type: 'error' };
-        renderApp(); // 更新畫面顯示錯誤
+        renderApp();
         return;
       }
 
@@ -174,6 +254,7 @@
       if (isACorrect && isBCorrect) {
         state.step = 2;
         state.activeField = 'ans';
+        state.cursorPos = null;
         state.feedback = { message: '正確！請輸入展開後的答案。', type: 'success' };
         state.attempts = 0;
       } else {
@@ -184,13 +265,13 @@
           state.feedback = { message: 'a 或 b 的數值不正確，請再試一次！', type: 'error' };
         }
       }
-      renderApp(); // 完成檢查後更新畫面
+      renderApp(); 
     };
 
     const checkStep2 = () => {
       if (!state.inputs.ans) {
         state.feedback = { message: '請填寫答案！', type: 'error' };
-        renderApp(); // 更新畫面顯示錯誤
+        renderApp(); 
         return;
       }
 
@@ -207,15 +288,16 @@
           praise: praises[Math.floor(Math.random() * praises.length)] 
         };
         state.step = 3; 
+        state.cursorPos = null;
       } else {
         state.attempts++;
         if (state.attempts >= 2) {
           state.feedback = { message: `試試看利用提示的步驟，自己計算出最終結果：`, type: 'info', showIntermediate: true };
         } else {
-          state.feedback = { message: '答案不對，請再檢查一下正負號或平方！', type: 'error' };
+          state.feedback = { message: '答案不對，請再檢查一下平方或正負號！', type: 'error' };
         }
       }
-      renderApp(); // 完成檢查後更新畫面
+      renderApp(); 
     };
 
     const nextQuestion = () => {
@@ -224,6 +306,7 @@
         state.step = 1;
         state.inputs = { a: '', b: '', ans: '' };
         state.activeField = 'a';
+        state.cursorPos = null;
         state.feedback = { message: '', type: '' };
         state.attempts = 0;
         renderApp();
@@ -233,12 +316,17 @@
       }
     };
 
-    const setActiveField = (field) => {
+    const setActiveField = (field, pos) => {
+      let newPos = pos !== null && pos !== undefined ? parseInt(pos, 10) : state.inputs[field].length;
+      if (isNaN(newPos)) newPos = state.inputs[field].length;
+
       if (state.step === 1 && (field === 'a' || field === 'b')) {
         state.activeField = field;
+        state.cursorPos = newPos;
         renderApp();
       } else if (state.step === 2 && field === 'ans') {
         state.activeField = field;
+        state.cursorPos = newPos;
         renderApp();
       }
     };
@@ -260,27 +348,57 @@
       return html;
     };
 
+    const renderMathInteractive = (str, fieldName, isActive) => {
+      let pos = state.cursorPos;
+      if (!isActive || pos === null || pos === undefined) pos = str.length;
+
+      let html = `<div class="font-mono tracking-wider flex items-center h-full whitespace-nowrap">`;
+      
+      html += `<div data-action="set-field" data-field="${fieldName}" data-pos="0" class="h-full flex items-center cursor-text px-[4px] relative">
+                  ${isActive && pos === 0 ? '<div class="absolute w-[2px] h-[70%] bg-blue-500 animate-pulse right-0 z-10"></div>' : ''}
+               </div>`;
+
+      let i = 0;
+      while(i < str.length) {
+         let isPow = str.substring(i, i+2) === '^2';
+         let tokenText = isPow ? '<sup class="text-[0.6em] relative -top-2 pointer-events-none">2</sup>' : str[i];
+         let tokenLen = isPow ? 2 : 1;
+         i += tokenLen;
+         
+         html += `<div data-action="set-field" data-field="${fieldName}" data-pos="${i}" class="h-full flex items-center cursor-text relative group">
+                     <span class="px-[1px] group-hover:text-blue-500 transition-colors">${tokenText}</span>
+                     ${isActive && pos === i ? '<div class="w-[2px] h-[70%] bg-blue-500 animate-pulse absolute right-0 z-10"></div>' : ''}
+                  </div>`;
+      }
+      html += `</div>`;
+      return html;
+    }
+
     // ----------------------------------------------------------------------
     // UI 渲染模板
     // ----------------------------------------------------------------------
     const renderHome = () => `
-      <div class="min-h-screen bg-green-50 flex flex-col items-center justify-center p-8">
-        <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-10 text-center border-4 border-green-200">
-          <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6">平方差的展開</h1>
+      <div class="min-h-screen bg-green-50 flex flex-col items-center justify-center p-4 sm:p-8">
+        <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-6 sm:p-10 text-center border-4 border-green-200">
+          <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 mb-6">平方差的展開</h1>
           
-          <div class="bg-yellow-100 rounded-2xl p-6 mb-10 shadow-inner">
-            <p class="text-gray-600 mb-2 font-medium">請緊記恆等式公式：</p>
-            <div class="text-4xl font-bold text-blue-700">
-              ${renderMath("(a + b)(a - b) ≡ a^2 - b^2")}
+          <div class="bg-yellow-100 rounded-2xl p-4 sm:p-6 mb-10 shadow-inner w-full overflow-hidden">
+            <p class="text-gray-600 mb-4 font-medium text-lg">請緊記恆等式公式：</p>
+            
+            <div class="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 space-y-4 w-full overflow-x-auto scrollbar-hide whitespace-nowrap pb-2">
+              <div>${renderMath("(a + b)(a - b) ≡ a^2 - b^2")}</div>
             </div>
           </div>
 
-          <div class="space-y-6 flex flex-col items-center">
-            <button data-action="start" data-level="1" class="w-full max-w-md bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+          <div class="space-y-4 flex flex-col items-center">
+            <button data-action="start" data-level="1" class="w-full max-w-md bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
               等級一 (初階)
             </button>
-            <button data-action="start" data-level="2" class="w-full max-w-md bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            <button data-action="start" data-level="2" class="w-full max-w-md bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
               等級二 (進階)
+            </button>
+            <button data-action="start" data-level="3" class="w-full max-w-md bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+              等級三 (挑戰)
             </button>
           </div>
         </div>
@@ -305,7 +423,6 @@
     const renderGame = () => {
       const currentQ = state.questions[state.qIndex];
       
-      // 處理 Feedback 樣式和內容
       let feedbackHTML = '';
       if (state.feedback.message) {
         let fbClasses = 'p-4 rounded-xl text-lg font-bold text-center border-2 shrink-0 transition-colors flex flex-col items-center ';
@@ -319,9 +436,9 @@
           extraHints = `
             <div class="mt-4 bg-white p-5 rounded-xl inline-block shadow-sm border-2 border-blue-200 text-left w-full max-w-md">
               <div class="text-gray-700 mb-3 font-bold text-center text-xl border-b pb-2">💡 尋找 a 和 b 的秘訣</div>
-              <div class="text-gray-600 text-lg space-y-2">
-                <p>👉 括號內<span class="text-blue-600 font-bold">符號相同</span>的項是 <span class="font-serif italic font-bold text-blue-600">a</span></p>
-                <p>👉 括號內<span class="text-green-600 font-bold">符號相反</span>的項是 <span class="font-serif italic font-bold text-green-600">b</span></p>
+              <div class="text-gray-600 text-lg space-y-3">
+                <p>👉 找出括號內相同的項目，這就是 <span class="font-serif italic font-bold text-blue-600">a</span></p>
+                <p>👉 找出符號一正一負的項目（不計正負號），這就是 <span class="font-serif italic font-bold text-green-600">b</span></p>
               </div>
             </div>`;
         }
@@ -342,7 +459,6 @@
         feedbackHTML = `<div class="${fbClasses}"><div>${state.feedback.message}</div>${extraHints}</div>`;
       }
 
-      // Step 1 UI
       const step1Class = state.step === 1 ? 'border-blue-400 ring-4 ring-blue-100' : 'border-gray-200 opacity-60';
       const aFieldClass = state.activeField === 'a' ? 'border-blue-500 bg-blue-50 shadow-inner' : 'border-gray-300 bg-gray-50';
       const bFieldClass = state.activeField === 'b' ? 'border-blue-500 bg-blue-50 shadow-inner' : 'border-gray-300 bg-gray-50';
@@ -352,7 +468,6 @@
         step1BtnHTML = `<button data-action="check1" class="ml-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow active:scale-95">檢查</button>`;
       }
 
-      // Step 2 UI
       let step2HTML = '';
       if (state.step >= 2) {
         const step2Class = state.step === 2 ? 'border-purple-400 ring-4 ring-purple-100' : 'border-gray-200 opacity-80';
@@ -374,8 +489,8 @@
             </h3>
             <div class="flex items-center justify-center gap-4">
               <span class="text-3xl font-bold text-gray-600">答案 = </span>
-              <div data-action="set-field" data-field="ans" class="flex-1 max-w-md h-16 rounded-xl border-2 flex items-center px-4 text-3xl font-mono overflow-hidden transition-colors ${ansFieldClass}">
-                ${renderMath(state.inputs.ans)}
+              <div data-action="set-field" data-field="ans" class="flex-1 max-w-md h-16 rounded-xl border-2 flex items-center justify-center text-3xl font-mono overflow-x-auto scrollbar-hide transition-colors ${ansFieldClass}">
+                ${renderMathInteractive(state.inputs.ans, 'ans', state.step === 2 && state.activeField === 'ans')}
               </div>
               ${step2BtnHTML}
             </div>
@@ -383,15 +498,17 @@
         `;
       }
 
-      // Keyboard UI
       const keyboardHTML = keyboardKeys.map(row => `
-        <div class="flex gap-3 justify-center">
+        <div class="flex gap-2 lg:gap-3 justify-center">
           ${row.map(key => {
-            let btnClass = "flex-1 h-16 md:h-20 bg-white rounded-2xl shadow shadow-gray-400 flex items-center justify-center text-2xl font-bold text-gray-800 active:bg-gray-100 active:scale-95 transition-all select-none";
-            if (key === '確定') btnClass = "flex-1 h-16 md:h-20 bg-green-500 text-white rounded-2xl shadow shadow-green-700 flex items-center justify-center text-xl font-bold active:bg-green-600 active:scale-95 transition-all select-none";
-            else if (key === '⌫' || key === 'C') btnClass = "flex-1 h-16 md:h-20 bg-red-100 text-red-600 rounded-2xl shadow shadow-red-300 flex items-center justify-center text-2xl font-bold active:bg-red-200 active:scale-95 transition-all select-none";
-            else if (key === '^2') btnClass = "flex-1 h-16 md:h-20 bg-blue-100 text-blue-800 rounded-2xl shadow shadow-blue-300 flex items-center justify-center text-2xl font-bold font-mono active:bg-blue-200 active:scale-95 transition-all select-none";
-            else if (['+', '-', 'x', 'y', 'm', 'n'].includes(key)) btnClass = "flex-1 h-16 md:h-20 bg-gray-100 text-gray-800 rounded-2xl shadow shadow-gray-400 flex items-center justify-center text-2xl font-bold font-mono active:bg-gray-200 active:scale-95 transition-all select-none";
+            let btnClass = "flex-1 h-14 md:h-16 bg-white rounded-2xl shadow shadow-gray-400 flex items-center justify-center text-2xl font-bold text-gray-800 active:bg-gray-100 active:scale-95 transition-all select-none";
+            
+            if (key === '確定') btnClass = "flex-[3] h-14 md:h-16 bg-green-500 text-white rounded-2xl shadow shadow-green-700 flex items-center justify-center text-xl font-bold active:bg-green-600 active:scale-95 transition-all select-none";
+            else if (key === 'C') btnClass = "flex-[2] h-14 md:h-16 bg-red-100 text-red-600 rounded-2xl shadow shadow-red-300 flex items-center justify-center text-2xl font-bold active:bg-red-200 active:scale-95 transition-all select-none";
+            else if (key === '⌫') btnClass = "flex-1 h-14 md:h-16 bg-red-100 text-red-600 rounded-2xl shadow shadow-red-300 flex items-center justify-center text-2xl font-bold active:bg-red-200 active:scale-95 transition-all select-none";
+            else if (key === '^2') btnClass = "flex-1 h-14 md:h-16 bg-blue-100 text-blue-800 rounded-2xl shadow shadow-blue-300 flex items-center justify-center text-2xl font-bold font-mono active:bg-blue-200 active:scale-95 transition-all select-none";
+            else if (['⬅️', '➡️'].includes(key)) btnClass = "flex-1 h-14 md:h-16 bg-gray-300 text-gray-800 rounded-2xl shadow shadow-gray-500 flex items-center justify-center text-2xl font-bold active:bg-gray-400 active:scale-95 transition-all select-none";
+            else if (['+', '-', 'x', 'y', 'm', 'n'].includes(key)) btnClass = "flex-1 h-14 md:h-16 bg-gray-100 text-gray-800 rounded-2xl shadow shadow-gray-400 flex items-center justify-center text-2xl font-bold font-mono active:bg-gray-200 active:scale-95 transition-all select-none";
 
             let displayKey = key === '^2' ? '<span><span class="opacity-0">.</span><sup>2</sup></span>' : key;
             return `<button data-action="key" data-key="${key}" class="${btnClass}" style="touch-action: manipulation;">${displayKey}</button>`;
@@ -402,7 +519,7 @@
       let successOverlay = '';
       if (state.step === 3) {
         successOverlay = `
-          <div class="absolute bottom-8 left-6 right-6 bg-white p-6 rounded-2xl shadow-2xl border-4 border-yellow-400 flex flex-col items-center">
+          <div class="absolute bottom-8 left-6 right-6 bg-white p-6 rounded-2xl shadow-2xl border-4 border-yellow-400 flex flex-col items-center z-20">
             <p class="text-3xl font-bold text-orange-500 mb-6 flex items-center gap-2">
               🌟 ${state.feedback.praise} 🌟
             </p>
@@ -415,7 +532,6 @@
 
       return `
         <div class="min-h-screen bg-slate-100 flex flex-col font-sans h-screen overflow-hidden">
-          <!-- 頂部導航 -->
           <div class="bg-white shadow-md px-6 py-4 flex justify-between items-center z-10 shrink-0">
             <button data-action="home" class="text-gray-500 hover:text-gray-800 font-bold px-4 py-2 bg-gray-100 rounded-lg active:scale-95">
               放棄並返回
@@ -428,10 +544,8 @@
             </div>
           </div>
 
-          <!-- 主要內容區 (左右分欄) -->
           <div class="flex-1 flex flex-row p-6 gap-6 overflow-hidden">
-            <!-- 左側：題目與輸入區 -->
-            <div class="w-3/5 flex flex-col gap-6 overflow-y-auto pr-2 pb-20">
+            <div id="left-panel" class="w-3/5 flex flex-col gap-6 overflow-y-auto pr-2 pb-20">
               <div class="bg-white rounded-3xl shadow-lg p-8 flex flex-col items-center justify-center border-t-8 border-blue-400 shrink-0 max-w-full overflow-hidden">
                 <p class="text-gray-500 font-bold text-lg mb-2">展開下列算式：</p>
                 <div class="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 py-4 whitespace-nowrap overflow-x-auto w-full text-center scrollbar-hide">
@@ -449,14 +563,14 @@
                 <div class="flex flex-col sm:flex-row gap-4 items-center justify-center">
                   <div class="flex items-center text-3xl">
                     <span class="font-serif italic mr-3">a = </span>
-                    <div data-action="set-field" data-field="a" class="w-32 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-mono cursor-pointer transition-all ${aFieldClass}">
-                      ${renderMath(state.inputs.a)}
+                    <div data-action="set-field" data-field="a" class="w-32 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-mono cursor-pointer transition-all overflow-x-auto scrollbar-hide ${aFieldClass}">
+                      ${renderMathInteractive(state.inputs.a, 'a', state.step === 1 && state.activeField === 'a')}
                     </div>
                   </div>
                   <div class="flex items-center text-3xl">
                     <span class="font-serif italic mr-3 ml-4">b = </span>
-                    <div data-action="set-field" data-field="b" class="w-32 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-mono cursor-pointer transition-all ${bFieldClass}">
-                      ${renderMath(state.inputs.b)}
+                    <div data-action="set-field" data-field="b" class="w-32 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-mono cursor-pointer transition-all overflow-x-auto scrollbar-hide ${bFieldClass}">
+                      ${renderMathInteractive(state.inputs.b, 'b', state.step === 1 && state.activeField === 'b')}
                     </div>
                   </div>
                   ${step1BtnHTML}
@@ -466,10 +580,9 @@
               ${step2HTML}
             </div>
 
-            <!-- 右側：專屬數學鍵盤 -->
             <div class="w-2/5 flex flex-col bg-gray-200 rounded-3xl p-4 shadow-inner shrink-0 relative">
               <div class="text-center mb-4 text-gray-500 font-bold">自定義數學鍵盤</div>
-              <div class="flex flex-col gap-3 transition-opacity duration-300 ${state.step === 3 ? 'opacity-30 pointer-events-none' : ''}">
+              <div class="flex flex-col gap-2 lg:gap-3 transition-opacity duration-300 ${state.step === 3 ? 'opacity-30 pointer-events-none' : ''}">
                 ${keyboardHTML}
               </div>
               ${successOverlay}
@@ -484,9 +597,18 @@
     // ----------------------------------------------------------------------
     const renderApp = () => {
       const app = document.getElementById('app');
+      
+      const leftPanel = document.getElementById('left-panel');
+      const savedScrollTop = leftPanel ? leftPanel.scrollTop : 0;
+
       if (state.screen === 'home') app.innerHTML = renderHome();
       else if (state.screen === 'game') app.innerHTML = renderGame();
       else if (state.screen === 'result') app.innerHTML = renderResult();
+
+      const newLeftPanel = document.getElementById('left-panel');
+      if (newLeftPanel) {
+        newLeftPanel.scrollTop = savedScrollTop;
+      }
     };
 
     document.getElementById('app').addEventListener('click', (e) => {
@@ -500,10 +622,9 @@
       else if (action === 'check1') checkStep1();
       else if (action === 'check2') checkStep2();
       else if (action === 'next') nextQuestion();
-      else if (action === 'set-field') setActiveField(btn.getAttribute('data-field'));
+      else if (action === 'set-field') setActiveField(btn.getAttribute('data-field'), btn.getAttribute('data-pos'));
     });
 
-    // 初始化應用程式
     renderApp();
   </script>
 </body>
