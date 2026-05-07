@@ -17,7 +17,6 @@
   </style>
 </head>
 <body class="bg-slate-100 font-sans text-gray-800">
-  <!-- 應用的主要掛載點 -->
   <div id="app" class="h-screen w-screen overflow-hidden"></div>
 
   <script>
@@ -30,32 +29,35 @@
       const q = [];
       for (let i = 0; i < 10; i++) {
         const v = vars[Math.floor(Math.random() * vars.length)];
-        const c = Math.floor(Math.random() * 9) + 2; // 2 to 10
+        const c = Math.floor(Math.random() * 9) + 2; 
         const isPlus = Math.random() > 0.5;
         const varFirst = Math.random() > 0.5;
+        const midSign = isPlus ? '+' : '-';
         
         if (varFirst) {
-          // (v ± c)^2
           q.push({
-            text: `(${v} ${isPlus ? '+' : '-'} ${c})^2`,
+            text: `(${v} ${midSign} ${c})^2`,
             a: [v],
             b: [`${c}`],
-            intermediate: `(${v})^2 ${isPlus ? '+' : '-'} 2(${v})(${c}) + (${c})^2`,
+            intermediate: `(${v})^2 ${midSign} 2(${v})(${c}) + (${c})^2`,
             ans: [
-              `${v}^2${isPlus ? '+' : '-'}${2 * c}${v}+${c * c}`,
-              `${c * c}${isPlus ? '+' : '-'}${2 * c}${v}+${v}^2`
+              `${v}^2${midSign}${2 * c}${v}+${c * c}`,
+              `${c * c}${midSign}${2 * c}${v}+${v}^2`,
+              `${v}^2+${c * c}${midSign}${2 * c}${v}`,
+              `${c * c}+${v}^2${midSign}${2 * c}${v}`
             ]
           });
         } else {
-          // (c ± v)^2
           q.push({
-            text: `(${c} ${isPlus ? '+' : '-'} ${v})^2`,
+            text: `(${c} ${midSign} ${v})^2`,
             a: [`${c}`],
             b: [v],
-            intermediate: `(${c})^2 ${isPlus ? '+' : '-'} 2(${c})(${v}) + (${v})^2`,
+            intermediate: `(${c})^2 ${midSign} 2(${c})(${v}) + (${v})^2`,
             ans: [
-              `${c * c}${isPlus ? '+' : '-'}${2 * c}${v}+${v}^2`,
-              `${v}^2${isPlus ? '+' : '-'}${2 * c}${v}+${c * c}`
+              `${c * c}${midSign}${2 * c}${v}+${v}^2`,
+              `${v}^2${midSign}${2 * c}${v}+${c * c}`,
+              `${c * c}+${v}^2${midSign}${2 * c}${v}`,
+              `${v}^2+${c * c}${midSign}${2 * c}${v}`
             ]
           });
         }
@@ -69,38 +71,39 @@
         const r = Math.random();
         const isPlus = Math.random() > 0.5;
         const v1 = vars[Math.floor(Math.random() * vars.length)];
+        const midSign = isPlus ? '+' : '-';
 
         if (r < 0.5) {
-          // (k1 v1 ± c)^2
-          const k1 = Math.floor(Math.random() * 4) + 2; // 2 to 5
-          const c = Math.floor(Math.random() * 8) + 2; // 2 to 9
+          const k1 = Math.floor(Math.random() * 4) + 2; 
+          const c = Math.floor(Math.random() * 8) + 2; 
           q.push({
-            text: `(${k1}${v1} ${isPlus ? '+' : '-'} ${c})^2`,
+            text: `(${k1}${v1} ${midSign} ${c})^2`,
             a: [`${k1}${v1}`],
             b: [`${c}`],
-            intermediate: `(${k1}${v1})^2 ${isPlus ? '+' : '-'} 2(${k1}${v1})(${c}) + (${c})^2`,
+            intermediate: `(${k1}${v1})^2 ${midSign} 2(${k1}${v1})(${c}) + (${c})^2`,
             ans: [
-              `${k1 * k1}${v1}^2${isPlus ? '+' : '-'}${2 * k1 * c}${v1}+${c * c}`,
-              `${c * c}${isPlus ? '+' : '-'}${2 * k1 * c}${v1}+${k1 * k1}${v1}^2`
+              `${k1 * k1}${v1}^2${midSign}${2 * k1 * c}${v1}+${c * c}`,
+              `${c * c}${midSign}${2 * k1 * c}${v1}+${k1 * k1}${v1}^2`,
+              `${k1 * k1}${v1}^2+${c * c}${midSign}${2 * k1 * c}${v1}`,
+              `${c * c}+${k1 * k1}${v1}^2${midSign}${2 * k1 * c}${v1}`
             ]
           });
         } else {
-          // (k1 v1 ± k2 v2)^2
           let v2 = vars[Math.floor(Math.random() * vars.length)];
           while (v1 === v2) v2 = vars[Math.floor(Math.random() * vars.length)];
           const k1 = Math.floor(Math.random() * 4) + 2;
           const k2 = Math.floor(Math.random() * 4) + 2;
           
           q.push({
-            text: `(${k1}${v1} ${isPlus ? '+' : '-'} ${k2}${v2})^2`,
+            text: `(${k1}${v1} ${midSign} ${k2}${v2})^2`,
             a: [`${k1}${v1}`],
             b: [`${k2}${v2}`],
-            intermediate: `(${k1}${v1})^2 ${isPlus ? '+' : '-'} 2(${k1}${v1})(${k2}${v2}) + (${k2}${v2})^2`,
+            intermediate: `(${k1}${v1})^2 ${midSign} 2(${k1}${v1})(${k2}${v2}) + (${k2}${v2})^2`,
             ans: [
-              `${k1 * k1}${v1}^2${isPlus ? '+' : '-'}${2 * k1 * k2}${v1}${v2}+${k2 * k2}${v2}^2`,
-              `${k1 * k1}${v1}^2${isPlus ? '+' : '-'}${2 * k1 * k2}${v2}${v1}+${k2 * k2}${v2}^2`,
-              `${k2 * k2}${v2}^2${isPlus ? '+' : '-'}${2 * k1 * k2}${v1}${v2}+${k1 * k1}${v1}^2`,
-              `${k2 * k2}${v2}^2${isPlus ? '+' : '-'}${2 * k1 * k2}${v2}${v1}+${k1 * k1}${v1}^2`
+              `${k1 * k1}${v1}^2${midSign}${2 * k1 * k2}${v1}${v2}+${k2 * k2}${v2}^2`,
+              `${k1 * k1}${v1}^2${midSign}${2 * k1 * k2}${v2}${v1}+${k2 * k2}${v2}^2`,
+              `${k2 * k2}${v2}^2${midSign}${2 * k1 * k2}${v1}${v2}+${k1 * k1}${v1}^2`,
+              `${k2 * k2}${v2}^2${midSign}${2 * k1 * k2}${v2}${v1}+${k1 * k1}${v1}^2`
             ]
           });
         }
@@ -116,7 +119,6 @@
         const v1 = vars[Math.floor(Math.random() * vars.length)];
         
         if (r < 0.25) {
-          // (-v1 ± c)^2
           const c = Math.floor(Math.random() * 8) + 2; 
           const midSign = isPlus ? '-' : '+'; 
           q.push({
@@ -126,11 +128,11 @@
             intermediate: `(-${v1})^2 ${isPlus ? '+' : '-'} 2(-${v1})(${c}) + (${c})^2`,
             ans: [
               `${v1}^2${midSign}${2 * c}${v1}+${c * c}`,
-              `${c * c}${midSign}${2 * c}${v1}+${v1}^2`
+              `${c * c}${midSign}${2 * c}${v1}+${v1}^2`,
+              `${v1}^2+${c * c}${midSign}${2 * c}${v1}`
             ]
           });
         } else if (r < 0.5) {
-          // (-k1 v1 ± c)^2
           const k1 = Math.floor(Math.random() * 4) + 2; 
           const c = Math.floor(Math.random() * 8) + 2; 
           const midSign = isPlus ? '-' : '+';
@@ -141,11 +143,11 @@
             intermediate: `(-${k1}${v1})^2 ${isPlus ? '+' : '-'} 2(-${k1}${v1})(${c}) + (${c})^2`,
             ans: [
               `${k1 * k1}${v1}^2${midSign}${2 * k1 * c}${v1}+${c * c}`,
-              `${c * c}${midSign}${2 * k1 * c}${v1}+${k1 * k1}${v1}^2`
+              `${c * c}${midSign}${2 * k1 * c}${v1}+${k1 * k1}${v1}^2`,
+              `${k1 * k1}${v1}^2+${c * c}${midSign}${2 * k1 * c}${v1}`
             ]
           });
         } else if (r < 0.75) {
-          // (-k1 v1 ± k2 v2)^2
           let v2 = vars[Math.floor(Math.random() * vars.length)];
           while (v1 === v2) v2 = vars[Math.floor(Math.random() * vars.length)];
           const k1 = Math.floor(Math.random() * 4) + 2;
@@ -164,15 +166,13 @@
             ]
           });
         } else {
-          // 挑戰題型：k(-c ± k1 v1)^2 或 k(-k1 v1 ± c)^2
-          const k = Math.floor(Math.random() * 5) + 2; // 外面的係數 2 到 6
-          const k1 = Math.floor(Math.random() * 4) + 2; // 2 到 5
-          const c = Math.floor(Math.random() * 8) + 2; // 2 到 9
+          const k = Math.floor(Math.random() * 5) + 2; 
+          const k1 = Math.floor(Math.random() * 4) + 2; 
+          const c = Math.floor(Math.random() * 8) + 2; 
           const midSign = isPlus ? '+' : '-';
           const isVarFirst = Math.random() > 0.5;
 
           if (isVarFirst) {
-            // k(-k1 v1 ± c)^2
             q.push({
               text: `${k}(-${k1}${v1} ${midSign} ${c})^2`,
               a: [`-${k1}${v1}`],
@@ -180,11 +180,11 @@
               intermediate: `${k}[(-${k1}${v1})^2 ${midSign} 2(-${k1}${v1})(${c}) + (${c})^2]`,
               ans: [
                 `${k * k1 * k1}${v1}^2${isPlus ? '-' : '+'}${k * 2 * k1 * c}${v1}+${k * c * c}`,
-                `${k * c * c}${isPlus ? '-' : '+'}${k * 2 * k1 * c}${v1}+${k * k1 * k1}${v1}^2`
+                `${k * c * c}${isPlus ? '-' : '+'}${k * 2 * k1 * c}${v1}+${k * k1 * k1}${v1}^2`,
+                `${k * k1 * k1}${v1}^2+${k * c * c}${isPlus ? '-' : '+'}${k * 2 * k1 * c}${v1}`
               ]
             });
           } else {
-            // k(-c ± k1 v1)^2 
             q.push({
               text: `${k}(-${c} ${midSign} ${k1}${v1})^2`,
               a: [`-${c}`],
@@ -192,7 +192,8 @@
               intermediate: `${k}[(-${c})^2 ${midSign} 2(-${c})(${k1}${v1}) + (${k1}${v1})^2]`,
               ans: [
                 `${k * c * c}${isPlus ? '-' : '+'}${k * 2 * c * k1}${v1}+${k * k1 * k1}${v1}^2`,
-                `${k * k1 * k1}${v1}^2${isPlus ? '-' : '+'}${k * 2 * c * k1}${v1}+${k * c * c}`
+                `${k * k1 * k1}${v1}^2${isPlus ? '-' : '+'}${k * 2 * c * k1}${v1}+${k * c * c}`,
+                `${k * c * c}+${k * k1 * k1}${v1}^2${isPlus ? '-' : '+'}${k * 2 * c * k1}${v1}`
               ]
             });
           }
@@ -212,13 +213,12 @@
       step: 1,
       inputs: { a: '', b: '', ans: '' },
       activeField: 'a',
-      cursorPos: null, // 記錄游標位置，null表示在字串最尾端
+      cursorPos: null, 
       feedback: { message: '', type: '', showColoredHint: false, showIntermediate: false, praise: '' },
       score: 0,
       attempts: 0
     };
 
-    // 鍵盤新增了 ⬅️ 和 ➡️，並調整為 5 行
     const keyboardKeys = [
       ['1', '2', '3', 'x', 'y'],
       ['4', '5', '6', 'm', 'n'],
@@ -254,14 +254,13 @@
     };
 
     const handleKeyPress = (key) => {
-      if (state.step === 3) return; // 鎖定鍵盤
+      if (state.step === 3) return; 
       
       let str = state.inputs[state.activeField] || '';
       let pos = state.cursorPos !== null ? state.cursorPos : str.length;
 
       if (key === '⌫') {
         if (pos > 0) {
-          // 如果前面是 ^2，要一次刪除兩個字元
           if (pos >= 2 && str.substring(pos - 2, pos) === '^2') {
             state.inputs[state.activeField] = str.slice(0, pos - 2) + str.slice(pos);
             state.cursorPos = pos - 2;
@@ -288,12 +287,10 @@
           else state.cursorPos = pos + 1;
         }
       } else {
-        // 在光標位置插入字元
         state.inputs[state.activeField] = str.slice(0, pos) + key + str.slice(pos);
         state.cursorPos = pos + key.length;
       }
       
-      // 移動光標不清除提示，但修改內容會清除之前的錯誤提示
       if (key !== '⬅️' && key !== '➡️') {
         state.feedback = { message: '', type: '' };
       }
@@ -308,8 +305,25 @@
       }
 
       const q = state.questions[state.qIndex];
-      const cleanA = state.inputs.a.replace(/\s+/g, '');
-      const cleanB = state.inputs.b.replace(/\s+/g, '');
+      let cleanA = state.inputs.a.replace(/\s+/g, '');
+      let cleanB = state.inputs.b.replace(/\s+/g, '');
+
+      // 防呆機制：若學生多打正號則忽略
+      if (cleanA.startsWith('+')) cleanA = cleanA.substring(1);
+      if (cleanB.startsWith('+')) cleanB = cleanB.substring(1);
+
+      // 防呆機制：精準提醒缺少負號或多出負號
+      if (!q.a.includes(cleanA) && q.a.some(ans => ans === '-' + cleanA)) {
+        state.feedback = { message: '提示：a 的數值要連同前面的負號一起寫喔！', type: 'warning' };
+        renderApp();
+        return;
+      }
+      if (!q.b.includes(cleanB) && cleanB.startsWith('-') && q.b.some(ans => '-' + ans === cleanB)) {
+        state.feedback = { message: '提示：b 的數值不需要包含中間的加減號喔！', type: 'warning' };
+        renderApp();
+        return;
+      }
+
       const isACorrect = q.a.includes(cleanA);
       const isBCorrect = q.b.includes(cleanB);
 
@@ -338,7 +352,14 @@
       }
 
       const q = state.questions[state.qIndex];
-      const cleanAns = state.inputs.ans.replace(/\s+/g, '');
+      let cleanAns = state.inputs.ans.replace(/\s+/g, '');
+      
+      // 防呆機制：學生常誤寫的符號轉換
+      cleanAns = cleanAns.replace(/\+-/g, '-');
+      cleanAns = cleanAns.replace(/-\+/g, '-');
+      // 將 1x^2 視同為 x^2
+      cleanAns = cleanAns.replace(/(^|[+-])1([a-zA-Z])/g, '$1$2');
+
       const isAnsCorrect = q.ans.includes(cleanAns);
 
       if (isAnsCorrect) {
@@ -356,7 +377,7 @@
         if (state.attempts >= 2) {
           state.feedback = { message: `試試看利用提示的步驟，自己計算出最終結果：`, type: 'info', showIntermediate: true };
         } else {
-          state.feedback = { message: '答案不對，請再檢查一下正負號或平方！', type: 'error' };
+          state.feedback = { message: '答案不對，請再檢查一下平方或正負號！', type: 'error' };
         }
       }
       renderApp(); 
@@ -396,7 +417,6 @@
     // ----------------------------------------------------------------------
     // 渲染輔助函數
     // ----------------------------------------------------------------------
-    // 純文字渲染 (用於不需編輯的顯示區塊，如提示和題目)
     const renderMath = (str) => {
       if (!str) return '<span></span>';
       const parts = str.split('^2');
@@ -411,20 +431,17 @@
       return html;
     };
 
-    // 互動式渲染 (包含光標、支援點擊定位)
     const renderMathInteractive = (str, fieldName, isActive) => {
       let pos = state.cursorPos;
       if (!isActive || pos === null || pos === undefined) pos = str.length;
 
       let html = `<div class="font-mono tracking-wider flex items-center h-full whitespace-nowrap">`;
       
-      let i = 0;
-      // 渲染位置 0 的點擊區塊與光標
       html += `<div data-action="set-field" data-field="${fieldName}" data-pos="0" class="h-full flex items-center cursor-text px-[4px] relative">
                   ${isActive && pos === 0 ? '<div class="absolute w-[2px] h-[70%] bg-blue-500 animate-pulse right-0 z-10"></div>' : ''}
                </div>`;
 
-      // 逐字元/token 渲染
+      let i = 0;
       while(i < str.length) {
          let isPow = str.substring(i, i+2) === '^2';
          let tokenText = isPow ? '<sup class="text-[0.6em] relative -top-2 pointer-events-none">2</sup>' : str[i];
@@ -444,28 +461,28 @@
     // UI 渲染模板
     // ----------------------------------------------------------------------
     const renderHome = () => `
-      <div class="min-h-screen bg-green-50 flex flex-col items-center justify-center p-4 sm:p-8">
-        <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-6 sm:p-10 text-center border-4 border-green-200">
-          <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 mb-6">完全平方的展開</h1>
+      <div class="min-h-screen bg-green-50 flex flex-col items-center justify-center p-2 sm:p-4">
+        <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-4 sm:p-8 text-center border-4 border-green-200">
+          <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 mb-4 sm:mb-6">完全平方的展開</h1>
           
-          <div class="bg-yellow-100 rounded-2xl p-4 sm:p-6 mb-10 shadow-inner w-full overflow-hidden">
-            <p class="text-gray-600 mb-4 font-medium text-lg">請緊記恆等式公式：</p>
+          <div class="bg-yellow-100 rounded-2xl p-3 sm:p-6 mb-6 sm:mb-10 shadow-inner w-full overflow-hidden">
+            <p class="text-gray-600 mb-2 sm:mb-4 font-medium text-base sm:text-lg">請緊記恆等式公式：</p>
             
-            <!-- 加入了 whitespace-nowrap, overflow-x-auto 和 scrollbar-hide 防止公式換行 -->
-            <div class="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 space-y-4 w-full overflow-x-auto scrollbar-hide whitespace-nowrap pb-2">
+            <!-- 【已更新】縮小了字體 text-xl sm:text-2xl md:text-3xl，並確保強制單行不換行 -->
+            <div class="text-xl sm:text-2xl md:text-3xl font-bold text-blue-700 space-y-3 sm:space-y-4 w-full overflow-x-auto scrollbar-hide whitespace-nowrap pb-2">
               <div>${renderMath("(a + b)^2 ≡ a^2 + 2ab + b^2")}</div>
               <div>${renderMath("(a - b)^2 ≡ a^2 - 2ab + b^2")}</div>
             </div>
           </div>
 
           <div class="space-y-4 flex flex-col items-center">
-            <button data-action="start" data-level="1" class="w-full max-w-md bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            <button data-action="start" data-level="1" class="w-full max-w-md bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 sm:py-4 px-8 rounded-full text-lg sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
               等級一 (初階)
             </button>
-            <button data-action="start" data-level="2" class="w-full max-w-md bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            <button data-action="start" data-level="2" class="w-full max-w-md bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 sm:py-4 px-8 rounded-full text-lg sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
               等級二 (進階)
             </button>
-            <button data-action="start" data-level="3" class="w-full max-w-md bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-full text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            <button data-action="start" data-level="3" class="w-full max-w-md bg-red-500 hover:bg-red-600 text-white font-bold py-3 sm:py-4 px-8 rounded-full text-lg sm:text-2xl shadow-lg transition-transform transform hover:scale-105 active:scale-95">
               等級三 (挑戰)
             </button>
           </div>
@@ -527,7 +544,6 @@
         feedbackHTML = `<div class="${fbClasses}"><div>${state.feedback.message}</div>${extraHints}</div>`;
       }
 
-      // Step 1 UI
       const step1Class = state.step === 1 ? 'border-blue-400 ring-4 ring-blue-100' : 'border-gray-200 opacity-60';
       const aFieldClass = state.activeField === 'a' ? 'border-blue-500 bg-blue-50 shadow-inner' : 'border-gray-300 bg-gray-50';
       const bFieldClass = state.activeField === 'b' ? 'border-blue-500 bg-blue-50 shadow-inner' : 'border-gray-300 bg-gray-50';
@@ -537,7 +553,6 @@
         step1BtnHTML = `<button data-action="check1" class="ml-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow active:scale-95">檢查</button>`;
       }
 
-      // Step 2 UI
       let step2HTML = '';
       if (state.step >= 2) {
         const step2Class = state.step === 2 ? 'border-purple-400 ring-4 ring-purple-100' : 'border-gray-200 opacity-80';
@@ -568,7 +583,6 @@
         `;
       }
 
-      // Keyboard UI
       const keyboardHTML = keyboardKeys.map(row => `
         <div class="flex gap-2 lg:gap-3 justify-center">
           ${row.map(key => {
@@ -603,7 +617,6 @@
 
       return `
         <div class="min-h-screen bg-slate-100 flex flex-col font-sans h-screen overflow-hidden">
-          <!-- 頂部導航 -->
           <div class="bg-white shadow-md px-6 py-4 flex justify-between items-center z-10 shrink-0">
             <button data-action="home" class="text-gray-500 hover:text-gray-800 font-bold px-4 py-2 bg-gray-100 rounded-lg active:scale-95">
               放棄並返回
@@ -616,9 +629,7 @@
             </div>
           </div>
 
-          <!-- 主要內容區 (左右分欄) -->
           <div class="flex-1 flex flex-row p-6 gap-6 overflow-hidden">
-            <!-- 左側：題目與輸入區 -->
             <div id="left-panel" class="w-3/5 flex flex-col gap-6 overflow-y-auto pr-2 pb-20">
               <div class="bg-white rounded-3xl shadow-lg p-8 flex flex-col items-center justify-center border-t-8 border-blue-400 shrink-0 max-w-full overflow-hidden">
                 <p class="text-gray-500 font-bold text-lg mb-2">展開下列算式：</p>
@@ -654,7 +665,6 @@
               ${step2HTML}
             </div>
 
-            <!-- 右側：專屬數學鍵盤 -->
             <div class="w-2/5 flex flex-col bg-gray-200 rounded-3xl p-4 shadow-inner shrink-0 relative">
               <div class="text-center mb-4 text-gray-500 font-bold">自定義數學鍵盤</div>
               <div class="flex flex-col gap-2 lg:gap-3 transition-opacity duration-300 ${state.step === 3 ? 'opacity-30 pointer-events-none' : ''}">
@@ -700,7 +710,6 @@
       else if (action === 'set-field') setActiveField(btn.getAttribute('data-field'), btn.getAttribute('data-pos'));
     });
 
-    // 初始化應用程式
     renderApp();
   </script>
 </body>
