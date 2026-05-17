@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>百分變化學習遊戲</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 隱藏捲軸但保留滾動功能以保持版面乾淨 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* 避免 iOS Safari 點擊時出現半透明遮罩 */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans overflow-hidden text-gray-800">
+    <div id="root" class="w-full h-full"></div>
+
+    <script>
+        // --- 題目模板資料 ---
+        const TEMPLATES = [
+            { text1: "某農場上個月收成了 {old} 公斤蘋果，這個月收成了 {new} 公斤。求蘋果收成量的百分變化。", text2_up: "某農場上個月收成了 {old} 公斤蘋果，這個月的收成量增加了 {pct}%。求這個月的蘋果收成量。", text2_down: "某農場上個月收成了 {old} 公斤蘋果，這個月的收成量減少了 {pct}%。求這個月的蘋果收成量。", dir: 'any', bases: [100, 150, 200, 250, 300, 400] },
+            { text1: "某款智能手機的售價由 ${old} 降價至 ${new}。求手機售價的百分變化。", text2_down: "某款智能手機的售價為 ${old}，現在降價了 {pct}%。求手機的新售價。", dir: 'down', bases: [4000, 5000, 6000, 8000, 10000] },
+            { text1: "一家餐廳昨晚的顧客人數是 {old} 人，今晚增加到 {new} 人。求顧客人數的百分變化。", text2_up: "一家餐廳昨晚的顧客人數是 {old} 人，今晚增加了 {pct}%。求今晚的顧客人數。", dir: 'up', bases: [50, 60, 80, 100, 120, 150] },
+            { text1: "小明在上半年的儲蓄是 ${old}，下半年的儲蓄減少至 ${new}。求他儲蓄的百分變化。", text2_down: "小明在上半年的儲蓄是 ${old}，下半年的儲蓄減少了 {pct}%。求他下半年的儲蓄。", dir: 'down', bases: [2000, 3000, 4000, 5000, 6000] },
+            { text1: "某班級在上學期的缺席人數為 {old} 人次，下學期減少至 {new} 人次。求缺席人數的百分變化。", text2_down: "某班級在上學期的缺席人數為 {old} 人次，下學期缺席減少了 {pct}%。求下學期的缺席人數。", dir: 'down', bases: [20, 25, 30, 40, 50] },
+            { text1: "一家鞋店上個月賣出 {old} 雙球鞋，這個月賣出 {new} 雙。求球鞋銷量的百分變化。", text2_up: "一家鞋店上個月賣出 {old} 雙球鞋，這個月銷量增加了 {pct}%。求這個月賣出的球鞋數量。", dir: 'up', bases: [100, 150, 200, 250, 300] },
+            { text1: "某旅行社去年接待了 {old} 個旅行團，今年接待了 {new} 個。求旅行團數目的百分變化。", text2_down: "某旅行社去年接待了 {old} 個旅行團，今年接待數目減少了 {pct}%。求今年接待的旅行團數目。", dir: 'down', bases: [1000, 1200, 1250, 1500, 2000] },
+            { text1: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得到 {new} 分。求小華得分的百分變化。", text2_up: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得分增加了 {pct}%。求小華第二次的得分。", text2_down: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得分減少了 {pct}%。求小華第二次的得分。", dir: 'any', bases: [50, 60, 70, 80, 90, 100] },
+            { text1: "某小鎮的人口由 {old} 人增加到 {new} 人。求該小鎮人口的百分變化。", text2_up: "某小鎮的人口原為 {old} 人，後來增加了 {pct}%。求該小鎮現在的人口。", dir: 'up', bases: [5000, 6000, 8000, 10000] },
+            { text1: "一家公司去年的純利為 ${old}，今年的純利增加至 ${new}。求純利的百分變化。", text2_up: "一家公司去年的純利為 ${old}，今年的純利增加了 {pct}%。求今年的純利。", dir: 'up', bases: [200000, 300000, 400000, 450000, 500000] },
+            { text1: "某體育館上週的入場人次為 {old} 人，本週減少至 {new} 人。求入場人次的百分變化。", text2_down: "某體育館上週的入場人次為 {old} 人，本週減少了 {pct}%。求本週的入場人次。", dir: 'down', bases: [1000, 1200, 1500, 1600, 2000] },
+            { text1: "小麗上個月的手機上網數據用量是 {old} GB，這個月增加到 {new} GB。求數據用量的百分變化。", text2_up: "小麗上個月的手機上網數據用量是 {old} GB，這個月用量增加了 {pct}%。求這個月的數據用量。", dir: 'up', bases: [10, 20, 30, 40, 50] },
+            { text1: "某服裝連鎖店去年的分店數目為 {old} 間，今年縮減至 {new} 間。求分店數目的百分變化。", text2_down: "某服裝連鎖店去年的分店數目為 {old} 間，今年縮減了 {pct}%。求今年的分店數目。", dir: 'down', bases: [20, 30, 40, 50] },
+            { text1: "一個水箱原本儲水 {old} 公升，漏水後只剩下 {new} 公升。求儲水量的百分變化。", text2_down: "一個水箱原本儲水 {old} 公升，漏水後儲水量減少了 {pct}%。求現在的儲水量。", dir: 'down', bases: [40, 50, 60, 80, 100] },
+            { text1: "某工廠上個月的用電量為 {old} 度，這個月推行節能措施後減少至 {new} 度。求用電量的百分變化。", text2_down: "某工廠上個月的用電量為 {old} 度，這個月推行節能措施後用電量減少了 {pct}%。求這個月的用電量。", dir: 'down', bases: [2000, 3000, 4000, 5000] },
+            { text1: "小明在英文模擬試中，卷一得到 {old} 分，卷二得到 {new} 分。求卷二得分相較於卷一的百分變化。", text2_up: "小明在英文模擬試中，卷一得到 {old} 分，卷二得分相較於卷一增加了 {pct}%。求卷二的得分。", text2_down: "小明在英文模擬試中，卷一得到 {old} 分，卷二得分相較於卷一減少了 {pct}%。求卷二的得分。", dir: 'any', bases: [40, 50, 60, 70, 80] },
+            { text1: "某網店的訂閱人數由 {old} 人上升至 {new} 人。求訂閱人數的百分變化。", text2_up: "某網店的訂閱人數原為 {old} 人，後來上升了 {pct}%。求現在的訂閱人數。", dir: 'up', bases: [8000, 10000, 12000, 12500, 15000] },
+            { text1: "一家電影院平日的單日票房為 ${old}，週末的單日票房增加至 ${new}。求票房的百分變化。", text2_up: "一家電影院平日的單日票房為 ${old}，週末的單日票房增加了 {pct}%。求週末的單日票房。", dir: 'up', bases: [20000, 30000, 40000, 50000] },
+            { text1: "某款汽車的每公里耗油量經過引擎優化後，由 {old} 公升下降至 {new} 公升。求每公里耗油量的百分變化。", text2_down: "某款汽車的每公里耗油量為 {old} 公升，經過引擎優化後下降了 {pct}%。求現在每公里的耗油量。", dir: 'down', bases: [0.05, 0.08, 0.10, 0.12, 0.15] },
+            { text1: "某中學去年有 {old} 名畢業生升讀大學，今年增加至 {new} 名。求升讀大學畢業生人數的百分變化。", text2_up: "某中學去年有 {old} 名畢業生升讀大學，今年增加了 {pct}%。求今年升讀大學的畢業生人數。", dir: 'up', bases: [100, 120, 150, 160, 200] }
+        ];
+
+        // --- 輔助與狀態管理 ---
+        const safeFloat = (num) => parseFloat(num.toPrecision(12));
+
+        let state = {
+            gameState: 'start', // start, playing, end
+            gameType: 'type1', // type1: 求百分變化, type2: 求新值
+            questions: [],
+            currentIdx: 0,
+            score: 0,
+            inputs: {
+                oldVal: '', newVal: '', changeVal: '',
+                f_newVal: '', f_oldVal: '', f_denom: '', finalAns: '',
+                pctVal: '', f_changeVal: '', f_pctVal: '', f_operator: ''
+            },
+            activeInput: 'oldVal',
+            errors: {},
+            showFeedback: false,
+            isCorrect: false
+        };
+
+        // --- SVG 圖示庫 ---
+        const icons = {
+            CheckCircle2: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+            XCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+            ChevronRight: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
+            RotateCcw: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>`,
+            ArrowLeft: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`,
+            Delete: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>`
+        };
+
+        // --- 邏輯函式 ---
+        const generateQuestionData = (template, gameType) => {
+            const upMults = [1.1, 1.2, 1.25, 1.4, 1.5, 2.0, 1.05, 1.15];
+            const downMults = [0.5, 0.6, 0.75, 0.8, 0.9, 0.85, 0.95];
+            let mults = template.dir === 'up' ? upMults : template.dir === 'down' ? downMults : [...upMults, ...downMults];
+
+            let validPairs = [];
+            for (let b of template.bases) {
+                for (let m of mults) {
+                    let n = safeFloat(b * m);
+                    if (n * 100 === Math.floor(n * 100) && n !== b) {
+                        validPairs.push({ old: b, new: n });
+                    }
+                }
+            }
+            let pair = validPairs[Math.floor(Math.random() * validPairs.length)];
+            let change = safeFloat(pair.new - pair.old);
+            let pct = safeFloat((change / pair.old) * 100);
+            let absPct = Math.abs(pct);
+            let absChange = Math.abs(change);
+            let qDir = change > 0 ? 'up' : 'down';
+
+            let text = "";
+            if (gameType === 'type1') {
+                text = template.text1.replace('{old}', pair.old).replace('{new}', pair.new);
+            } else {
+                if (qDir === 'up') text = template.text2_up.replace('{old}', pair.old).replace('{pct}', absPct);
+                else text = template.text2_down.replace('{old}', pair.old).replace('{pct}', absPct);
+            }
+
+            return { text, old: pair.old, new: pair.new, change: change, pct: pct, absPct: absPct, absChange: absChange, dir: qDir };
+        };
+
+        const generateQuiz = (gameType) => {
+            const shuffled = [...TEMPLATES].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, 10).map(tpl => generateQuestionData(tpl, gameType));
+        };
+
+        const startGame = (type) => {
+            state.gameType = type;
+            state.questions = generateQuiz(type);
+            state.currentIdx = 0;
+            state.score = 0;
+            resetTurn();
+            state.gameState = 'playing';
+            render();
+        };
+
+        const resetTurn = () => {
+            state.inputs = {
+                oldVal: '', newVal: '', changeVal: '',
+                f_newVal: '', f_oldVal: '', f_denom: '', finalAns: '',
+                pctVal: '', f_changeVal: '', f_pctVal: '', f_operator: ''
+            };
+            state.activeInput = 'oldVal';
+            state.errors = {};
+            state.showFeedback = false;
+            state.isCorrect = false;
+        };
+
+        window.setGameState = (newState) => {
+            state.gameState = newState;
+            render();
+        };
+
+        window.setActiveInput = (name) => {
+            if (state.isCorrect) return;
+            state.activeInput = name;
+            render();
+        };
+
+        window.handleKeyPress = (key) => {
+            if (state.isCorrect) return;
+
+            let currentVal = state.inputs[state.activeInput] || '';
+
+            if (key === 'C') {
+                state.inputs[state.activeInput] = '';
+            } else if (key === 'Del') {
+                state.inputs[state.activeInput] = currentVal.slice(0, -1);
+            } else if (state.activeInput === 'f_operator') {
+                if (key === '+' || key === '-') {
+                    state.inputs[state.activeInput] = key;
+                }
+            } else {
+                // 避免重複輸入小數點或負號，其他欄位不接受 +
+                if (key === '.' && currentVal.includes('.')) return;
+                if (key === '-' && currentVal.length > 0) return;
+                if (key === '+') return;
+                state.inputs[state.activeInput] = currentVal + key;
+            }
+            
+            if (state.showFeedback) {
+                state.errors[state.activeInput] = false;
+            }
+            
+            render();
+        };
+
+        window.handleSubmit = () => {
+            const q = state.questions[state.currentIdx];
+            let newErrors = {};
+
+            const checkVal = (inputKey, exactValue) => {
+                if (!state.inputs[inputKey] || state.inputs[inputKey].trim() === '') {
+                    newErrors[inputKey] = true;
+                } else if (safeFloat(parseFloat(state.inputs[inputKey])) !== exactValue) {
+                    newErrors[inputKey] = true;
+                }
+            };
+
+            if (state.gameType === 'type1') {
+                checkVal('oldVal', q.old);
+                checkVal('newVal', q.new);
+                checkVal('changeVal', q.change);
+                checkVal('f_newVal', q.new);
+                checkVal('f_oldVal', q.old);
+                checkVal('f_denom', q.old);
+
+                let finalStr = (state.inputs.finalAns || '').trim();
+                if (finalStr === '') {
+                    newErrors.finalAns = true;
+                } else if (!finalStr.endsWith('%')) {
+                    newErrors.finalAns = true;
+                } else {
+                    finalStr = finalStr.slice(0, -1);
+                    if (safeFloat(parseFloat(finalStr)) !== q.pct) {
+                        newErrors.finalAns = true;
+                    }
+                }
+            } else {
+                checkVal('oldVal', q.old);
+                
+                const checkPct = (key) => {
+                    let pctStr = (state.inputs[key] || '').trim();
+                    if (pctStr === '') {
+                        newErrors[key] = true;
+                    } else if (!pctStr.endsWith('%')) {
+                        newErrors[key] = true;
+                    } else {
+                        if (safeFloat(parseFloat(pctStr.slice(0, -1))) !== q.pct) {
+                            newErrors[key] = true;
+                        }
+                    }
+                };
+
+                checkPct('pctVal');
+                checkVal('f_oldVal', q.old);
+
+                let op = (state.inputs.f_operator || '').trim();
+                let fPctStr = (state.inputs.f_pctVal || '').trim();
+
+                if (!op) newErrors.f_operator = true;
+                else if (op !== '+' && op !== '-') newErrors.f_operator = true;
+
+                if (!fPctStr) {
+                    newErrors.f_pctVal = true;
+                } else if (!fPctStr.endsWith('%')) {
+                    newErrors.f_pctVal = true;
+                } else {
+                    let pctVal = safeFloat(parseFloat(fPctStr.slice(0, -1)));
+                    if (op === '+') {
+                        if (pctVal !== q.pct) newErrors.f_pctVal = true;
+                    } else if (op === '-') {
+                        if (pctVal !== -q.pct) newErrors.f_pctVal = true;
+                    } else {
+                        newErrors.f_pctVal = true;
+                    }
+                }
+                
+                let finalStr = (state.inputs.finalAns || '').trim();
+                if (finalStr === '') {
+                    newErrors.finalAns = true;
+                } else if (finalStr.endsWith('%')) {
+                    newErrors.finalAns = true;
+                } else {
+                    if (safeFloat(parseFloat(finalStr)) !== q.new) {
+                        newErrors.finalAns = true;
+                    }
+                }
+            }
+
+            state.errors = newErrors;
+            state.showFeedback = true;
+
+            if (Object.keys(newErrors).length === 0) {
+                state.isCorrect = true;
+                state.score += 10;
+            }
+            render();
+        };
+
+        window.handleNext = () => {
+            if (state.currentIdx < 9) {
+                state.currentIdx += 1;
+                resetTurn();
+                render();
+            } else {
+                state.gameState = 'end';
+                render();
+            }
+        };
+
+        // --- 渲染 UI 函式 ---
+        const renderInput = (name, className = "w-20") => {
+            const isActive = state.activeInput === name;
+            const value = state.inputs[name] || '';
+            let stateClass = "border-gray-300 bg-white text-black";
+            
+            if (state.showFeedback) {
+                if (state.errors[name]) stateClass = "border-red-500 bg-red-50 text-red-600";
+                else stateClass = "border-green-500 bg-green-50 text-green-700";
+            } else if (isActive) {
+                stateClass = "border-blue-500 bg-blue-50 ring-4 ring-blue-200 text-blue-800";
+            }
+
+            const cursorHtml = (isActive && !state.isCorrect) ? `<span class="animate-pulse ml-0.5 text-blue-500">|</span>` : '';
+
+            return `
+                <div onclick="setActiveInput('${name}')" 
+                     class="h-12 flex items-center justify-center border-2 rounded-xl cursor-pointer text-lg sm:text-xl font-bold shadow-sm transition-all select-none ${className} ${stateClass}">
+                    ${value}${cursorHtml}
+                </div>
+            `;
+        };
+
+        const render = () => {
+            const app = document.getElementById('root');
+            
+            if (state.gameState === 'start') {
+                app.innerHTML = `
+                    <div class="min-h-[100dvh] bg-blue-50 flex items-center justify-center p-4">
+                        <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl text-center space-y-6">
+                            <div class="text-6xl mb-4">📈</div>
+                            <h1 class="text-3xl font-extrabold text-blue-600 tracking-tight">百分變化挑戰</h1>
+                            <p class="text-lg text-gray-600">選擇你想挑戰的題型，一步步練習如何運用公式計算！</p>
+                            
+                            <div class="flex flex-col gap-4 mt-6">
+                                <button onclick="startGame('type1')" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xl transition-colors shadow-lg hover:shadow-blue-500/30 text-left px-6 flex items-center justify-between group active:scale-95">
+                                    <span><span class="opacity-80 text-base block font-normal">題型一</span>求百分變化</span>
+                                    <span class="transform group-hover:translate-x-1 transition-transform">${icons.ChevronRight}</span>
+                                </button>
+                                <button onclick="startGame('type2')" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xl transition-colors shadow-lg hover:shadow-indigo-500/30 text-left px-6 flex items-center justify-between group active:scale-95">
+                                    <span><span class="opacity-80 text-base block font-normal">題型二</span>求新值</span>
+                                    <span class="transform group-hover:translate-x-1 transition-transform">${icons.ChevronRight}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (state.gameState === 'end') {
+                app.innerHTML = `
+                    <div class="min-h-[100dvh] bg-green-50 flex items-center justify-center p-4">
+                        <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl text-center space-y-6">
+                            <div class="text-6xl mb-4">🏆</div>
+                            <h1 class="text-3xl font-extrabold text-green-600">挑戰完成！</h1>
+                            <p class="text-xl">你的總得分為：</p>
+                            <div class="text-6xl font-black text-green-500 py-4">${state.score} / 100</div>
+                            <p class="text-gray-500">${state.score >= 80 ? "太棒了！你已經完全掌握百分變化的技巧！" : "再接再厲，多練習幾次會更熟練喔！"}</p>
+                            <div class="flex flex-col gap-3">
+                                <button onclick="startGame('${state.gameType}')" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 transition-colors active:scale-95">
+                                    ${icons.RotateCcw} 再玩一次
+                                </button>
+                                <button onclick="setGameState('start')" class="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xl flex items-center justify-center gap-2 transition-colors active:scale-95">
+                                    ${icons.ArrowLeft} 返回首頁
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const q = state.questions[state.currentIdx];
+            
+            // 決定 Feedback 區內容
+            let feedbackHtml = '';
+            if (state.isCorrect) {
+                feedbackHtml = `
+                    <div class="bg-green-100 text-green-700 px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-lg animate-bounce w-full justify-center">
+                        ${icons.CheckCircle2} 完全正確！
+                    </div>
+                `;
+            } else if (state.showFeedback && Object.keys(state.errors).length > 0) {
+                let errorMsg = "有些地方填錯了，請修正！";
+                if (state.gameType === 'type2' && state.errors.f_operator) {
+                    errorMsg = "請填入正確的加減符號「+」或「-」喔！";
+                } else if (state.gameType === 'type1' && state.errors.finalAns && state.inputs.finalAns && !state.inputs.finalAns.includes('%')) {
+                    errorMsg = "答錯了！是否忘記加上「%」？";
+                } else if (state.gameType === 'type2' && ((state.errors.pctVal && state.inputs.pctVal && !state.inputs.pctVal.includes('%')) || (state.errors.f_pctVal && state.inputs.f_pctVal && !state.inputs.f_pctVal.includes('%')))) {
+                    errorMsg = "答錯了！百分變化是否忘記加上「%」？";
+                } else if (state.gameType === 'type2' && state.errors.f_pctVal && state.inputs.f_pctVal && state.inputs.f_operator === '+' && parseFloat(state.inputs.f_pctVal) > 0 && q.pct < 0) {
+                    errorMsg = "答錯了！數值減少時，如果前面填了「+」，百分變化記得加上負號「-」喔！";
+                } else if (state.gameType === 'type2' && state.errors.finalAns && state.inputs.finalAns && state.inputs.finalAns.includes('%')) {
+                    errorMsg = "答錯了！計算新值不需要加上「%」";
+                }
+                
+                feedbackHtml = `
+                    <div class="bg-red-100 text-red-600 px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-base w-full justify-center text-center">
+                        <div class="shrink-0">${icons.XCircle}</div> 
+                        ${errorMsg}
+                    </div>
+                `;
+            } else {
+                feedbackHtml = `
+                    <div class="text-gray-500 text-center font-medium text-sm sm:text-base">
+                        點擊左方空格，然後使用下方鍵盤輸入數字
+                    </div>
+                `;
+            }
+
+            // 鍵盤佈局渲染
+            const keys = ['1','2','3','+','4','5','6','-','7','8','9','%','C','0','.','Del'];
+            const keyboardHtml = keys.map(key => {
+                let btnClass = 'bg-white border-gray-200 text-gray-800 hover:bg-blue-50 hover:border-blue-300';
+                let inner = key;
+                
+                if (key === 'C') btnClass = 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100';
+                else if (key === 'Del') { btnClass = 'bg-orange-100 border-orange-200 text-orange-800 hover:bg-orange-200'; inner = icons.Delete; }
+                else if (key === '%') btnClass = 'bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200';
+                else if (key === '+' || key === '-') btnClass = 'bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-200';
+
+                return `
+                    <button onclick="handleKeyPress('${key}')" ${state.isCorrect ? 'disabled' : ''} 
+                        class="border-2 rounded-xl text-xl sm:text-2xl font-bold active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm h-12 lg:h-auto min-h-[48px] flex items-center justify-center ${btnClass}">
+                        ${inner}
+                    </button>
+                `;
+            }).join('');
+
+            // 主要答題內容渲染 (分 Type 1 和 Type 2)
+            let mainContentHtml = '';
+            if (state.gameType === 'type1') {
+                mainContentHtml = `
+                    <div class="flex flex-col gap-4 flex-1 justify-center">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col gap-2">
+                                <h3 class="font-semibold text-gray-600 text-sm">步驟 1：找出新舊值</h3>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-lg font-bold text-gray-700">舊值：</span>
+                                    ${renderInput('oldVal', 'w-24 sm:w-32')}
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-lg font-bold text-gray-700">新值：</span>
+                                    ${renderInput('newVal', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col justify-center gap-2">
+                                <h3 class="font-semibold text-gray-600 text-sm">步驟 2：計算變化 (新值 - 舊值)</h3>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-lg font-bold text-gray-700">變化：</span>
+                                    ${renderInput('changeVal', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 p-4 sm:p-6 rounded-xl border border-indigo-100 flex flex-col gap-4">
+                            <h3 class="font-semibold text-indigo-800 text-sm">步驟 3：代入百分變化公式</h3>
+                            <div class="flex items-center justify-center gap-2 sm:gap-4 text-xl sm:text-2xl font-bold text-gray-700 overflow-x-auto py-2">
+                                <div class="flex flex-col items-center">
+                                    <div class="flex items-center gap-2 pb-2">
+                                        ${renderInput('f_newVal', 'w-16 sm:w-24')}
+                                        <span>−</span>
+                                        ${renderInput('f_oldVal', 'w-16 sm:w-24')}
+                                    </div>
+                                    <div class="w-full h-1 bg-gray-800 rounded-full my-1"></div>
+                                    <div class="pt-2">
+                                        ${renderInput('f_denom', 'w-16 sm:w-24')}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                                    <span>×</span><span>100%</span><span>=</span>
+                                    ${renderInput('finalAns', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                mainContentHtml = `
+                    <div class="flex flex-col gap-4 flex-1 justify-center">
+                        <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col gap-4">
+                            <h3 class="font-semibold text-gray-600 text-sm">步驟 1：找出舊值與百分變化</h3>
+                            <div class="flex flex-col sm:flex-row gap-4 sm:gap-8">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold text-gray-700">舊值：</span>
+                                    ${renderInput('oldVal', 'w-24 sm:w-32')}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold text-gray-700 shrink-0">百分變化：</span>
+                                    ${renderInput('pctVal', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 p-4 sm:p-6 rounded-xl border border-indigo-100 flex flex-col gap-4">
+                            <h3 class="font-semibold text-indigo-800 text-sm">步驟 2：代入公式「新值 ＝ 舊值 × (1 ＋ 百分變化)」</h3>
+                            <div class="flex items-center justify-center gap-2 sm:gap-4 text-xl sm:text-2xl font-bold text-gray-700 overflow-x-auto py-4">
+                                ${renderInput('f_oldVal', 'w-16 sm:w-24')}
+                                <span>×</span><span>(</span><span>1</span>
+                                ${renderInput('f_operator', 'w-10 sm:w-12 text-center')}
+                                ${renderInput('f_pctVal', 'w-16 sm:w-24')}
+                                <span>)</span><span>=</span>
+                                ${renderInput('finalAns', 'w-20 sm:w-32')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 組合完整介面
+            app.innerHTML = `
+                <div class="min-h-[100dvh] flex items-center justify-center p-2 sm:p-4 bg-gray-100">
+                    <div class="w-full max-w-6xl bg-white md:rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[100dvh] md:h-[95vh] md:max-h-[850px]">
+                        <!-- Header -->
+                        <div class="bg-blue-600 p-3 sm:p-4 flex justify-between items-center text-white shrink-0">
+                            <div class="flex items-center gap-3">
+                                <button onclick="setGameState('start')" class="bg-blue-700 hover:bg-blue-800 p-2 rounded-lg transition-colors flex items-center justify-center" title="返回首頁">
+                                    ${icons.ArrowLeft}
+                                </button>
+                                <div class="font-bold text-lg sm:text-2xl flex items-center gap-2">
+                                    <span class="bg-white/20 px-3 py-1 rounded-lg">第 ${state.currentIdx + 1} / 10 題</span>
+                                    <span class="hidden sm:inline ml-2 text-blue-200">(${state.gameType === 'type1' ? '求百分變化' : '求新值'})</span>
+                                </div>
+                            </div>
+                            <div class="font-bold text-lg sm:text-2xl flex items-center gap-2">
+                                得分：<span class="text-yellow-300 text-2xl sm:text-3xl">${state.score}</span>
+                            </div>
+                        </div>
+
+                        <!-- Main Content -->
+                        <div class="flex flex-col lg:flex-row flex-1 overflow-hidden">
+                            <!-- Left Area -->
+                            <div class="flex-1 p-4 sm:p-6 flex flex-col gap-4 overflow-y-auto">
+                                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl shrink-0">
+                                    <p class="text-lg sm:text-xl text-gray-800 font-medium leading-relaxed">
+                                        ${q.text}
+                                    </p>
+                                </div>
+                                ${mainContentHtml}
+                            </div>
+
+                            <!-- Right Area -->
+                            <div class="w-full lg:w-[320px] bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 p-4 flex flex-col shrink-0">
+                                <div class="h-16 mb-4 flex items-center justify-center">
+                                    ${feedbackHtml}
+                                </div>
+                                <div class="grid grid-cols-4 gap-2 flex-1">
+                                    ${keyboardHtml}
+                                </div>
+                                <div class="mt-4">
+                                    ${!state.isCorrect ? `
+                                        <button onclick="handleSubmit()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-lg font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                                            ${icons.CheckCircle2} 確定提交
+                                        </button>
+                                    ` : `
+                                        <button onclick="handleNext()" class="w-full py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl text-lg font-bold shadow-lg transition-all animate-pulse flex items-center justify-center gap-2">
+                                            下一題 ${icons.ChevronRight}
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        // 初始化開始畫面
+        render();
+    </script>
+</body>
+</html>
