@@ -34,27 +34,26 @@
     <script>
         // --- 題目模板資料 ---
         const TEMPLATES = [
-            { text1: "某農場上個月收成了 {old} 公斤蘋果，這個月收成了 {new} 公斤。求蘋果收成量的百分變化。", text2_up: "某農場上個月收成了 {old} 公斤蘋果，這個月的收成量增加了 {pct}%。求這個月的蘋果收成量。", text2_down: "某農場上個月收成了 {old} 公斤蘋果，這個月的收成量減少了 {pct}%。求這個月的蘋果收成量。", dir: 'any', bases: [100, 150, 200, 250, 300, 400] },
-            { text1: "某款智能手機的售價由 ${old} 降價至 ${new}。求手機售價的百分變化。", text2_down: "某款智能手機的售價為 ${old}，現在降價了 {pct}%。求手機的新售價。", dir: 'down', bases: [4000, 5000, 6000, 8000, 10000] },
-            { text1: "一家餐廳昨晚的顧客人數是 {old} 人，今晚增加到 {new} 人。求顧客人數的百分變化。", text2_up: "一家餐廳昨晚的顧客人數是 {old} 人，今晚增加了 {pct}%。求今晚的顧客人數。", dir: 'up', bases: [50, 60, 80, 100, 120, 150] },
-            { text1: "小明在上半年的儲蓄是 ${old}，下半年的儲蓄減少至 ${new}。求他儲蓄的百分變化。", text2_down: "小明在上半年的儲蓄是 ${old}，下半年的儲蓄減少了 {pct}%。求他下半年的儲蓄。", dir: 'down', bases: [2000, 3000, 4000, 5000, 6000] },
-            { text1: "某班級在上學期的缺席人數為 {old} 人次，下學期減少至 {new} 人次。求缺席人數的百分變化。", text2_down: "某班級在上學期的缺席人數為 {old} 人次，下學期缺席減少了 {pct}%。求下學期的缺席人數。", dir: 'down', bases: [20, 25, 30, 40, 50] },
-            { text1: "一家鞋店上個月賣出 {old} 雙球鞋，這個月賣出 {new} 雙。求球鞋銷量的百分變化。", text2_up: "一家鞋店上個月賣出 {old} 雙球鞋，這個月銷量增加了 {pct}%。求這個月賣出的球鞋數量。", dir: 'up', bases: [100, 150, 200, 250, 300] },
-            { text1: "某旅行社去年接待了 {old} 個旅行團，今年接待了 {new} 個。求旅行團數目的百分變化。", text2_down: "某旅行社去年接待了 {old} 個旅行團，今年接待數目減少了 {pct}%。求今年接待的旅行團數目。", dir: 'down', bases: [1000, 1200, 1250, 1500, 2000] },
-            { text1: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得到 {new} 分。求小華得分的百分變化。", text2_up: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得分增加了 {pct}%。求小華第二次的得分。", text2_down: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得分減少了 {pct}%。求小華第二次的得分。", dir: 'any', bases: [50, 60, 70, 80, 90, 100] },
-            { text1: "某小鎮的人口由 {old} 人增加到 {new} 人。求該小鎮人口的百分變化。", text2_up: "某小鎮的人口原為 {old} 人，後來增加了 {pct}%。求該小鎮現在的人口。", dir: 'up', bases: [5000, 6000, 8000, 10000] },
-            { text1: "一家公司去年的純利為 ${old}，今年的純利增加至 ${new}。求純利的百分變化。", text2_up: "一家公司去年的純利為 ${old}，今年的純利增加了 {pct}%。求今年的純利。", dir: 'up', bases: [200000, 300000, 400000, 450000, 500000] },
-            { text1: "某體育館上週的入場人次為 {old} 人，本週減少至 {new} 人。求入場人次的百分變化。", text2_down: "某體育館上週的入場人次為 {old} 人，本週減少了 {pct}%。求本週的入場人次。", dir: 'down', bases: [1000, 1200, 1500, 1600, 2000] },
-            { text1: "小麗上個月的手機上網數據用量是 {old} GB，這個月增加到 {new} GB。求數據用量的百分變化。", text2_up: "小麗上個月的手機上網數據用量是 {old} GB，這個月用量增加了 {pct}%。求這個月的數據用量。", dir: 'up', bases: [10, 20, 30, 40, 50] },
-            { text1: "某服裝連鎖店去年的分店數目為 {old} 間，今年縮減至 {new} 間。求分店數目的百分變化。", text2_down: "某服裝連鎖店去年的分店數目為 {old} 間，今年縮減了 {pct}%。求今年的分店數目。", dir: 'down', bases: [20, 30, 40, 50] },
-            { text1: "一個水箱原本儲水 {old} 公升，漏水後只剩下 {new} 公升。求儲水量的百分變化。", text2_down: "一個水箱原本儲水 {old} 公升，漏水後儲水量減少了 {pct}%。求現在的儲水量。", dir: 'down', bases: [40, 50, 60, 80, 100] },
-            { text1: "某工廠上個月的用電量為 {old} 度，這個月推行節能措施後減少至 {new} 度。求用電量的百分變化。", text2_down: "某工廠上個月的用電量為 {old} 度，這個月推行節能措施後用電量減少了 {pct}%。求這個月的用電量。", dir: 'down', bases: [2000, 3000, 4000, 5000] },
-            { text1: "小明在英文模擬試中，卷一得到 {old} 分，卷二得到 {new} 分。求卷二得分相較於卷一的百分變化。", text2_up: "小明在英文模擬試中，卷一得到 {old} 分，卷二得分相較於卷一增加了 {pct}%。求卷二的得分。", text2_down: "小明在英文模擬試中，卷一得到 {old} 分，卷二得分相較於卷一減少了 {pct}%。求卷二的得分。", dir: 'any', bases: [40, 50, 60, 70, 80] },
-            { text1: "某網店的訂閱人數由 {old} 人上升至 {new} 人。求訂閱人數的百分變化。", text2_up: "某網店的訂閱人數原為 {old} 人，後來上升了 {pct}%。求現在的訂閱人數。", dir: 'up', bases: [8000, 10000, 12000, 12500, 15000] },
-            { text1: "一家電影院平日的單日票房為 ${old}，週末的單日票房增加至 ${new}。求票房的百分變化。", text2_up: "一家電影院平日的單日票房為 ${old}，週末的單日票房增加了 {pct}%。求週末的單日票房。", dir: 'up', bases: [20000, 30000, 40000, 50000] },
-            // 修正為 100 公里耗油量，以便全數使用整數，避免產生小數點題目
-            { text1: "某款汽車的每 100 公里耗油量經過引擎優化後，由 {old} 公升下降至 {new} 公升。求耗油量的百分變化。", text2_down: "某款汽車的每 100 公里耗油量為 {old} 公升，經過引擎優化後下降了 {pct}%。求現在每 100 公里的耗油量。", dir: 'down', bases: [10, 12, 15, 20, 25] },
-            { text1: "某中學去年有 {old} 名畢業生升讀大學，今年增加至 {new} 名。求升讀大學畢業生人數的百分變化。", text2_up: "某中學去年有 {old} 名畢業生升讀大學，今年增加了 {pct}%。求今年升讀大學的畢業生人數。", dir: 'up', bases: [100, 120, 150, 160, 200] }
+            { text1: "某農場上個月收成了 {old} 公斤蘋果，這個月收成了 {new} 公斤。求蘋果收成量的百分變化。", text2_up: "某農場上個月收成了 {old} 公斤蘋果，這個月的收成量增加了 {pct}%。求這個月的蘋果收成量。", text2_down: "某農場上個月收成了 {old} 公斤蘋果，這個月的收成量減少了 {pct}%。求這個月的蘋果收成量。", text3_up: "某農場這個月收成了 {new} 公斤蘋果，收成量比上個月增加了 {pct}%。求上個月的蘋果收成量。", text3_down: "某農場這個月收成了 {new} 公斤蘋果，收成量比上個月減少了 {pct}%。求上個月的蘋果收成量。", dir: 'any', bases: [100, 150, 200, 250, 300, 400] },
+            { text1: "某款智能手機的售價由 ${old} 降價至 ${new}。求手機售價的百分變化。", text2_down: "某款智能手機的售價為 ${old}，現在降價了 {pct}%。求手機的新售價。", text3_down: "某款智能手機現在降價了 {pct}%，最新售價為 ${new}。求手機的原價。", dir: 'down', bases: [4000, 5000, 6000, 8000, 10000] },
+            { text1: "一家餐廳昨晚的顧客人數是 {old} 人，今晚增加到 {new} 人。求顧客人數的百分變化。", text2_up: "一家餐廳昨晚的顧客人數是 {old} 人，今晚增加了 {pct}%。求今晚的顧客人數。", text3_up: "一家餐廳今晚的顧客人數是 {new} 人，比昨晚增加了 {pct}%。求昨晚的顧客人數。", dir: 'up', bases: [50, 60, 80, 100, 120, 150] },
+            { text1: "小明在上半年的儲蓄是 ${old}，下半年的儲蓄減少至 ${new}。求他儲蓄的百分變化。", text2_down: "小明在上半年的儲蓄是 ${old}，下半年的儲蓄減少了 {pct}%。求他下半年的儲蓄。", text3_down: "小明下半年的儲蓄是 ${new}，比上半年減少了 {pct}%。求他上半年的儲蓄。", dir: 'down', bases: [2000, 3000, 4000, 5000, 6000] },
+            { text1: "某班級在上學期的缺席人數為 {old} 人次，下學期減少至 {new} 人次。求缺席人數的百分變化。", text2_down: "某班級在上學期的缺席人數為 {old} 人次，下學期缺席減少了 {pct}%。求下學期的缺席人數。", text3_down: "某班級下學期的缺席人數為 {new} 人次，比上學期減少了 {pct}%。求上學期的缺席人數。", dir: 'down', bases: [20, 25, 30, 40, 50] },
+            { text1: "一家鞋店上個月賣出 {old} 雙球鞋，這個月賣出 {new} 雙。求球鞋銷量的百分變化。", text2_up: "一家鞋店上個月賣出 {old} 雙球鞋，這個月銷量增加了 {pct}%。求這個月賣出的球鞋數量。", text3_up: "一家鞋店這個月賣出 {new} 雙球鞋，比上個月銷量增加了 {pct}%。求上個月賣出的球鞋數量。", dir: 'up', bases: [100, 150, 200, 250, 300] },
+            { text1: "某旅行社去年接待了 {old} 個旅行團，今年接待了 {new} 個。求旅行團數目的百分變化。", text2_down: "某旅行社去年接待了 {old} 個旅行團，今年接待數目減少了 {pct}%。求今年接待的旅行團數目。", text3_down: "某旅行社今年接待了 {new} 個旅行團，比去年減少了 {pct}%。求去年接待的旅行團數目。", dir: 'down', bases: [1000, 1200, 1250, 1500, 2000] },
+            { text1: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得到 {new} 分。求小華得分的百分變化。", text2_up: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得分增加了 {pct}%。求小華第二次的得分。", text2_down: "小華在第一次數學小測驗得到 {old} 分，第二次小測驗得分減少了 {pct}%。求小華第二次的得分。", text3_up: "小華在第二次數學小測驗得到 {new} 分，比第一次得分增加了 {pct}%。求小華第一次的得分。", text3_down: "小華在第二次數學小測驗得到 {new} 分，比第一次得分減少了 {pct}%。求小華第一次的得分。", dir: 'any', bases: [50, 60, 70, 80, 90, 100] },
+            { text1: "某小鎮的人口由 {old} 人增加到 {new} 人。求該小鎮人口的百分變化。", text2_up: "某小鎮的人口原為 {old} 人，後來增加了 {pct}%。求該小鎮現在的人口。", text3_up: "某小鎮現在的人口為 {new} 人，比原來增加了 {pct}%。求該小鎮原來的人口。", dir: 'up', bases: [5000, 6000, 8000, 10000] },
+            { text1: "一家公司去年的純利為 ${old}，今年的純利增加至 ${new}。求純利的百分變化。", text2_up: "一家公司去年的純利為 ${old}，今年的純利增加了 {pct}%。求今年的純利。", text3_up: "一家公司今年的純利為 ${new}，比去年增加了 {pct}%。求去年的純利。", dir: 'up', bases: [200000, 300000, 400000, 450000, 500000] },
+            { text1: "某體育館上週的入場人次為 {old} 人，本週減少至 {new} 人。求入場人次的百分變化。", text2_down: "某體育館上週的入場人次為 {old} 人，本週減少了 {pct}%。求本週的入場人次。", text3_down: "某體育館本週的入場人次為 {new} 人，比上週減少了 {pct}%。求上週的入場人次。", dir: 'down', bases: [1000, 1200, 1500, 1600, 2000] },
+            { text1: "小麗上個月的手機上網數據用量是 {old} GB，這個月增加到 {new} GB。求數據用量的百分變化。", text2_up: "小麗上個月的手機上網數據用量是 {old} GB，這個月用量增加了 {pct}%。求這個月的數據用量。", text3_up: "小麗這個月的手機上網數據用量是 {new} GB，比上個月增加了 {pct}%。求上個月的數據用量。", dir: 'up', bases: [10, 20, 30, 40, 50] },
+            { text1: "某服裝連鎖店去年的分店數目為 {old} 間，今年縮減至 {new} 間。求分店數目的百分變化。", text2_down: "某服裝連鎖店去年的分店數目為 {old} 間，今年縮減了 {pct}%。求今年的分店數目。", text3_down: "某服裝連鎖店今年的分店數目為 {new} 間，比去年縮減了 {pct}%。求去年的分店數目。", dir: 'down', bases: [20, 30, 40, 50] },
+            { text1: "一個水箱原本儲水 {old} 公升，漏水後只剩下 {new} 公升。求儲水量的百分變化。", text2_down: "一個水箱原本儲水 {old} 公升，漏水後儲水量減少了 {pct}%。求現在的儲水量。", text3_down: "一個水箱漏水後剩下 {new} 公升儲水，儲水量減少了 {pct}%。求原本的儲水量。", dir: 'down', bases: [40, 50, 60, 80, 100] },
+            { text1: "某工廠上個月的用電量為 {old} 度，這個月推行節能措施後減少至 {new} 度。求用電量的百分變化。", text2_down: "某工廠上個月的用電量為 {old} 度，這個月推行節能措施後用電量減少了 {pct}%。求這個月的用電量。", text3_down: "某工廠這個月推行節能措施後用電量為 {new} 度，比上個月減少了 {pct}%。求上個月的用電量。", dir: 'down', bases: [2000, 3000, 4000, 5000] },
+            { text1: "小明在英文模擬試中，卷一得到 {old} 分，卷二得到 {new} 分。求卷二得分相較於卷一的百分變化。", text2_up: "小明在英文模擬試中，卷一得到 {old} 分，卷二得分相較於卷一增加了 {pct}%。求卷二的得分。", text2_down: "小明在英文模擬試中，卷一得到 {old} 分，卷二得分相較於卷一減少了 {pct}%。求卷二的得分。", text3_up: "小明在英文模擬試中，卷二得到 {new} 分，相較於卷一增加了 {pct}%。求卷一的得分。", text3_down: "小明在英文模擬試中，卷二得到 {new} 分，相較於卷一減少了 {pct}%。求卷一的得分。", dir: 'any', bases: [40, 50, 60, 70, 80] },
+            { text1: "某網店的訂閱人數由 {old} 人上升至 {new} 人。求訂閱人數的百分變化。", text2_up: "某網店的訂閱人數原為 {old} 人，後來上升了 {pct}%。求現在的訂閱人數。", text3_up: "某網店現在的訂閱人數為 {new} 人，比原來上升了 {pct}%。求原來的訂閱人數。", dir: 'up', bases: [8000, 10000, 12000, 12500, 15000] },
+            { text1: "一家電影院平日的單日票房為 ${old}，週末的單日票房增加至 ${new}。求票房的百分變化。", text2_up: "一家電影院平日的單日票房為 ${old}，週末的單日票房增加了 {pct}%。求週末的單日票房。", text3_up: "一家電影院週末的單日票房為 ${new}，比平日增加了 {pct}%。求平日的單日票房。", dir: 'up', bases: [20000, 30000, 40000, 50000] },
+            { text1: "某款汽車的每 100 公里耗油量經過引擎優化後，由 {old} 公升下降至 {new} 公升。求耗油量的百分變化。", text2_down: "某款汽車的每 100 公里耗油量為 {old} 公升，經過引擎優化後下降了 {pct}%。求現在每 100 公里的耗油量。", text3_down: "某款汽車經過引擎優化後，現在每 100 公里耗油量為 {new} 公升，下降了 {pct}%。求優化前的耗油量。", dir: 'down', bases: [10, 12, 15, 20, 25] },
+            { text1: "某中學去年有 {old} 名畢業生升讀大學，今年增加至 {new} 名。求升讀大學畢業生人數的百分變化。", text2_up: "某中學去年有 {old} 名畢業生升讀大學，今年增加了 {pct}%。求今年升讀大學的畢業生人數。", text3_up: "某中學今年有 {new} 名畢業生升讀大學，比去年增加了 {pct}%。求去年升讀大學的畢業生人數。", dir: 'up', bases: [100, 120, 150, 160, 200] }
         ];
 
         // --- 輔助與狀態管理 ---
@@ -62,14 +61,15 @@
 
         let state = {
             gameState: 'start', // start, playing, end
-            gameType: 'type1', // type1: 求百分變化, type2: 求新值
+            gameType: 'type1', // type1: 求百分變化, type2: 求新值, type3: 求舊值
             questions: [],
             currentIdx: 0,
             score: 0,
             inputs: {
                 oldVal: '', newVal: '', changeVal: '',
                 f_newVal: '', f_oldVal: '', f_denom: '', finalAns: '',
-                pctVal: '', f_changeVal: '', f_pctVal: '', f_operator: ''
+                pctVal: '', f_changeVal: '', f_pctVal: '', f_operator: '',
+                f_calc_op: '', f_one: ''
             },
             activeInput: 'oldVal',
             errors: {},
@@ -113,9 +113,12 @@
             let text = "";
             if (gameType === 'type1') {
                 text = template.text1.replace('{old}', pair.old).replace('{new}', pair.new);
-            } else {
+            } else if (gameType === 'type2') {
                 if (qDir === 'up') text = template.text2_up.replace('{old}', pair.old).replace('{pct}', absPct);
                 else text = template.text2_down.replace('{old}', pair.old).replace('{pct}', absPct);
+            } else {
+                if (qDir === 'up') text = template.text3_up.replace('{new}', pair.new).replace('{pct}', absPct);
+                else text = template.text3_down.replace('{new}', pair.new).replace('{pct}', absPct);
             }
 
             return { text, old: pair.old, new: pair.new, change: change, pct: pct, absPct: absPct, absChange: absChange, dir: qDir };
@@ -140,9 +143,10 @@
             state.inputs = {
                 oldVal: '', newVal: '', changeVal: '',
                 f_newVal: '', f_oldVal: '', f_denom: '', finalAns: '',
-                pctVal: '', f_changeVal: '', f_pctVal: '', f_operator: ''
+                pctVal: '', f_changeVal: '', f_pctVal: '', f_operator: '',
+                f_calc_op: '', f_one: ''
             };
-            state.activeInput = 'oldVal';
+            state.activeInput = state.gameType === 'type3' ? 'newVal' : 'oldVal';
             state.errors = {};
             state.showFeedback = false;
             state.isCorrect = false;
@@ -172,11 +176,19 @@
                 if (key === '+' || key === '-') {
                     state.inputs[state.activeInput] = key;
                 }
+            } else if (state.activeInput === 'f_calc_op') {
+                if (key === '×' || key === '÷') {
+                    state.inputs[state.activeInput] = key;
+                }
+            } else if (state.activeInput === 'f_one') {
+                if (key === '1') {
+                    state.inputs[state.activeInput] = key;
+                }
             } else {
-                // 避免重複輸入小數點或負號，其他欄位不接受 +
+                // 避免重複輸入小數點或負號，其他欄位不接受運算符號
                 if (key === '.' && currentVal.includes('.')) return;
                 if (key === '-' && currentVal.length > 0) return;
-                if (key === '+') return;
+                if (['+', '×', '÷'].includes(key)) return;
                 state.inputs[state.activeInput] = currentVal + key;
             }
             
@@ -199,44 +211,20 @@
                 }
             };
 
-            if (state.gameType === 'type1') {
-                checkVal('oldVal', q.old);
-                checkVal('newVal', q.new);
-                checkVal('changeVal', q.change);
-                checkVal('f_newVal', q.new);
-                checkVal('f_oldVal', q.old);
-                checkVal('f_denom', q.old);
-
-                let finalStr = (state.inputs.finalAns || '').trim();
-                if (finalStr === '') {
-                    newErrors.finalAns = true;
-                } else if (!finalStr.endsWith('%')) {
-                    newErrors.finalAns = true;
+            const checkPct = (key) => {
+                let pctStr = (state.inputs[key] || '').trim();
+                if (pctStr === '') {
+                    newErrors[key] = true;
+                } else if (!pctStr.endsWith('%')) {
+                    newErrors[key] = true;
                 } else {
-                    finalStr = finalStr.slice(0, -1);
-                    if (safeFloat(parseFloat(finalStr)) !== q.pct) {
-                        newErrors.finalAns = true;
+                    if (safeFloat(parseFloat(pctStr.slice(0, -1))) !== q.pct) {
+                        newErrors[key] = true;
                     }
                 }
-            } else {
-                checkVal('oldVal', q.old);
-                
-                const checkPct = (key) => {
-                    let pctStr = (state.inputs[key] || '').trim();
-                    if (pctStr === '') {
-                        newErrors[key] = true;
-                    } else if (!pctStr.endsWith('%')) {
-                        newErrors[key] = true;
-                    } else {
-                        if (safeFloat(parseFloat(pctStr.slice(0, -1))) !== q.pct) {
-                            newErrors[key] = true;
-                        }
-                    }
-                };
+            };
 
-                checkPct('pctVal');
-                checkVal('f_oldVal', q.old);
-
+            const checkFormulaPct = () => {
                 let op = (state.inputs.f_operator || '').trim();
                 let fPctStr = (state.inputs.f_pctVal || '').trim();
 
@@ -257,6 +245,39 @@
                         newErrors.f_pctVal = true;
                     }
                 }
+            };
+
+            if (state.gameType === 'type1') {
+                checkVal('oldVal', q.old);
+                checkVal('newVal', q.new);
+                checkVal('changeVal', q.change);
+                checkVal('f_newVal', q.new);
+                checkVal('f_oldVal', q.old);
+                checkVal('f_denom', q.old);
+
+                let finalStr = (state.inputs.finalAns || '').trim();
+                if (finalStr === '') {
+                    newErrors.finalAns = true;
+                } else if (!finalStr.endsWith('%')) {
+                    newErrors.finalAns = true;
+                } else {
+                    finalStr = finalStr.slice(0, -1);
+                    if (safeFloat(parseFloat(finalStr)) !== q.pct) {
+                        newErrors.finalAns = true;
+                    }
+                }
+            } else if (state.gameType === 'type2') {
+                checkVal('oldVal', q.old);
+                checkPct('pctVal');
+                checkVal('f_oldVal', q.old);
+
+                let calcOp = (state.inputs.f_calc_op || '').trim();
+                if (calcOp !== '×') newErrors.f_calc_op = true;
+
+                let fOne = (state.inputs.f_one || '').trim();
+                if (fOne !== '1') newErrors.f_one = true;
+                
+                checkFormulaPct();
                 
                 let finalStr = (state.inputs.finalAns || '').trim();
                 if (finalStr === '') {
@@ -265,6 +286,29 @@
                     newErrors.finalAns = true;
                 } else {
                     if (safeFloat(parseFloat(finalStr)) !== q.new) {
+                        newErrors.finalAns = true;
+                    }
+                }
+            } else if (state.gameType === 'type3') {
+                checkVal('newVal', q.new);
+                checkPct('pctVal');
+                checkVal('f_newVal', q.new);
+
+                let calcOp = (state.inputs.f_calc_op || '').trim();
+                if (calcOp !== '÷') newErrors.f_calc_op = true;
+
+                let fOne = (state.inputs.f_one || '').trim();
+                if (fOne !== '1') newErrors.f_one = true;
+                
+                checkFormulaPct();
+                
+                let finalStr = (state.inputs.finalAns || '').trim();
+                if (finalStr === '') {
+                    newErrors.finalAns = true;
+                } else if (finalStr.endsWith('%')) {
+                    newErrors.finalAns = true;
+                } else {
+                    if (safeFloat(parseFloat(finalStr)) !== q.old) {
                         newErrors.finalAns = true;
                     }
                 }
@@ -334,6 +378,10 @@
                                     <span><span class="opacity-80 text-base block font-normal">題型二</span>求新值</span>
                                     <span class="transform group-hover:translate-x-1 transition-transform">${icons.ChevronRight}</span>
                                 </button>
+                                <button onclick="startGame('type3')" class="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-xl transition-colors shadow-lg hover:shadow-teal-500/30 text-left px-6 flex items-center justify-between group active:scale-95">
+                                    <span><span class="opacity-80 text-base block font-normal">題型三</span>求舊值</span>
+                                    <span class="transform group-hover:translate-x-1 transition-transform">${icons.ChevronRight}</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -376,16 +424,20 @@
                 `;
             } else if (state.showFeedback && Object.keys(state.errors).length > 0) {
                 let errorMsg = "有些地方填錯了，請修正！";
-                if (state.gameType === 'type2' && state.errors.f_operator) {
+                if (['type2', 'type3'].includes(state.gameType) && state.errors.f_calc_op) {
+                    errorMsg = state.gameType === 'type2' ? "請填入正確的運算符號「×」喔！" : "請填入正確的運算符號「÷」喔！";
+                } else if (['type2', 'type3'].includes(state.gameType) && state.errors.f_one) {
+                    errorMsg = "括號內的第一個數字應該填入什麼呢？（提示：是 1 喔！）";
+                } else if (['type2', 'type3'].includes(state.gameType) && state.errors.f_operator) {
                     errorMsg = "請填入正確的加減符號「+」或「-」喔！";
                 } else if (state.gameType === 'type1' && state.errors.finalAns && state.inputs.finalAns && !state.inputs.finalAns.includes('%')) {
                     errorMsg = "答錯了！是否忘記加上「%」？";
-                } else if (state.gameType === 'type2' && ((state.errors.pctVal && state.inputs.pctVal && !state.inputs.pctVal.includes('%')) || (state.errors.f_pctVal && state.inputs.f_pctVal && !state.inputs.f_pctVal.includes('%')))) {
+                } else if (['type2', 'type3'].includes(state.gameType) && ((state.errors.pctVal && state.inputs.pctVal && !state.inputs.pctVal.includes('%')) || (state.errors.f_pctVal && state.inputs.f_pctVal && !state.inputs.f_pctVal.includes('%')))) {
                     errorMsg = "答錯了！百分變化是否忘記加上「%」？";
-                } else if (state.gameType === 'type2' && state.errors.f_pctVal && state.inputs.f_pctVal && state.inputs.f_operator === '+' && parseFloat(state.inputs.f_pctVal) > 0 && q.pct < 0) {
+                } else if (['type2', 'type3'].includes(state.gameType) && state.errors.f_pctVal && state.inputs.f_pctVal && state.inputs.f_operator === '+' && parseFloat(state.inputs.f_pctVal) > 0 && q.pct < 0) {
                     errorMsg = "答錯了！數值減少時，如果前面填了「+」，百分變化記得加上負號「-」喔！";
-                } else if (state.gameType === 'type2' && state.errors.finalAns && state.inputs.finalAns && state.inputs.finalAns.includes('%')) {
-                    errorMsg = "答錯了！計算新值不需要加上「%」";
+                } else if (['type2', 'type3'].includes(state.gameType) && state.errors.finalAns && state.inputs.finalAns && state.inputs.finalAns.includes('%')) {
+                    errorMsg = state.gameType === 'type2' ? "答錯了！計算新值不需要加上「%」" : "答錯了！計算舊值不需要加上「%」";
                 }
                 
                 feedbackHtml = `
@@ -403,25 +455,32 @@
             }
 
             // 鍵盤佈局渲染
-            const keys = ['1','2','3','+','4','5','6','-','7','8','9','%','C','0','.','Del'];
+            const keys = [
+                '1','2','3','+',
+                '4','5','6','-',
+                '7','8','9','×',
+                '.','0','%','÷',
+                'C','Del'
+            ];
             const keyboardHtml = keys.map(key => {
                 let btnClass = 'bg-white border-gray-200 text-gray-800 hover:bg-blue-50 hover:border-blue-300';
                 let inner = key;
+                let colSpan = '';
                 
-                if (key === 'C') btnClass = 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100';
-                else if (key === 'Del') { btnClass = 'bg-orange-100 border-orange-200 text-orange-800 hover:bg-orange-200'; inner = icons.Delete; }
+                if (key === 'C') { btnClass = 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'; colSpan = 'col-span-2'; }
+                else if (key === 'Del') { btnClass = 'bg-orange-100 border-orange-200 text-orange-800 hover:bg-orange-200'; inner = icons.Delete; colSpan = 'col-span-2'; }
                 else if (key === '%') btnClass = 'bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200';
-                else if (key === '+' || key === '-') btnClass = 'bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-200';
+                else if (['+', '-', '×', '÷'].includes(key)) btnClass = 'bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-200';
 
                 return `
                     <button onclick="handleKeyPress('${key}')" ${state.isCorrect ? 'disabled' : ''} 
-                        class="border-2 rounded-xl text-xl sm:text-2xl font-bold active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm h-12 lg:h-auto min-h-[48px] flex items-center justify-center ${btnClass}">
+                        class="${colSpan} border-2 rounded-xl text-xl sm:text-2xl font-bold active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm h-12 lg:h-auto min-h-[48px] flex items-center justify-center ${btnClass}">
                         ${inner}
                     </button>
                 `;
             }).join('');
 
-            // 主要答題內容渲染 (分 Type 1 和 Type 2)
+            // 主要答題內容渲染 (分 Type 1, Type 2, Type 3)
             let mainContentHtml = '';
             if (state.gameType === 'type1') {
                 mainContentHtml = `
@@ -468,7 +527,7 @@
                         </div>
                     </div>
                 `;
-            } else {
+            } else if (state.gameType === 'type2') {
                 mainContentHtml = `
                     <div class="flex flex-col gap-4 flex-1 justify-center">
                         <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col gap-4">
@@ -485,10 +544,43 @@
                             </div>
                         </div>
                         <div class="bg-indigo-50 p-4 sm:p-6 rounded-xl border border-indigo-100 flex flex-col gap-4">
-                            <h3 class="font-semibold text-indigo-800 text-sm">步驟 2：代入公式「新值 ＝ 舊值 × (1 ＋ 百分變化)」</h3>
+                            <h3 class="font-semibold text-indigo-800 text-sm">步驟 2：代入公式</h3>
                             <div class="flex items-center justify-center gap-2 sm:gap-4 text-xl sm:text-2xl font-bold text-gray-700 overflow-x-auto py-4">
                                 ${renderInput('f_oldVal', 'w-16 sm:w-24')}
-                                <span>×</span><span>(</span><span>1</span>
+                                ${renderInput('f_calc_op', 'w-10 sm:w-12 text-center')}
+                                <span>(</span>
+                                ${renderInput('f_one', 'w-10 sm:w-12 text-center')}
+                                ${renderInput('f_operator', 'w-10 sm:w-12 text-center')}
+                                ${renderInput('f_pctVal', 'w-16 sm:w-24')}
+                                <span>)</span><span>=</span>
+                                ${renderInput('finalAns', 'w-20 sm:w-32')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (state.gameType === 'type3') {
+                mainContentHtml = `
+                    <div class="flex flex-col gap-4 flex-1 justify-center">
+                        <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col gap-4">
+                            <h3 class="font-semibold text-gray-600 text-sm">步驟 1：找出新值與百分變化</h3>
+                            <div class="flex flex-col sm:flex-row gap-4 sm:gap-8">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold text-gray-700">新值：</span>
+                                    ${renderInput('newVal', 'w-24 sm:w-32')}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold text-gray-700 shrink-0">百分變化：</span>
+                                    ${renderInput('pctVal', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 p-4 sm:p-6 rounded-xl border border-indigo-100 flex flex-col gap-4">
+                            <h3 class="font-semibold text-indigo-800 text-sm">步驟 2：代入公式</h3>
+                            <div class="flex items-center justify-center gap-2 sm:gap-4 text-xl sm:text-2xl font-bold text-gray-700 overflow-x-auto py-4">
+                                ${renderInput('f_newVal', 'w-16 sm:w-24')}
+                                ${renderInput('f_calc_op', 'w-10 sm:w-12 text-center')}
+                                <span>(</span>
+                                ${renderInput('f_one', 'w-10 sm:w-12 text-center')}
                                 ${renderInput('f_operator', 'w-10 sm:w-12 text-center')}
                                 ${renderInput('f_pctVal', 'w-16 sm:w-24')}
                                 <span>)</span><span>=</span>
@@ -498,6 +590,12 @@
                     </div>
                 `;
             }
+
+            // 決定提示公式的內容
+            let hintText = '';
+            if (state.gameType === 'type1') hintText = '百分變化 ＝ (新值 － 舊值) ÷ 舊值 × 100%';
+            else if (state.gameType === 'type2') hintText = '新值 ＝ 舊值 × (1 ＋ 百分變化)';
+            else if (state.gameType === 'type3') hintText = '舊值 ＝ 新值 ÷ (1 ＋ 百分變化)';
 
             // 組合完整介面
             app.innerHTML = `
@@ -511,7 +609,7 @@
                                 </button>
                                 <div class="font-bold text-lg sm:text-2xl flex items-center gap-2">
                                     <span class="bg-white/20 px-3 py-1 rounded-lg">第 ${state.currentIdx + 1} / 10 題</span>
-                                    <span class="hidden sm:inline ml-2 text-blue-200">(${state.gameType === 'type1' ? '求百分變化' : '求新值'})</span>
+                                    <span class="hidden sm:inline ml-2 text-blue-200">(${state.gameType === 'type1' ? '求百分變化' : state.gameType === 'type2' ? '求新值' : '求舊值'})</span>
                                 </div>
                             </div>
                             <div class="font-bold text-lg sm:text-2xl flex items-center gap-2">
@@ -528,6 +626,14 @@
                                         ${q.text}
                                     </p>
                                 </div>
+
+                                <!-- 提示公式區塊 -->
+                                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-xl shrink-0 shadow-sm">
+                                    <p class="text-base sm:text-lg text-yellow-800 font-bold tracking-wide">
+                                        💡 提示公式：${hintText}
+                                    </p>
+                                </div>
+
                                 ${mainContentHtml}
                             </div>
 
