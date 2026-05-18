@@ -22,13 +22,14 @@
             background: #94a3b8;
         }
         
-        /* 避免 iOS Safari 點擊時出現半透明遮罩 */
+        /* 避免 iOS Safari 點擊時出現半透明遮罩，並防止雙擊放大 */
         * {
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation; /* 停用雙擊放大，解決連續點擊干擾作答的問題 */
         }
     </style>
 </head>
-<body class="bg-gray-100 font-sans overflow-hidden text-gray-800">
+<body class="bg-gray-100 font-sans overflow-hidden text-gray-800 touch-manipulation">
     <div id="root" class="w-full h-full"></div>
 
     <script>
