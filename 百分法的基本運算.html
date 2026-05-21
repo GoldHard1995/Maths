@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <!-- 針對平板優化：禁止縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>百分法運算特訓</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 平板優化：防止雙擊放大與選取文字，移除點擊高光 */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #f0fdf4; /* 淺綠色背景，對眼睛柔和 */
+        }
+
+        /* 答錯時的震動動畫 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        /* 答對時的彈出動畫 */
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* 按鈕點擊特效 */
+        .btn-active:active {
+            transform: scale(0.95);
+            background-color: #e5e7eb;
+        }
+        .btn-submit:active {
+            transform: scale(0.95);
+            background-color: #15803d;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col text-gray-800">
+
+    <!-- 遊戲主要容器 (由 JS 動態渲染) -->
+    <div id="app" class="flex-1 w-full h-full flex flex-col"></div>
+
+    <script>
+        // --- 遊戲狀態管理 (State) ---
+        const state = {
+            view: 'menu', // 'menu', 'playing', 'result'
+            mode: 1, // 1, 2, 3, 4, 5(混合)
+            totalQuestions: 10,
+            questions: [],
+            currentIndex: 0,
+            userInput: '',
+            score: 0,
+            feedback: 'none', // 'none', 'correct', 'incorrect'
+            hasAttemptedCurrent: false, // 紀錄當前題目是否已經答錯過（影響計分）
+            showHint: false, // 紀錄是否點擊了提示鍵
+            hintTimer: null,  // 手動提示的計時器
+            feedbackTimer: null // 答錯提示的計時器
+        };
+
+        // --- 清除所有計時器 (防呆機制) ---
+        function clearAllTimers() {
+            if (state.hintTimer) {
+                clearTimeout(state.hintTimer);
+                state.hintTimer = null;
+            }
+            if (state.feedbackTimer) {
+                clearTimeout(state.feedbackTimer);
+                state.feedbackTimer = null;
+            }
+        }
+
+        // --- 題目生成邏輯 ---
+        function generateQuestion(type) {
+            let q = { type: type, prefix: '', content: '', ans: 0, hint: '' };
+            
+            if (type === 1) {
+                // 題型 1: A 的 B%
+                const b_options = [10, 20, 25, 30, 40, 50, 60, 75, 80, 90];
+                let b = b_options[Math.floor(Math.random() * b_options.length)];
+                let a = Math.floor(Math.random() * 20 + 1) * 10; // 10, 20... 200
+                let ans = (a * b) / 100;
+                
+                // 確保答案是整數，若出現小數則重新生成數字
+                while (!Number.isInteger(ans)) {
+                    a = Math.floor(Math.random() * 20 + 1) * 10;
+                    b = b_options[Math.floor(Math.random() * b_options.length)];
+                    ans = (a * b) / 100;
+                }
+                
+                q.prefix = '計算：';
+                q.content = `<span class="text-blue-600">${a} 的 ${b}%</span>`;
+                q.ans = ans;
+                q.hint = `提示：數值 × 百分率`;
+            } 
+            else if (type === 2) {
+                // 題型 2: A 佔 B 的百分之幾
+                const b_options = [50, 100, 200, 250, 400, 500];
+                let b = b_options[Math.floor(Math.random() * b_options.length)];
+                let ans = Math.floor(Math.random() * 90 + 5); // 答案為 5% ~ 94%
+                let a = (b * ans) / 100;
+                
+                // 確保數值是整數，讓題目乾淨
+                while (!Number.isInteger(a)) {
+                    ans = Math.floor(Math.random() * 90 + 5);
+                    a = (b * ans) / 100;
+                }
+                
+                q.prefix = '計算：';
+                q.content = `<span class="text-orange-600">${a} 佔 ${b} 的百分之幾？</span>`;
+                q.ans = ans;
+                q.hint = `提示：(部份 ÷ 全部) × 100`;
+            } 
+            else if (type === 3) {
+                // 題型 3: n 的 B% 是 C
+                const b_options = [10, 20, 25, 30, 40, 50, 60, 75, 80, 90];
+                let b = b_options[Math.floor(Math.random() * b_options.length)];
+                let ans = Math.floor(Math.random() * 20 + 2) * 10; // 答案為 20, 30... 210
+                let c = (ans * b) / 100;
+
+                while (!Number.isInteger(c)) {
+                    ans = Math.floor(Math.random() * 20 + 2) * 10;
+                    c = (ans * b) / 100;
+                }
+
+                q.prefix = '求未知量 n：';
+                q.content = `<span class="text-purple-600">n 的 ${b}% 是 ${c}</span>`;
+                q.ans = ans;
+                q.hint = `提示：全部 = 部份 ÷ 百分率`;
+            }
+            else if (type === 4) {
+                // 題型 4: A 增加/減少 B%
+                const b_options = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80];
+                let isIncrease = Math.random() > 0.5;
+                let b = b_options[Math.floor(Math.random() * b_options.length)];
+                let a = Math.floor(Math.random() * 20 + 1) * 10; // 10, 20... 200
+                
+                let ans = isIncrease ? a * (1 + b / 100) : a * (1 - b / 100);
+
+                // 確保答案是整數
+                while (!Number.isInteger(ans)) {
+                    a = Math.floor(Math.random() * 20 + 1) * 10;
+                    b = b_options[Math.floor(Math.random() * b_options.length)];
+                    ans = isIncrease ? a * (1 + b / 100) : a * (1 - b / 100);
+                }
+
+                q.prefix = '求新值：';
+                q.content = `<span class="text-teal-600">${a} ${isIncrease ? '增加' : '減少'} ${b}%</span>`;
+                q.ans = ans;
+                q.hint = `提示：原值 × (1 ${isIncrease ? '+' : '-'} 百分率)`;
+            }
+            return q;
+        }
+
+        // --- 遊戲初始化 ---
+        function startGame(mode) {
+            clearAllTimers();
+            state.mode = mode;
+            state.totalQuestions = (mode === 5) ? 20 : 10; // 綜合模式為 20 題
+            state.questions = [];
+            state.currentIndex = 0;
+            state.score = 0;
+            state.userInput = '';
+            state.feedback = 'none';
+            state.hasAttemptedCurrent = false;
+            state.showHint = false;
+
+            // 根據模式生成題目
+            for (let i = 0; i < state.totalQuestions; i++) {
+                let typeToGen = mode;
+                if (mode === 5) {
+                    // 混合模式，平均分配 1, 2, 3, 4 題型 (各 5 題)
+                    typeToGen = Math.floor(i / 5) + 1;
+                }
+                state.questions.push(generateQuestion(typeToGen));
+            }
+            
+            // 打亂混合模式的題目順序
+            if (mode === 5) {
+                state.questions.sort(() => Math.random() - 0.5);
+            }
+
+            state.view = 'playing';
+            render();
+        }
+
+        // --- 處理鍵盤輸入 ---
+        function handleKey(key) {
+            if (state.feedback === 'correct') return; // 答對動畫播放中鎖定輸入
+            
+            // 清除之前的錯誤提示狀態與計時器
+            if (state.feedback === 'incorrect') {
+                clearAllTimers();
+                state.feedback = 'none';
+                state.userInput = ''; 
+            }
+
+            if (key === 'C') {
+                state.userInput = '';
+            } else if (key === 'Del') {
+                state.userInput = state.userInput.slice(0, -1);
+            } else {
+                // 限制長度防呆
+                if (state.userInput.length < 8) {
+                    state.userInput += key;
+                }
+            }
+            render();
+        }
+
+        // --- 解析與驗證答案 ---
+        function parseInput(inputStr) {
+            try {
+                // 移除 % 以便進行純數值解析
+                let str = inputStr.replace('%', '');
+                
+                // 處理分數輸入 (例如 1/2)
+                if (str.includes('/')) {
+                    const parts = str.split('/');
+                    if (parts.length === 2 && parseFloat(parts[1]) !== 0) {
+                        return parseFloat(parts[0]) / parseFloat(parts[1]);
+                    }
+                }
+                return parseFloat(str);
+            } catch (e) {
+                return NaN;
+            }
+        }
+
+        function submitAnswer() {
+            if (!state.userInput) return;
+            if (state.feedback === 'correct') return;
+
+            clearAllTimers(); // 清理任何作用中的提示計時器
+
+            const currentQ = state.questions[state.currentIndex];
+            const userAnswerStr = state.userInput;
+            const userAnswerNum = parseInput(userAnswerStr);
+            
+            let isCorrect = false;
+            
+            // 處理浮點數誤差，精確到小數點後三位比對
+            const isValueCorrect = !isNaN(userAnswerNum) && Math.abs(userAnswerNum - currentQ.ans) < 0.001;
+
+            // 題型二必須親自輸入 % 符號，題型一、三、四則不需要 (防呆)
+            if (currentQ.type === 2) {
+                isCorrect = isValueCorrect && userAnswerStr.includes('%');
+            } else {
+                isCorrect = isValueCorrect && !userAnswerStr.includes('%');
+            }
+
+            if (isCorrect) {
+                state.feedback = 'correct';
+                state.showHint = false;
+                if (!state.hasAttemptedCurrent) {
+                    state.score += 10; // 每一題 10 分
+                }
+                render();
+                
+                // 1.5秒後進入下一題
+                setTimeout(() => {
+                    if (state.currentIndex < state.totalQuestions - 1) {
+                        state.currentIndex++;
+                        state.userInput = '';
+                        state.feedback = 'none';
+                        state.hasAttemptedCurrent = false;
+                        state.showHint = false;
+                        render();
+                    } else {
+                        state.view = 'result';
+                        render();
+                    }
+                }, 1500);
+            } else {
+                state.feedback = 'incorrect';
+                state.hasAttemptedCurrent = true;
+                state.showHint = false; // 答錯時收合手動提示，由答錯提示接管
+                render();
+
+                // 答錯提示改為 5 秒後自動隱藏 (5000 毫秒)
+                state.feedbackTimer = setTimeout(() => {
+                    if (state.feedback === 'incorrect') {
+                        state.feedback = 'none';
+                        render();
+                    }
+                }, 5000);
+            }
+        }
+
+        function returnToMenu() {
+            clearAllTimers();
+            state.view = 'menu';
+            render();
+        }
+
+        // --- 顯示提示（5秒後自動消失） ---
+        function showHintBtn() {
+            if (state.feedback === 'correct' || state.feedback === 'incorrect') return; // 特殊狀態下不重複觸發
+            
+            state.showHint = true;
+            render();
+
+            if (state.hintTimer) clearTimeout(state.hintTimer);
+            
+            // 手動提示改為 5 秒後自動隱藏 (5000 毫秒)
+            state.hintTimer = setTimeout(() => {
+                state.showHint = false;
+                render();
+            }, 5000);
+        }
+
+        // --- UI 渲染邏輯 ---
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.view === 'menu') {
+                app.innerHTML = `
+                    <div class="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
+                        <div class="text-center">
+                            <h1 class="text-4xl md:text-5xl font-bold text-green-700 mb-4">✨ 百分法特訓營 ✨</h1>
+                            <p class="text-xl text-gray-600">請選擇你要挑戰的題型</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
+                            <button onclick="startGame(1)" class="p-6 bg-white border-4 border-blue-200 rounded-2xl shadow-sm active:scale-95 transition-transform flex flex-col items-center">
+                                <span class="text-2xl font-bold text-blue-700 mb-2">題型一 (10題)</span>
+                                <span class="text-gray-500">計算數值的百分率<br>(例：84 的 60%)</span>
+                            </button>
+                            <button onclick="startGame(2)" class="p-6 bg-white border-4 border-orange-200 rounded-2xl shadow-sm active:scale-95 transition-transform flex flex-col items-center">
+                                <span class="text-2xl font-bold text-orange-700 mb-2">題型二 (10題)</span>
+                                <span class="text-gray-500">計算佔百分之幾<br>(例：50 佔 200 的百分之幾)</span>
+                            </button>
+                            <button onclick="startGame(3)" class="p-6 bg-white border-4 border-purple-200 rounded-2xl shadow-sm active:scale-95 transition-transform flex flex-col items-center">
+                                <span class="text-2xl font-bold text-purple-700 mb-2">題型三 (10題)</span>
+                                <span class="text-gray-500">求未知量<br>(例：n 的 60% 是 1500)</span>
+                            </button>
+                            <button onclick="startGame(4)" class="p-6 bg-white border-4 border-teal-200 rounded-2xl shadow-sm active:scale-95 transition-transform flex flex-col items-center">
+                                <span class="text-2xl font-bold text-teal-700 mb-2">題型四 (10題)</span>
+                                <span class="text-gray-500">求增加/減少後的新值<br>(例：60 增加 20%)</span>
+                            </button>
+                            <button onclick="startGame(5)" class="md:col-span-2 p-6 bg-gradient-to-br from-green-400 to-emerald-600 text-white rounded-2xl shadow-md active:scale-95 transition-transform flex flex-col items-center border-4 border-transparent hover:border-green-300">
+                                <span class="text-2xl font-bold mb-2">🏆 綜合挑戰 (20題)</span>
+                                <span class="text-green-50">混合四種題型，考驗你的實力！</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (state.view === 'playing') {
+                const q = state.questions[state.currentIndex];
+                const isError = state.feedback === 'incorrect';
+                const isSuccess = state.feedback === 'correct';
+
+                // 鍵盤按鈕佈局 (4x4 排版容納 % 符號)
+                const keys = [
+                    '7', '8', '9', '/',
+                    '4', '5', '6', '%',
+                    '1', '2', '3', '-',
+                    'C', '0', '.', 'Del'
+                ];
+
+                app.innerHTML = `
+                    <!-- 頂部資訊列 -->
+                    <div class="h-16 bg-white shadow-sm flex items-center justify-between px-4 md:px-8">
+                        <button onclick="returnToMenu()" class="flex items-center text-gray-600 font-bold active:scale-95 transition-transform px-4 py-2 rounded-lg bg-gray-100">
+                            <svg class="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            返回
+                        </button>
+                        <div class="text-xl font-bold text-gray-700">第 ${state.currentIndex + 1} / ${state.totalQuestions} 題</div>
+                        <div class="text-xl font-bold text-green-600">分數: ${state.score}</div>
+                    </div>
+
+                    <!-- 主要遊戲區 (左題目、右鍵盤) -->
+                    <div class="flex-1 flex flex-col md:flex-row p-4 md:p-8 gap-6 md:gap-12 max-w-6xl mx-auto w-full overflow-y-auto md:overflow-hidden">
+                        
+                        <!-- 左側：題目與顯示 (優化為一行表示完整問題) -->
+                        <div class="flex-1 flex flex-col justify-center bg-white p-6 md:p-8 rounded-3xl shadow-sm border-2 border-gray-100">
+                            
+                            <!-- 題目行：前綴 + 題目內容 + 提示鍵 完美置於同一行中 -->
+                            <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
+                                <h2 class="text-2xl md:text-3.5xl lg:text-4xl font-bold text-gray-800 flex flex-wrap items-center gap-x-2">
+                                    <span class="text-gray-500">${q.prefix}</span>
+                                    <span>${q.content}</span>
+                                </h2>
+                                <button onclick="showHintBtn()" class="shrink-0 flex items-center px-4 py-2 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-xl font-bold active:scale-95 transition-transform shadow-sm hover:bg-yellow-100">
+                                    💡 提示
+                                </button>
+                            </div>
+                            
+                            <!-- 作答輸入框 -->
+                            <div class="flex items-center space-x-4 mb-4">
+                                <span class="text-2xl md:text-3xl font-bold text-gray-500">答：</span>
+                                <div class="flex-1 h-20 bg-gray-50 border-b-4 border-gray-400 text-4xl md:text-5xl font-mono flex items-center px-4 ${isError ? 'border-red-500 text-red-600 animate-shake' : (isSuccess ? 'border-green-500 text-green-600' : 'text-gray-800')}">
+                                    ${state.userInput}
+                                    <span class="animate-pulse ml-1 ${isSuccess ? 'hidden' : ''}">|</span>
+                                </div>
+                            </div>
+
+                            <!-- 回饋提示區塊 (設定了5秒自動隱藏) -->
+                            <div class="h-32 mt-4 flex flex-col justify-center">
+                                ${isSuccess ? `
+                                    <div class="animate-pop flex items-center text-green-600 bg-green-50 p-4 rounded-xl border border-green-200">
+                                        <svg class="w-10 h-10 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <span class="text-2xl font-bold">太棒了！答對了！</span>
+                                    </div>
+                                ` : ''}
+                                
+                                ${isError ? `
+                                    <div class="animate-pop flex flex-col text-red-600 bg-red-50 p-4 rounded-xl border border-red-200">
+                                        <div class="flex items-center mb-2">
+                                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span class="text-xl font-bold">答錯囉，再試一次！</span>
+                                        </div>
+                                        <div class="text-lg text-gray-700 bg-white p-3 rounded-lg font-bold border border-gray-200">
+                                            ${q.hint}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                ${(!isError && !isSuccess && state.showHint) ? `
+                                    <div class="animate-pop flex flex-col text-yellow-700 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                                        <div class="flex items-center mb-2">
+                                            <span class="text-xl font-bold">💡 提示小幫手</span>
+                                        </div>
+                                        <div class="text-lg text-gray-700 bg-white p-3 rounded-lg font-bold border border-gray-200">
+                                            ${q.hint}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- 右側：自訂數字鍵盤 -->
+                        <div class="w-full md:w-[400px] flex flex-col justify-center">
+                            <div class="bg-white p-4 md:p-6 rounded-3xl shadow-sm border-2 border-gray-100">
+                                <div class="grid grid-cols-4 gap-3 md:gap-4 mb-4">
+                                    ${keys.map(k => `
+                                        <button onclick="handleKey('${k}')" class="btn-active h-16 md:h-20 bg-gray-100 rounded-2xl text-2xl md:text-3xl font-bold text-gray-700 border-b-4 border-gray-300 flex items-center justify-center">
+                                            ${k}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                <button onclick="submitAnswer()" class="btn-submit w-full h-20 bg-green-600 text-white rounded-2xl text-3xl font-bold shadow-md border-b-4 border-green-800 flex items-center justify-center">
+                                    <svg class="w-8 h-8 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    送 出 答 案
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (state.view === 'result') {
+                const maxScore = state.totalQuestions * 10;
+                app.innerHTML = `
+                    <div class="flex-1 flex flex-col items-center justify-center p-6">
+                        <div class="bg-white p-12 rounded-3xl shadow-lg text-center max-w-lg w-full border-4 border-green-100">
+                            <h2 class="text-4xl font-bold text-gray-800 mb-6">測驗完成！</h2>
+                            
+                            <div class="w-32 h-32 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-6">
+                                <span class="text-6xl font-black text-green-600">${state.score}</span>
+                            </div>
+                            
+                            <p class="text-xl text-gray-600 mb-8">
+                                ${state.score === maxScore ? '太完美了！你是百分法大師！🏆' : 
+                                 state.score >= maxScore * 0.8 ? '表現得非常好！繼續保持！🌟' : 
+                                 '不錯喔！再多加練習會更厲害！💪'}
+                            </p>
+                            
+                            <button onclick="returnToMenu()" class="w-full py-4 bg-blue-600 text-white rounded-xl text-2xl font-bold active:scale-95 transition-transform shadow-md border-b-4 border-blue-800">
+                                回到主選單
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // --- 啟動遊戲 ---
+        render();
+
+    </script>
+</body>
+</html>
