@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>盈利與虧蝕學習遊戲</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 隱藏捲軸但保留滾動功能以保持版面乾淨 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* 避免 iOS Safari 點擊時出現半透明遮罩，並防止雙擊放大 */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans overflow-hidden text-gray-800 touch-manipulation">
+    <div id="root" class="w-full h-full"></div>
+
+    <script>
+        // --- 題目模板資料 (根據圖片 Q5-Q12, Q15-Q16 設計) ---
+        // 為每種物品設定符合香港市場真實合理的成本範圍 ( bases )
+        const ITEM_CONFIG = {
+            '手提電腦': [3000, 4000, 5000, 6000, 8000, 10000, 12000, 15000],
+            '暖氣機': [400, 500, 600, 800, 1000, 1200, 1500],
+            '繪圖計算機': [400, 500, 600, 800, 1000, 1200],
+            '風筒': [150, 200, 250, 300, 400, 500, 600, 800],
+            '攪拌機': [150, 200, 250, 300, 400, 500, 600, 800],
+            '背囊': [150, 200, 250, 300, 400, 500, 600, 800],
+            '球鞋': [200, 250, 300, 400, 500, 600, 800, 1000],
+            '耳機': [150, 200, 250, 300, 400, 500, 600, 800, 1200],
+            '襯衫': [100, 120, 150, 200, 250, 300, 400, 500],
+            '玩具': [50, 60, 80, 100, 120, 150, 200, 250],
+            '刀': [50, 60, 80, 100, 120, 150, 200],
+            'LED燈': [50, 60, 80, 100, 120, 150, 200]
+        };
+
+        const ITEMS = Object.keys(ITEM_CONFIG);
+        const NAMES = ['莉莉', '俊林', '潤基', '雨恩', '小明', '小華', '家豪', '美玲'];
+        
+        // 題型 1 模板
+        const T1_TEMPLATES = [
+            // 給 成本、售價 (對應 Q7, Q8)
+            { text: "某{item}的成本為 ${c}。若它以 ${s} 售出，求{pl_text}百分數。", type: 1 },
+            // 給 成本、盈利/虧蝕 (對應 Q5, Q6)
+            { text: "某{item}的成本為 ${c}。若把它售出後{pl_action} ${p}，求{pl_text}百分數。", type: 2 },
+            // 給 售價、盈利/虧蝕 (對應 Q9, Q10)
+            { text: "{name}以 ${s} 售出{unit}{item}並{pl_action} ${p}。求該{item}的成本及{pl_text}百分數。", type: 3 }
+        ];
+
+        // 題型 2 模板 (對應 Q11, Q12)
+        const T2_TEMPLATES = [
+            { text: "某{item}的成本為 ${c}。若{pl_text}百分數為 {pct}%，該{item}的售價是多少？" }
+        ];
+
+        // 題型 3 模板 (對應 Q15, Q16)
+        const T3_TEMPLATES = [
+            { text: "{name}以 ${s} 售出他的{item}，{pl_text}百分數為 {pct}%。求該{item}的成本及{pl_text}。" }
+        ];
+
+        const getUnit = (item) => {
+            if (['風筒', '攪拌機', '暖氣機', '繪圖計算機', '手提電腦'].includes(item)) return '一部';
+            if (['襯衫'].includes(item)) return '一件';
+            if (['刀'].includes(item)) return '一把';
+            if (['LED燈'].includes(item)) return '一盞';
+            if (['球鞋'].includes(item)) return '一雙';
+            return '一個';
+        };
+
+        const generateQuestionData = (gameType) => {
+            const pcts = [5, 8, 10, 15, 20, 25, 28, 30, 36, 40, 44, 50, 60, 75];
+            
+            while (true) {
+                let item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+                let bases = ITEM_CONFIG[item]; // 根據選中的物品取得專屬成本範圍
+                let c = bases[Math.floor(Math.random() * bases.length)];
+                
+                let isProfit = Math.random() > 0.5;
+                let pct = pcts[Math.floor(Math.random() * pcts.length)];
+                
+                let p = c * (pct / 100);
+                if (!Number.isInteger(p)) continue; // 強制整數防呆
+                
+                let s = isProfit ? c + p : c - p;
+                if (s <= 0) continue;
+
+                let name = NAMES[Math.floor(Math.random() * NAMES.length)];
+                let unit = getUnit(item);
+                let pl_text = isProfit ? "盈利" : "虧蝕";
+                let pl_action = isProfit ? "獲利" : "虧蝕";
+
+                let text = "";
+                if (gameType === 'type1') {
+                    let tpl = T1_TEMPLATES[Math.floor(Math.random() * T1_TEMPLATES.length)];
+                    text = tpl.text.replaceAll('{item}', item).replaceAll('{c}', c).replaceAll('{s}', s)
+                                   .replaceAll('{p}', p).replaceAll('{pl_text}', pl_text)
+                                   .replaceAll('{pl_action}', pl_action).replaceAll('{name}', name)
+                                   .replaceAll('{unit}', unit);
+                } else if (gameType === 'type2') {
+                    let tpl = T2_TEMPLATES[0];
+                    text = tpl.text.replaceAll('{item}', item).replaceAll('{c}', c)
+                                   .replaceAll('{pct}', pct).replaceAll('{pl_text}', pl_text);
+                } else {
+                    let tpl = T3_TEMPLATES[0];
+                    text = tpl.text.replaceAll('{item}', item).replaceAll('{s}', s)
+                                   .replaceAll('{pct}', pct).replaceAll('{pl_text}', pl_text)
+                                   .replaceAll('{name}', name);
+                }
+
+                return { text, c, s, p, pct, isProfit, qType: gameType, pl_text };
+            }
+        };
+
+        const generateQuiz = (gameType) => {
+            if (gameType === 'mixed') {
+                const q1 = Array.from({length: 5}, () => generateQuestionData('type1'));
+                const q2 = Array.from({length: 5}, () => generateQuestionData('type2'));
+                const q3 = Array.from({length: 5}, () => generateQuestionData('type3'));
+                return [...q1, ...q2, ...q3].sort(() => 0.5 - Math.random());
+            } else {
+                return Array.from({length: 10}, () => generateQuestionData(gameType));
+            }
+        };
+
+        // --- 狀態管理 ---
+        const safeFloat = (num) => parseFloat(num.toPrecision(12));
+
+        let state = {
+            gameState: 'start', 
+            gameType: 'type1', 
+            questions: [],
+            currentIdx: 0,
+            score: 0,
+            inputs: {
+                costVal: '', sellVal: '', plVal: '',
+                f_num1: '', f_num_op: '', f_num2: '', f_costVal: '', finalAns: '',
+                pctVal: '', f_calc_op: '', f_one: '', f_operator: '', f_pctVal: '',
+                f_costVal2: '', f_sellVal: ''
+            },
+            activeInput: 'costVal',
+            errors: {},
+            showFeedback: false,
+            isCorrect: false,
+            hasErroredCurrentQuestion: false, 
+            showHint: false,
+            hintTimer: null,
+            classStr: '',
+            studentId: ''
+        };
+
+        // --- SVG 圖示庫 ---
+        const icons = {
+            CheckCircle2: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+            XCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+            ChevronRight: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
+            RotateCcw: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>`,
+            ArrowLeft: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`,
+            Delete: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>`
+        };
+
+        const startGame = (type) => {
+            state.gameType = type;
+            state.questions = generateQuiz(type);
+            state.currentIdx = 0;
+            state.score = 0;
+            resetTurn();
+            state.gameState = 'playing';
+            render();
+        };
+
+        const resetTurn = () => {
+            state.inputs = {
+                costVal: '', sellVal: '', plVal: '',
+                f_num1: '', f_num_op: '', f_num2: '', f_costVal: '', finalAns: '',
+                pctVal: '', f_calc_op: '', f_one: '', f_operator: '', f_pctVal: '',
+                f_costVal2: '', f_sellVal: ''
+            };
+            
+            let currentType = state.gameType === 'mixed' && state.questions.length > 0 ? state.questions[state.currentIdx].qType : state.gameType;
+            state.activeInput = currentType === 'type3' ? 'sellVal' : 'costVal';
+            
+            state.errors = {};
+            state.showFeedback = false;
+            state.isCorrect = false;
+            state.hasErroredCurrentQuestion = false;
+            
+            if (state.hintTimer) clearTimeout(state.hintTimer);
+            state.showHint = false;
+        };
+
+        window.setGameState = (newState) => { state.gameState = newState; render(); };
+        window.setActiveInput = (name) => { if (!state.isCorrect) { state.activeInput = name; render(); } };
+
+        window.showHintTemporarily = () => {
+            if (state.hintTimer) clearTimeout(state.hintTimer);
+            state.showHint = true;
+            render();
+            state.hintTimer = setTimeout(() => { state.showHint = false; render(); }, 5000);
+        };
+
+        window.handleKeyPress = (key) => {
+            if (state.isCorrect) return;
+
+            let currentVal = state.inputs[state.activeInput] || '';
+
+            if (key === 'C') {
+                state.inputs[state.activeInput] = '';
+            } else if (key === 'Del') {
+                state.inputs[state.activeInput] = currentVal.slice(0, -1);
+            } else if (state.activeInput === 'f_operator' || state.activeInput === 'f_num_op') {
+                if (key === '+' || key === '-') state.inputs[state.activeInput] = key;
+            } else if (state.activeInput === 'f_calc_op') {
+                if (key === '×' || key === '÷') state.inputs[state.activeInput] = key;
+            } else if (state.activeInput === 'f_one') {
+                if (key === '1') state.inputs[state.activeInput] = key;
+            } else {
+                if (key === '.' && currentVal.includes('.')) return;
+                if (key === '-' && currentVal.length > 0) return;
+                if (['+', '×', '÷'].includes(key)) return;
+                state.inputs[state.activeInput] = currentVal + key;
+            }
+            
+            if (state.showFeedback) state.errors[state.activeInput] = false;
+            render();
+        };
+
+        window.handleSubmit = () => {
+            const q = state.questions[state.currentIdx];
+            let newErrors = {};
+            const currentType = state.gameType === 'mixed' ? q.qType : state.gameType;
+
+            const checkVal = (inputKey, exactValue) => {
+                if (!state.inputs[inputKey] || state.inputs[inputKey].trim() === '') newErrors[inputKey] = true;
+                else if (safeFloat(parseFloat(state.inputs[inputKey])) !== exactValue) newErrors[inputKey] = true;
+            };
+
+            const checkPctStr = (key, targetPct) => {
+                let pctStr = (state.inputs[key] || '').trim();
+                if (pctStr === '' || !pctStr.endsWith('%')) newErrors[key] = true;
+                else {
+                    let v = safeFloat(parseFloat(pctStr.slice(0, -1)));
+                    if (v !== targetPct) newErrors[key] = true;
+                }
+            };
+
+            const checkFormulaPct = () => {
+                let op = (state.inputs.f_operator || '').trim();
+                let fPctStr = (state.inputs.f_pctVal || '').trim();
+
+                if (op !== '+' && op !== '-') newErrors.f_operator = true;
+                if (!fPctStr || !fPctStr.endsWith('%')) newErrors.f_pctVal = true;
+                else {
+                    let pctVal = safeFloat(parseFloat(fPctStr.slice(0, -1)));
+                    // 若是盈利，op應為+，且數字為正
+                    if (q.isProfit) {
+                        if (op !== '+') newErrors.f_operator = true;
+                        if (pctVal !== q.pct) newErrors.f_pctVal = true;
+                    } else {
+                        // 虧蝕時：若op為+，則pct應帶負號；若op為-，則pct為正
+                        if (op === '+') {
+                            if (pctVal !== -q.pct) newErrors.f_pctVal = true;
+                        } else if (op === '-') {
+                            if (pctVal !== q.pct) newErrors.f_pctVal = true;
+                        }
+                    }
+                }
+            };
+
+            if (currentType === 'type1') {
+                checkVal('costVal', q.c);
+                checkVal('sellVal', q.s);
+                checkVal('plVal', q.p);
+                
+                // 檢查分子是否填寫正確的售價與成本位置
+                if (q.isProfit) {
+                    checkVal('f_num1', q.s);
+                    checkVal('f_num2', q.c);
+                } else {
+                    checkVal('f_num1', q.c);
+                    checkVal('f_num2', q.s);
+                }
+                
+                if ((state.inputs.f_num_op || '').trim() !== '-') newErrors.f_num_op = true;
+                
+                checkVal('f_costVal', q.c);
+                checkPctStr('finalAns', q.pct);
+            } else if (currentType === 'type2') {
+                checkVal('costVal', q.c);
+                checkPctStr('pctVal', q.pct);
+                checkVal('f_costVal2', q.c);
+
+                if ((state.inputs.f_calc_op || '').trim() !== '×') newErrors.f_calc_op = true;
+                if ((state.inputs.f_one || '').trim() !== '1') newErrors.f_one = true;
+                
+                checkFormulaPct();
+                
+                let finalStr = (state.inputs.finalAns || '').trim();
+                if (finalStr === '' || finalStr.endsWith('%')) newErrors.finalAns = true;
+                else if (safeFloat(parseFloat(finalStr)) !== q.s) newErrors.finalAns = true;
+            } else if (currentType === 'type3') {
+                checkVal('sellVal', q.s);
+                checkPctStr('pctVal', q.pct);
+                checkVal('f_sellVal', q.s);
+
+                if ((state.inputs.f_calc_op || '').trim() !== '÷') newErrors.f_calc_op = true;
+                if ((state.inputs.f_one || '').trim() !== '1') newErrors.f_one = true;
+                
+                checkFormulaPct();
+                
+                let finalStr = (state.inputs.finalAns || '').trim();
+                if (finalStr === '' || finalStr.endsWith('%')) newErrors.finalAns = true;
+                else if (safeFloat(parseFloat(finalStr)) !== q.c) newErrors.finalAns = true;
+            }
+
+            state.errors = newErrors;
+            state.showFeedback = true;
+
+            if (Object.keys(newErrors).length === 0) {
+                state.isCorrect = true;
+                if (!state.hasErroredCurrentQuestion) state.score += 10;
+            } else {
+                state.hasErroredCurrentQuestion = true;
+            }
+            render();
+        };
+
+        window.handleNext = () => {
+            if (state.currentIdx < state.questions.length - 1) {
+                state.currentIdx += 1;
+                resetTurn();
+                render();
+            } else {
+                state.gameState = 'input_info'; 
+                render();
+            }
+        };
+
+        window.submitInfo = () => {
+            const classInput = document.getElementById('classInput').value.trim();
+            const studentInput = document.getElementById('studentInput').value.trim();
+
+            if (!classInput || !studentInput) {
+                document.getElementById('infoError').classList.remove('hidden');
+                return;
+            }
+
+            state.classStr = classInput.toUpperCase();
+            state.studentId = studentInput;
+            state.gameState = 'end';
+            render();
+        };
+
+        // --- 渲染 UI 函式 ---
+        const renderInput = (name, className = "w-20") => {
+            const isActive = state.activeInput === name;
+            const value = state.inputs[name] || '';
+            let stateClass = "border-gray-300 bg-white text-black";
+            
+            if (state.showFeedback) {
+                if (state.errors[name]) stateClass = "border-red-500 bg-red-50 text-red-600";
+                else stateClass = "border-green-500 bg-green-50 text-green-700";
+            } else if (isActive) {
+                stateClass = "border-blue-500 bg-blue-50 ring-4 ring-blue-200 text-blue-800";
+            }
+
+            const cursorHtml = (isActive && !state.isCorrect) ? `<span class="animate-pulse ml-0.5 text-blue-500">|</span>` : '';
+
+            return `
+                <div onclick="setActiveInput('${name}')" 
+                     class="h-12 flex items-center justify-center border-2 rounded-xl cursor-pointer text-lg sm:text-xl font-bold shadow-sm transition-all select-none ${className} ${stateClass}">
+                    ${value}${cursorHtml}
+                </div>
+            `;
+        };
+
+        const render = () => {
+            const app = document.getElementById('root');
+            
+            if (state.gameState === 'start') {
+                app.innerHTML = `
+                    <div class="min-h-[100dvh] bg-blue-50 flex items-center justify-center p-4">
+                        <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl text-center space-y-6">
+                            <div class="text-6xl mb-4">💰</div>
+                            <h1 class="text-3xl font-extrabold text-blue-600 tracking-tight">盈利與虧蝕挑戰</h1>
+                            <p class="text-lg text-gray-600">選擇你想挑戰的題型，一步步練習如何運用公式計算！</p>
+                            
+                            <div class="flex flex-col gap-3 mt-6">
+                                <button onclick="startGame('type1')" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xl transition-colors shadow-lg hover:shadow-blue-500/30 text-left px-6 flex items-center justify-between group active:scale-95">
+                                    <span><span class="opacity-80 text-base block font-normal">題型一 (10題)</span>求百分數</span>
+                                    <span class="transform group-hover:translate-x-1 transition-transform">${icons.ChevronRight}</span>
+                                </button>
+                                <button onclick="startGame('type2')" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xl transition-colors shadow-lg hover:shadow-indigo-500/30 text-left px-6 flex items-center justify-between group active:scale-95">
+                                    <span><span class="opacity-80 text-base block font-normal">題型二 (10題)</span>求售價</span>
+                                    <span class="transform group-hover:translate-x-1 transition-transform">${icons.ChevronRight}</span>
+                                </button>
+                                <button onclick="startGame('type3')" class="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-xl transition-colors shadow-lg hover:shadow-teal-500/30 text-left px-6 flex items-center justify-between group active:scale-95">
+                                    <span><span class="opacity-80 text-base block font-normal">題型三 (10題)</span>求成本</span>
+                                    <span class="transform group-hover:translate-x-1 transition-transform">${icons.ChevronRight}</span>
+                                </button>
+                                <button onclick="startGame('mixed')" class="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold text-xl transition-colors shadow-lg hover:shadow-orange-500/30 text-left px-6 flex items-center justify-between group active:scale-95 border-t-4 border-orange-700 mt-2">
+                                    <span><span class="opacity-80 text-base block font-normal">綜合練習 (共15題)</span>挑戰所有題型</span>
+                                    <span class="transform group-hover:translate-x-1 transition-transform">${icons.ChevronRight}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const maxScore = state.gameType === 'mixed' ? 150 : 100;
+
+            if (state.gameState === 'input_info') {
+                app.innerHTML = `
+                    <div class="min-h-[100dvh] bg-blue-50 flex items-center justify-center p-4">
+                        <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl text-center space-y-6">
+                            <div class="text-6xl mb-4">📝</div>
+                            <h1 class="text-3xl font-extrabold text-blue-600">填寫資料</h1>
+                            <p class="text-gray-600">請輸入你的班別及學號以紀錄成績</p>
+
+                            <div class="space-y-4 text-left mt-6">
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2 text-lg">班別 (例如: 1A)</label>
+                                    <input type="text" id="classInput" value="${state.classStr || ''}" class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all outline-none text-xl uppercase" placeholder="輸入班別" autocomplete="off">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2 text-lg">學號 (例如: 25)</label>
+                                    <input type="number" id="studentInput" value="${state.studentId || ''}" class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all outline-none text-xl" placeholder="輸入學號" autocomplete="off">
+                                </div>
+                                <div id="infoError" class="text-red-500 font-bold hidden text-center mt-2">請完整填寫班別與學號！</div>
+                            </div>
+
+                            <button onclick="submitInfo()" class="w-full py-4 mt-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg">
+                                查看成績 ${icons.ChevronRight}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (state.gameState === 'end') {
+                app.innerHTML = `
+                    <div class="min-h-[100dvh] bg-green-50 flex items-center justify-center p-4">
+                        <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl text-center space-y-6">
+                            <div class="text-6xl mb-4">🏆</div>
+                            <h1 class="text-3xl font-extrabold text-green-600">成績單</h1>
+                            <p class="text-xl text-gray-700 font-bold">班別：${state.classStr} &nbsp;&nbsp;&nbsp; 學號：${state.studentId}</p>
+                            <p class="text-xl text-gray-700">你的總得分為：</p>
+                            <div class="text-6xl font-black text-green-500 py-2">${state.score} <span class="text-3xl text-green-600">/ ${maxScore}</span></div>
+                            <p class="text-gray-500">${state.score >= (maxScore * 0.8) ? "太棒了！你已經完全掌握盈利與虧蝕的技巧！" : "再接再厲，多練習幾次會更熟練喔！"}</p>
+                            <div class="flex flex-col gap-3 mt-6">
+                                <button onclick="startGame('${state.gameType}')" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-md">
+                                    ${icons.RotateCcw} 再玩一次
+                                </button>
+                                <button onclick="setGameState('start')" class="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xl flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-sm">
+                                    ${icons.ArrowLeft} 返回首頁
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const q = state.questions[state.currentIdx];
+            const currentType = state.gameType === 'mixed' ? q.qType : state.gameType;
+            
+            // --- Feedback 區內容 ---
+            let feedbackHtml = '';
+            if (state.isCorrect) {
+                if (!state.hasErroredCurrentQuestion) {
+                    feedbackHtml = `<div class="bg-green-100 text-green-700 px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-lg animate-bounce w-full justify-center shadow-sm">${icons.CheckCircle2} 完全正確！ (+10分)</div>`;
+                } else {
+                    feedbackHtml = `<div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-lg w-full justify-center shadow-sm">${icons.CheckCircle2} 補答正確！ (此題不加分)</div>`;
+                }
+            } else if (state.showFeedback && Object.keys(state.errors).length > 0) {
+                let errorMsg = "有些地方填錯了，請修正！";
+                
+                if (currentType === 'type1' && state.errors.f_num_op) {
+                    errorMsg = "請在分子中間填入減號「-」喔！";
+                } else if (currentType === 'type1' && (state.errors.f_num1 || state.errors.f_num2)) {
+                    errorMsg = q.isProfit ? "答錯了！盈利的分子應該是「售價 － 成本」喔！" : "答錯了！虧蝕的分子應該是「成本 － 售價」喔！";
+                } else if (['type2', 'type3'].includes(currentType) && state.errors.f_calc_op) {
+                    errorMsg = currentType === 'type2' ? "請填入正確的運算符號「×」喔！" : "請填入正確的運算符號「÷」喔！";
+                } else if (['type2', 'type3'].includes(currentType) && state.errors.f_one) {
+                    errorMsg = "括號內的第一個數字應該填入什麼呢？（提示：是 1 喔！）";
+                } else if (['type2', 'type3'].includes(currentType) && state.errors.f_operator) {
+                    errorMsg = "請填入正確的加減符號「+」或「-」喔！";
+                } else if (currentType === 'type1' && state.errors.finalAns && state.inputs.finalAns && !state.inputs.finalAns.includes('%')) {
+                    errorMsg = "答錯了！是否忘記加上「%」？";
+                } else if (['type2', 'type3'].includes(currentType) && ((state.errors.pctVal && state.inputs.pctVal && !state.inputs.pctVal.includes('%')) || (state.errors.f_pctVal && state.inputs.f_pctVal && !state.inputs.f_pctVal.includes('%')))) {
+                    errorMsg = "答錯了！百分數是否忘記加上「%」？";
+                } else if (['type2', 'type3'].includes(currentType) && state.errors.f_pctVal && state.inputs.f_pctVal && state.inputs.f_operator === '+' && parseFloat(state.inputs.f_pctVal) > 0 && !q.isProfit) {
+                    errorMsg = "答錯了！虧蝕時，如果前面填了「+」，百分數記得加上負號「-」喔！";
+                } else if (['type2', 'type3'].includes(currentType) && state.errors.finalAns && state.inputs.finalAns && state.inputs.finalAns.includes('%')) {
+                    errorMsg = currentType === 'type2' ? "答錯了！計算新售價不需要加上「%」" : "答錯了！計算成本不需要加上「%」";
+                }
+                
+                feedbackHtml = `<div class="bg-red-100 text-red-600 px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-base w-full justify-center text-center shadow-sm"><div class="shrink-0">${icons.XCircle}</div> ${errorMsg}</div>`;
+            } else {
+                feedbackHtml = `<div class="text-gray-500 text-center font-medium text-sm sm:text-base">點擊左方空格，然後使用下方鍵盤輸入數字</div>`;
+            }
+
+            // --- 鍵盤渲染 ---
+            const keys = ['1','2','3','+','4','5','6','-','7','8','9','×','.','0','%','÷','C','Del'];
+            const keyboardHtml = keys.map(key => {
+                let btnClass = 'bg-white border-gray-200 text-gray-800 hover:bg-blue-50 hover:border-blue-300';
+                let inner = key;
+                let colSpan = '';
+                
+                if (key === 'C') { btnClass = 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'; colSpan = 'col-span-2'; }
+                else if (key === 'Del') { btnClass = 'bg-orange-100 border-orange-200 text-orange-800 hover:bg-orange-200'; inner = icons.Delete; colSpan = 'col-span-2'; }
+                else if (key === '%') btnClass = 'bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200';
+                else if (['+', '-', '×', '÷'].includes(key)) btnClass = 'bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-200';
+
+                return `<button onclick="handleKeyPress('${key}')" ${state.isCorrect ? 'disabled' : ''} class="${colSpan} border-2 rounded-xl text-xl sm:text-2xl font-bold active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm h-12 lg:h-auto min-h-[48px] flex items-center justify-center ${btnClass}">${inner}</button>`;
+            }).join('');
+
+            // --- 答題內容渲染 ---
+            let mainContentHtml = '';
+            if (currentType === 'type1') {
+                mainContentHtml = `
+                    <div class="flex flex-col gap-4 flex-1 justify-center">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col gap-2">
+                                <h3 class="font-semibold text-gray-600 text-sm">步驟 1：找出成本和售價</h3>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-lg font-bold text-gray-700">成本：</span>
+                                    ${renderInput('costVal', 'w-24 sm:w-32')}
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-lg font-bold text-gray-700">售價：</span>
+                                    ${renderInput('sellVal', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col justify-center gap-2">
+                                <h3 class="font-semibold text-gray-600 text-sm">步驟 2：計算${q.pl_text}</h3>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-lg font-bold text-gray-700">${q.pl_text}：</span>
+                                    ${renderInput('plVal', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 p-4 sm:p-6 rounded-xl border border-indigo-100 flex flex-col gap-4">
+                            <h3 class="font-semibold text-indigo-800 text-sm">步驟 3：代入百分數公式</h3>
+                            <div class="flex items-center justify-center gap-2 sm:gap-4 text-xl sm:text-2xl font-bold text-gray-700 overflow-x-auto py-2">
+                                <div class="flex flex-col items-center">
+                                    <div class="flex items-center gap-2 pb-2">
+                                        <span>(</span>
+                                        ${renderInput('f_num1', 'w-16 sm:w-20')}
+                                        ${renderInput('f_num_op', 'w-10 sm:w-12 text-center')}
+                                        ${renderInput('f_num2', 'w-16 sm:w-20')}
+                                        <span>)</span>
+                                    </div>
+                                    <div class="w-full h-1 bg-gray-800 rounded-full my-1"></div>
+                                    <div class="pt-2">${renderInput('f_costVal', 'w-16 sm:w-24')}</div>
+                                </div>
+                                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                                    <span>×</span><span>100%</span><span>=</span>
+                                    ${renderInput('finalAns', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (currentType === 'type2') {
+                mainContentHtml = `
+                    <div class="flex flex-col gap-4 flex-1 justify-center">
+                        <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col gap-4">
+                            <h3 class="font-semibold text-gray-600 text-sm">步驟 1：找出成本與百分數</h3>
+                            <div class="flex flex-col sm:flex-row gap-4 sm:gap-8">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold text-gray-700">成本：</span>
+                                    ${renderInput('costVal', 'w-24 sm:w-32')}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold text-gray-700 shrink-0">${q.pl_text}百分數：</span>
+                                    ${renderInput('pctVal', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 p-4 sm:p-6 rounded-xl border border-indigo-100 flex flex-col gap-4">
+                            <h3 class="font-semibold text-indigo-800 text-sm">步驟 2：代入公式求售價</h3>
+                            <div class="flex items-center justify-center gap-2 sm:gap-4 text-xl sm:text-2xl font-bold text-gray-700 overflow-x-auto py-4">
+                                ${renderInput('f_costVal2', 'w-16 sm:w-24')}
+                                ${renderInput('f_calc_op', 'w-10 sm:w-12 text-center')}
+                                <span>(</span>
+                                ${renderInput('f_one', 'w-10 sm:w-12 text-center')}
+                                ${renderInput('f_operator', 'w-10 sm:w-12 text-center')}
+                                ${renderInput('f_pctVal', 'w-16 sm:w-24')}
+                                <span>)</span><span>=</span>
+                                ${renderInput('finalAns', 'w-20 sm:w-32')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (currentType === 'type3') {
+                mainContentHtml = `
+                    <div class="flex flex-col gap-4 flex-1 justify-center">
+                        <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col gap-4">
+                            <h3 class="font-semibold text-gray-600 text-sm">步驟 1：找出售價與百分數</h3>
+                            <div class="flex flex-col sm:flex-row gap-4 sm:gap-8">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold text-gray-700">售價：</span>
+                                    ${renderInput('sellVal', 'w-24 sm:w-32')}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold text-gray-700 shrink-0">${q.pl_text}百分數：</span>
+                                    ${renderInput('pctVal', 'w-24 sm:w-32')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 p-4 sm:p-6 rounded-xl border border-indigo-100 flex flex-col gap-4">
+                            <h3 class="font-semibold text-indigo-800 text-sm">步驟 2：代入公式求成本</h3>
+                            <div class="flex items-center justify-center gap-2 sm:gap-4 text-xl sm:text-2xl font-bold text-gray-700 overflow-x-auto py-4">
+                                ${renderInput('f_sellVal', 'w-16 sm:w-24')}
+                                ${renderInput('f_calc_op', 'w-10 sm:w-12 text-center')}
+                                <span>(</span>
+                                ${renderInput('f_one', 'w-10 sm:w-12 text-center')}
+                                ${renderInput('f_operator', 'w-10 sm:w-12 text-center')}
+                                ${renderInput('f_pctVal', 'w-16 sm:w-24')}
+                                <span>)</span><span>=</span>
+                                ${renderInput('finalAns', 'w-20 sm:w-32')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // --- 提示公式邏輯 ---
+            let hintTextHtml = '';
+            if (currentType === 'type1') {
+                hintTextHtml = `提示公式：<br>
+                    <span class="pl-6 block mt-2 text-[0.95em] text-yellow-700">• 盈利百分數 ＝ (售價 － 成本) ÷ 成本 × 100%</span>
+                    <span class="pl-6 block mt-1 text-[0.95em] text-yellow-700">• 虧蝕百分數 ＝ (成本 － 售價) ÷ 成本 × 100%</span>`;
+            } else if (currentType === 'type2') {
+                hintTextHtml = `提示公式：<br>
+                    <span class="pl-6 block mt-2 text-[0.95em] text-yellow-700">• 售價 ＝ 成本 × (1 ＋ 盈利百分數)</span>
+                    <span class="pl-6 block mt-1 text-[0.95em] text-yellow-700">• 售價 ＝ 成本 × (1 － 虧蝕百分數)</span>`;
+            } else if (currentType === 'type3') {
+                hintTextHtml = `提示公式：<br>
+                    <span class="pl-6 block mt-2 text-[0.95em] text-yellow-700">• 成本 ＝ 售價 ÷ (1 ＋ 盈利百分數)</span>
+                    <span class="pl-6 block mt-1 text-[0.95em] text-yellow-700">• 成本 ＝ 售價 ÷ (1 － 虧蝕百分數)</span>`;
+            }
+
+            let hintAreaHtml = '';
+            if (state.showHint) {
+                hintAreaHtml = `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-xl shrink-0 shadow-sm transition-all"><p class="text-base sm:text-lg text-yellow-800 font-bold tracking-wide leading-snug">💡 ${hintTextHtml}</p></div>`;
+            } else {
+                hintAreaHtml = `<button onclick="showHintTemporarily()" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-2 px-4 rounded-xl shadow-sm transition-all active:scale-95 self-start flex items-center gap-2 border border-yellow-300">💡 顯示提示公式</button>`;
+            }
+
+            let headerTypeStr = currentType === 'type1' ? '求百分數' : currentType === 'type2' ? '求售價' : '求成本';
+            if (state.gameType === 'mixed') headerTypeStr = `綜合練習 (${headerTypeStr})`;
+
+            app.innerHTML = `
+                <div class="min-h-[100dvh] flex items-center justify-center p-2 sm:p-4 bg-gray-100">
+                    <div class="w-full max-w-6xl bg-white md:rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[100dvh] md:h-[95vh] md:max-h-[850px]">
+                        <div class="bg-blue-600 p-3 sm:p-4 flex justify-between items-center text-white shrink-0">
+                            <div class="flex items-center gap-3">
+                                <button onclick="setGameState('start')" class="bg-blue-700 hover:bg-blue-800 p-2 rounded-lg transition-colors flex items-center justify-center" title="返回首頁">${icons.ArrowLeft}</button>
+                                <div class="font-bold text-lg sm:text-2xl flex items-center gap-2">
+                                    <span class="bg-white/20 px-3 py-1 rounded-lg">第 ${state.currentIdx + 1} / ${state.questions.length} 題</span>
+                                    <span class="hidden sm:inline ml-2 text-blue-200">(${headerTypeStr})</span>
+                                </div>
+                            </div>
+                            <div class="font-bold text-lg sm:text-2xl flex items-center gap-2">
+                                得分：<span class="text-yellow-300 text-2xl sm:text-3xl">${state.score}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col lg:flex-row flex-1 overflow-hidden">
+                            <div class="flex-1 p-4 sm:p-6 flex flex-col gap-4 overflow-y-auto">
+                                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl shrink-0 shadow-sm">
+                                    <p class="text-lg sm:text-xl text-gray-800 font-medium leading-relaxed">${q.text}</p>
+                                </div>
+                                ${hintAreaHtml}
+                                ${mainContentHtml}
+                            </div>
+                            <div class="w-full lg:w-[320px] bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 p-4 flex flex-col shrink-0">
+                                <div class="h-16 mb-4 flex items-center justify-center">${feedbackHtml}</div>
+                                <div class="grid grid-cols-4 gap-2 flex-1">${keyboardHtml}</div>
+                                <div class="mt-4">
+                                    ${!state.isCorrect 
+                                        ? `<button onclick="handleSubmit()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-lg font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">${icons.CheckCircle2} 確定提交</button>` 
+                                        : `<button onclick="handleNext()" class="w-full py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl text-lg font-bold shadow-lg transition-all animate-pulse flex items-center justify-center gap-2">下一題 ${icons.ChevronRight}</button>`}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        render();
+    </script>
+</body>
+</html>
