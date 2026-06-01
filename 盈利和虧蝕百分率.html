@@ -140,7 +140,8 @@
                 costVal: '', sellVal: '', plVal: '',
                 f_num1: '', f_num_op: '', f_num2: '', f_costVal: '', finalAns: '',
                 pctVal: '', f_calc_op: '', f_one: '', f_operator: '', f_pctVal: '',
-                f_costVal2: '', f_sellVal: ''
+                f_costVal2: '', f_sellVal: '',
+                f_pl_num1: '', f_pl_num_op: '', f_pl_num2: '', f_pl_ans: ''
             },
             activeInput: 'costVal',
             errors: {},
@@ -178,7 +179,8 @@
                 costVal: '', sellVal: '', plVal: '',
                 f_num1: '', f_num_op: '', f_num2: '', f_costVal: '', finalAns: '',
                 pctVal: '', f_calc_op: '', f_one: '', f_operator: '', f_pctVal: '',
-                f_costVal2: '', f_sellVal: ''
+                f_costVal2: '', f_sellVal: '',
+                f_pl_num1: '', f_pl_num_op: '', f_pl_num2: '', f_pl_ans: ''
             };
             
             let currentType = state.gameType === 'mixed' && state.questions.length > 0 ? state.questions[state.currentIdx].qType : state.gameType;
@@ -212,7 +214,7 @@
                 state.inputs[state.activeInput] = '';
             } else if (key === 'Del') {
                 state.inputs[state.activeInput] = currentVal.slice(0, -1);
-            } else if (state.activeInput === 'f_operator' || state.activeInput === 'f_num_op') {
+            } else if (state.activeInput === 'f_operator' || state.activeInput === 'f_num_op' || state.activeInput === 'f_pl_num_op') {
                 if (key === '+' || key === '-') state.inputs[state.activeInput] = key;
             } else if (state.activeInput === 'f_calc_op') {
                 if (key === '×' || key === '÷') state.inputs[state.activeInput] = key;
@@ -315,6 +317,17 @@
                 let finalStr = (state.inputs.finalAns || '').trim();
                 if (finalStr === '' || finalStr.endsWith('%')) newErrors.finalAns = true;
                 else if (safeFloat(parseFloat(finalStr)) !== q.c) newErrors.finalAns = true;
+
+                if (q.isProfit) {
+                    checkVal('f_pl_num1', q.s);
+                    checkVal('f_pl_num2', q.c);
+                } else {
+                    checkVal('f_pl_num1', q.c);
+                    checkVal('f_pl_num2', q.s);
+                }
+                
+                if ((state.inputs.f_pl_num_op || '').trim() !== '-') newErrors.f_pl_num_op = true;
+                checkVal('f_pl_ans', q.p);
             }
 
             state.errors = newErrors;
@@ -486,6 +499,10 @@
                     errorMsg = "請在分子中間填入減號「-」喔！";
                 } else if (currentType === 'type1' && (state.errors.f_num1 || state.errors.f_num2)) {
                     errorMsg = q.isProfit ? "答錯了！盈利的分子應該是「售價 － 成本」喔！" : "答錯了！虧蝕的分子應該是「成本 － 售價」喔！";
+                } else if (currentType === 'type3' && state.errors.f_pl_num_op) {
+                    errorMsg = "請在步驟3中間填入減號「-」喔！";
+                } else if (currentType === 'type3' && (state.errors.f_pl_num1 || state.errors.f_pl_num2)) {
+                    errorMsg = q.isProfit ? "答錯了！盈利應該是「售價 － 成本」喔！" : "答錯了！虧蝕應該是「成本 － 售價」喔！";
                 } else if (['type2', 'type3'].includes(currentType) && state.errors.f_calc_op) {
                     errorMsg = currentType === 'type2' ? "請填入正確的運算符號「×」喔！" : "請填入正確的運算符號「÷」喔！";
                 } else if (['type2', 'type3'].includes(currentType) && state.errors.f_one) {
@@ -627,6 +644,16 @@
                                 ${renderInput('f_pctVal', 'w-16 sm:w-24')}
                                 <span>)</span><span>=</span>
                                 ${renderInput('finalAns', 'w-20 sm:w-32')}
+                            </div>
+                        </div>
+                        <div class="bg-teal-50 p-4 sm:p-6 rounded-xl border border-teal-100 flex flex-col gap-4">
+                            <h3 class="font-semibold text-teal-800 text-sm">步驟 3：計算${q.pl_text}</h3>
+                            <div class="flex items-center justify-center gap-2 sm:gap-4 text-xl sm:text-2xl font-bold text-gray-700 overflow-x-auto py-2">
+                                ${renderInput('f_pl_num1', 'w-16 sm:w-24')}
+                                ${renderInput('f_pl_num_op', 'w-10 sm:w-12 text-center')}
+                                ${renderInput('f_pl_num2', 'w-16 sm:w-24')}
+                                <span>=</span>
+                                ${renderInput('f_pl_ans', 'w-20 sm:w-32')}
                             </div>
                         </div>
                     </div>
