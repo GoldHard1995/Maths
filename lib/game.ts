@@ -1,5 +1,5 @@
 export type GameId = 'locate' | 'compare' | 'move' | 'brackets';
-export type Question = { a: number; b: number; op: '+' | '-' };
+export type Question = { a: number; b: number; op: '+' | '-'; third?: { op: '+' | '-'; value: number } };
 export type Session = {
   game: GameId; questions: Question[]; index: number; stage: number;
   errors: number; stageErrors: number; firstTry: number; questionErrors: number;
@@ -9,10 +9,18 @@ export const gameIds: GameId[] = ['locate', 'compare', 'move', 'brackets'];
 export const signed = (n: number) => n < 0 ? `−${Math.abs(n)}` : n > 0 ? `+${n}` : '0';
 export const plain = (n: number) => String(n).replace('-', '−');
 export const delta = (q: Question) => q.op === '+' ? q.b : -q.b;
-export const result = (q: Question) => q.a + delta(q);
+const thirdDelta = (q: Question) => q.third ? (q.third.op === '+' ? q.third.value : -q.third.value) : 0;
+export const result = (q: Question) => q.a + delta(q) + thirdDelta(q);
 export const relation = (q: Question) => q.a < q.b ? '<' : q.a > q.b ? '>' : '=';
-export const expression = (q: Question) => `${plain(q.a)} ${q.op === '-' ? '−' : '+'} (${signed(q.b)})`;
-export const simplified = (q: Question) => `${plain(q.a)} ${delta(q) < 0 ? '−' : '+'} ${Math.abs(q.b)}`;
+export const expression = (q: Question) => `${plain(q.a)} ${q.op === '-' ? '−' : '+'} (${signed(q.b)})${q.third ? ` ${q.third.op === '-' ? '−' : '+'} (${signed(q.third.value)})` : ''}`;
+const signOf = (n: number) => n < 0 ? '-' : '+';
+const bracketAnswer = (q: Question) => signOf(delta(q)) + (q.third ? ',' + signOf(thirdDelta(q)) : '');
+const withSigns = (q: Question, signs: string) => {
+  const [first, second] = signs.split(',');
+  return `${plain(q.a)} ${first === '-' ? '−' : '+'} ${Math.abs(q.b)}${q.third ? ` ${second === '-' ? '−' : '+'} ${Math.abs(q.third.value)}` : ''}`;
+};
+export const simplified = (q: Question) => withSigns(q, bracketAnswer(q));
+export const simplificationChoices = (q: Question) => (q.third ? ['+,+', '+,-', '-,+', '-,-'] : ['+', '-']).map(value => ({value, label: withSigns(q, value)}));
 const choose = <T,>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
 const int = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo + 1));
 export function makeQuestions(game: GameId): Question[] {
@@ -24,14 +32,30 @@ export function makeQuestions(game: GameId): Question[] {
     const pairs = [[-7,-3],[4,8],[-2,3],[0,-4],[-5,-5],[-1,-8],[-10,-6],[6,-6],[-9,-2],[-3,-7],[0,0],[10,9],[-4,-1],[-2,-10],[0,5],[-6,-6]];
     return pairs.map(([a,b]) => ({a,b,op:'+'}));
   }
-  return Array.from({length:game === 'brackets' ? 12 : 16},(_,i) => {
-    const category = game === 'move' ? Math.floor(i/4) : i%4;
+  if (game === 'brackets') {
+    return Array.from({length:12}, (_, i): Question => {
+      const category = i % 4;
+      const op = category % 2 === 0 ? '+' : '-';
+      const b = int(i < 4 ? 1 : 6, i < 4 ? 9 : 15) * (category >= 2 ? -1 : 1);
+      const change = op === '+' ? b : -b;
+      if (i < 4) return {a:int(1,10), b, op};
+      if (i < 8) return {a:int(Math.max(-20,-20-change), Math.min(-1,20-change)), b, op};
+      const thirdOp = category < 2 ? '+' : '-';
+      const thirdSign = category % 2 === 0 ? -1 : 1;
+      const candidates = Array.from({length:12}, (_, n) => (n+1)*thirdSign)
+        .filter(value => (thirdOp === '+' ? value : -value) !== -change);
+      const third: NonNullable<Question['third']> = {op:thirdOp, value:choose(candidates)};
+      const extra = third.op === '+' ? third.value : -third.value;
+      const a = int(Math.max(-20,-20-change,-20-change-extra), Math.min(20,20-change,20-change-extra));
+      return {a,b,op,third};
+    });
+  }
+  return Array.from({length:16}, (_, i) => {
+    const category = Math.floor(i/4);
     const op = category%2 === 0 ? '+' : '-';
-    const max = game === 'brackets' ? 20 : 10;
-    const b = int(1, game === 'move' ? 8 : 20) * (category>=2 ? -1 : 1);
+    const b = int(1,8) * (category>=2 ? -1 : 1);
     const change = op==='+'?b:-b;
-    const a = int(Math.max(-max,-max-change),Math.min(max,max-change));
-    return {a,b,op};
+    return {a:int(Math.max(-10,-10-change),Math.min(10,10-change)),b,op};
   });
 }
 export function startSession(game: GameId, questions = makeQuestions(game), now = Date.now()): Session {
@@ -42,7 +66,7 @@ export function expected(s: Session): string {
   if(s.game==='locate')return String(q.a);
   if(s.game==='compare')return relation(q);
   if(s.game==='move')return s.stage===0?(delta(q)<0?'left':'right'):s.stage===1?String(Math.abs(q.b)):String(result(q));
-  return s.stage===0?(delta(q)<0?'-':'+'):String(result(q));
+  return s.stage===0?bracketAnswer(q):String(result(q));
 }
 export function submit(s: Session, answer: string): Session {
   if(s.finished || s.solved) return s;
@@ -52,7 +76,7 @@ export function submit(s: Session, answer: string): Session {
       locate: q.a===0?'零是正負數的分界，找找數線中央。':`從零開始，向${q.a<0?'左':'右'}找 ${Math.abs(q.a)} 格。`,
       compare:'看一看數線：越右的數越大。兩個數在同一位置時相等。',
       move:s.stage===0?(q.b<0 ? (q.op==='-'?'減去負數，相當於加上正數，應向右移。':'加上負數，應向左移。'):(q.op==='+'?'加上正數，應向右移。':'減去正數，應向左移。')):s.stage===1?`步數是 ${signed(q.b)} 與零的距離，數一數有多少格。`:`從 ${plain(q.a)} 出發，向${delta(q)<0?'左':'右'}移 ${Math.abs(q.b)} 格，再找終點。`,
-      brackets:s.stage===0?(q.op==='+'?'括號前是加號，括號內的數保留原來符號。':q.b<0?'減去負數，相當於加上它的相反數，所以變成加正數。':'減去正數，相當於加上它的相反數，所以變成減正數。'):`拆括號已正確。請再計算 ${simplified(q)}。`,
+      brackets:s.stage===0?(q.third?'逐一檢查兩個括號：括號前是加號時，括號內的數保留原符號；減號後的數要取相反數。':q.op==='+'?'括號前是加號，括號內的數保留原來符號。':q.b<0?'減去負數，相當於加上它的相反數，所以變成加正數。':'減去正數，相當於加上它的相反數，所以變成減正數。'):`拆括號已正確。${q.third ? '由左至右逐步計算。' : ''}請再計算 ${simplified(q)}。`,
     };
     return {...s,errors:s.errors+1,questionErrors:s.questionErrors+1,stageErrors:s.stageErrors+1,feedback:`再試一次。${hints[s.game]}`};
   }

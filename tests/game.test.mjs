@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified } from '../lib/game.ts';
+import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified, result, simplificationChoices } from '../lib/game.ts';
 
 test('negative comparisons and equality use mathematical ordering',()=>{
  for(const [a,b,answer] of [[-7,-3,'<'],[-3,-7,'>'],[-4,-4,'='],[0,-8,'>'],[-2,6,'<']]) {
@@ -65,5 +65,38 @@ test('every generated question can complete through the intended stages',()=>{
    assert.equal(s.solved,true);s=nextQuestion(s);
   }
   assert.equal(s.finished,true);assert.equal(s.firstTry,s.questions.length);
+ }
+});
+
+
+test('bracket difficulty increases in three blocks and all three-term values remain bounded',()=>{
+ for(let run=0;run<150;run++) {
+  const qs=makeQuestions('brackets');
+  qs.forEach((q,i)=>{
+   if(i<4){assert.ok(q.a>=1&&q.a<=10);assert.ok(Math.abs(q.b)<=9);assert.equal(q.third,undefined);}
+   else if(i<8){assert.ok(q.a<0);assert.equal(q.third,undefined);}
+   else {
+    assert.ok(q.third);assert.ok(Math.abs(q.third.value)<=20);
+    const intermediate=q.a+(q.op==='+'?q.b:-q.b);
+    const final=intermediate+(q.third.op==='+'?q.third.value:-q.third.value);
+    assert.ok(Math.abs(intermediate)<=20);assert.ok(Math.abs(final)<=20);
+    assert.equal(result(q),final);assert.equal(simplificationChoices(q).length,4);
+   }
+  });
+ }
+});
+test('three-term answers require both bracket signs before accepting the final total',()=>{
+ const cases=[
+  [{a:5,b:-3,op:'-',third:{op:'+',value:-4}},'+,-','5 + 3 − 4',4],
+  [{a:-8,b:6,op:'+',third:{op:'-',value:-5}},'+,+','−8 + 6 + 5',3],
+  [{a:9,b:-4,op:'+',third:{op:'-',value:3}},'-,-','9 − 4 − 3',2],
+  [{a:-2,b:7,op:'-',third:{op:'-',value:-6}},'-,+','−2 − 7 + 6',-3],
+ ];
+ for(const [q,signs,text,total] of cases) {
+  let s=startSession('brackets',[q],0);
+  s=submit(s,signs[0]);assert.equal(s.stage,0);
+  for(const option of simplificationChoices(q))if(option.value!==signs)assert.equal(submit(s,option.value).stage,0);
+  s=submit(s,signs);assert.equal(s.stage,1);assert.equal(simplified(q),text);
+  s=submit(s,String(total));assert.equal(s.solved,true);
  }
 });

@@ -28,3 +28,5 @@
   font-variant-numeric: lining-nums tabular-nums;
   letter-spacing: 0;
 }
+
+.three-term-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:660px;margin:24px auto;gap:18px}.three-term-options .choice[data-slot=button]{min-width:0;white-space:normal;font-size:22px}@media(max-width:500px){.three-term-options{grid-template-columns:1fr}.task-title.math{overflow-wrap:anywhere}}
