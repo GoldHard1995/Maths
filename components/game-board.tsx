@@ -10,9 +10,9 @@ function NumericAnswer({onAnswer,disabled}:{onAnswer:(s:string)=>void;disabled:b
   const add=(key:string)=>{setValue(v=>key==='clear'?'':key==='back'?v.slice(0,-1):key==='sign'?(v.startsWith('-')?v.slice(1):'-'+v):v.replace('-','').length<2?v+key:v);};
   const valid=/^-?\d{1,2}$/.test(value)&&Math.abs(Number(value))<=20;
   return <form className="numeric-answer" onSubmit={e=>{e.preventDefault();if(valid&&!disabled)onAnswer(String(Number(value)));}}>
-    <label htmlFor="answer-input">你的答案</label><input id="answer-input" aria-describedby="answer-help" value={value} inputMode="text" autoComplete="off" placeholder="輸入答案" disabled={disabled} onChange={e=>{if(/^-?\d{0,2}$/.test(e.target.value))setValue(e.target.value);}} />
+    <label htmlFor="answer-input">你的答案</label><input id="answer-input" value={value} inputMode="text" autoComplete="off" placeholder="輸入答案" disabled={disabled} onChange={e=>{if(/^-?\d{0,2}$/.test(e.target.value))setValue(e.target.value);}} />
     <div className="keypad">{['1','2','3','4','5','6','7','8','9','sign','0','back'].map(k=><Button className="key" key={k} type="button" variant="secondary" disabled={disabled} aria-label={k==='sign'?'切換正負號':k==='back'?'刪除一位':k} onClick={()=>add(k)}>{k==='sign'?'±':k==='back'?'⌫':k}</Button>)}</div>
-    <p id="answer-help">可用上方鍵盤輸入。答案範圍：−20 至 +20。</p><Button className="block-btn" type="submit" disabled={!valid||disabled}>檢查答案 <Check/></Button>
+    <Button className="block-btn" type="submit" disabled={!valid||disabled}>檢查答案 <Check/></Button>
   </form>;
 }
 function Locate({s,answer}:{s:Session;answer:(a:string)=>void}) {
