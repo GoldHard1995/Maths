@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified, result, simplificationChoices } from '../lib/game.ts';
+import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified, result, simplificationChoices, questionKey } from '../lib/game.ts';
 
 test('negative comparisons and equality use mathematical ordering',()=>{
  for(const [a,b,answer] of [[-7,-3,'<'],[-3,-7,'>'],[-4,-4,'='],[0,-8,'>'],[-2,6,'<']]) {
@@ -98,5 +98,29 @@ test('three-term answers require both bracket signs before accepting the final t
   for(const option of simplificationChoices(q))if(option.value!==signs)assert.equal(submit(s,option.value).stage,0);
   s=submit(s,signs);assert.equal(s.stage,1);assert.equal(simplified(q),text);
   s=submit(s,String(total));assert.equal(s.solved,true);
+ }
+});
+
+
+test('all games generate distinct rounds and avoid memorising the previous round',()=>{
+ for(const game of ['locate','compare','move','brackets']) {
+  let previous=[];
+  for(let run=0;run<40;run++) {
+   const qs=makeQuestions(game,previous);
+   assert.equal(new Set(qs.map(questionKey)).size,qs.length);
+   if(game==='locate') {
+    assert.ok(qs.some(q=>q.a===0));
+    qs.forEach((q,i)=>assert.notEqual(q.a,previous[i]?.a));
+   } else {
+    const old=new Set(previous.map(questionKey));
+    qs.forEach(q=>assert.equal(old.has(questionKey(q)),false));
+   }
+   if(game==='compare') {
+    assert.ok(qs.slice(0,4).every(q=>q.a>=0&&q.b>=0));
+    assert.ok(qs.slice(8).every(q=>q.a<0&&q.b<0));
+    assert.equal(qs.filter(q=>q.a===q.b).length,2);
+   }
+   previous=qs;
+  }
  }
 });

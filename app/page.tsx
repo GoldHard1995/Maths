@@ -1,11 +1,11 @@
 'use client';
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useState, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { ArrowRight, ArrowLeft, Compass, Clock3, MoveHorizontal, Equal, Footprints, Brackets, Check, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import GameBoard from '@/components/game-board';
-import { gameIds, type GameId, reducer, startSession } from '@/lib/game';
+import { gameIds, type GameId, reducer, startSession, makeQuestions, type Question } from '@/lib/game';
 const games = [
   { title: '數線定位', label: '認識座標', text: '從零出發，找出每個數的位置。', sample: '−4　−3　−2　−1　0　1　2', icon: Compass, color: 'green' },
   { title: '比較大小', label: '分清大小', text: '兩個有向數，誰大誰小？', sample: '−7　<　−3', icon: Equal, color: 'blue' },
@@ -15,7 +15,8 @@ const games = [
 export default function Home() {
   const [session, dispatch] = useReducer(reducer, null);
   const [now, setNow] = useState(0);
-  const start = (game: GameId) => {const session=startSession(game);setNow(session.startedAt);dispatch({type:'start',session});};
+  const previousRounds=useRef<Partial<Record<GameId,Question[]>>>({});
+  const start = (game: GameId) => {const questions=makeQuestions(game,previousRounds.current[game]);previousRounds.current[game]=questions;const session=startSession(game,questions);setNow(session.startedAt);dispatch({type:'start',session});};
   useEffect(()=>{
     if(!session||session.finished)return;
     const timer=setInterval(()=>setNow(Date.now()),1000);

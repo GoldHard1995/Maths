@@ -22,42 +22,71 @@ const withSigns = (q: Question, signs: string) => {
 export const simplified = (q: Question) => withSigns(q, bracketAnswer(q));
 export const simplificationChoices = (q: Question) => (q.third ? ['+,+', '+,-', '-,+', '-,-'] : ['+', '-']).map(value => ({value, label: withSigns(q, value)}));
 const choose = <T,>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
-const int = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo + 1));
-export function makeQuestions(game: GameId): Question[] {
-  if (game === 'locate') {
-    const targets = [choose([-3,-4,-5]), choose([2,3,4]), 0, -7, 8, -1, 5, -9, 2, 0, -6, 10, -10, 7, -2, 4];
-    return targets.map(a => ({a,b:0,op:'+'}));
-  }
-  if (game === 'compare') {
-    const pairs = [[-7,-3],[4,8],[-2,3],[0,-4],[-5,-5],[-1,-8],[-10,-6],[6,-6],[-9,-2],[-3,-7],[0,0],[10,9],[-4,-1],[-2,-10],[0,5],[-6,-6]];
-    return pairs.map(([a,b]) => ({a,b,op:'+'}));
-  }
-  if (game === 'brackets') {
-    return Array.from({length:12}, (_, i): Question => {
-      const category = i % 4;
-      const op = category % 2 === 0 ? '+' : '-';
-      const b = int(i < 4 ? 1 : 6, i < 4 ? 9 : 15) * (category >= 2 ? -1 : 1);
-      const change = op === '+' ? b : -b;
-      if (i < 4) return {a:int(1,10), b, op};
-      if (i < 8) return {a:int(Math.max(-20,-20-change), Math.min(-1,20-change)), b, op};
-      const thirdOp = category < 2 ? '+' : '-';
-      const thirdSign = category % 2 === 0 ? -1 : 1;
-      const candidates = Array.from({length:12}, (_, n) => (n+1)*thirdSign)
-        .filter(value => (thirdOp === '+' ? value : -value) !== -change);
-      const third: NonNullable<Question['third']> = {op:thirdOp, value:choose(candidates)};
-      const extra = third.op === '+' ? third.value : -third.value;
-      const a = int(Math.max(-20,-20-change,-20-change-extra), Math.min(20,20-change,20-change-extra));
-      return {a,b,op,third};
+const shuffle = <T,>(items: T[]): T[] => {
+  const xs = [...items];
+  for(let i=xs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[xs[i],xs[j]]=[xs[j],xs[i]];}
+  return xs;
+};
+export const questionKey = (q: Question) => JSON.stringify([q.a,q.op,q.b,q.third?.op,q.third?.value]);
+export function makeQuestions(game: GameId, previous: Question[] = []): Question[] {
+  const used = new Set(previous.map(questionKey));
+  const draw = (pool: Question[], count: number): Question[] => {
+    const available = pool.filter(q=>!used.has(questionKey(q)));
+    const picked: Question[]=[];
+    for(let i=0;i<count;i++) {
+      const index=Math.floor(Math.random()*available.length);
+      const [q]=available.splice(index,1);
+      if(!q)throw new Error('Not enough distinct questions for this stage.');
+      used.add(questionKey(q));picked.push(q);
+    }
+    return picked;
+  };
+  if(game==='locate') {
+    const values=Array.from({length:21},(_,i)=>i-10).filter(n=>n!==0);
+    const zeroIndex=choose(Array.from({length:16},(_,i)=>i).filter(i=>previous[i]?.a!==0));
+    return Array.from({length:16},(_,i)=>{
+      const a=i===zeroIndex?0:choose(values.filter(n=>n!==previous[i]?.a));
+      if(a!==0)values.splice(values.indexOf(a),1);
+      return {a,b:0,op:'+'};
     });
   }
-  return Array.from({length:16}, (_, i) => {
-    const category = Math.floor(i/4);
-    const op = category%2 === 0 ? '+' : '-';
-    const b = int(1,8) * (category>=2 ? -1 : 1);
-    const change = op==='+'?b:-b;
-    return {a:int(Math.max(-10,-10-change),Math.min(10,10-change)),b,op};
-  });
+  if(game==='compare') {
+    const pool: Question[]=[];
+    for(let a=-10;a<=10;a++)for(let b=-10;b<=10;b++)pool.push({a,b,op:'+'});
+    return [
+      ...shuffle([...draw(pool.filter(q=>q.a>=0&&q.b>=0&&q.a!==q.b),3),...draw(pool.filter(q=>q.a===q.b&&q.a>=0),1)]),
+      ...shuffle(draw(pool.filter(q=>q.a*q.b<=0&&q.a!==q.b&&(q.a<0||q.b<0)),4)),
+      ...shuffle([...draw(pool.filter(q=>q.a<0&&q.b<0&&q.a!==q.b),7),...draw(pool.filter(q=>q.a===q.b&&q.a<0),1)]),
+    ];
+  }
+  if(game==='move') {
+    return [0,1,2,3].flatMap(category=>{
+      const op=category%2===0?'+':'-';const pool: Question[]=[];
+      for(let a=-10;a<=10;a++)for(let magnitude=1;magnitude<=8;magnitude++){
+        const b=magnitude*(category>=2?-1:1);const q: Question={a,b,op};
+        if(Math.abs(result(q))<=10)pool.push(q);
+      }
+      return draw(pool,4);
+    });
+  }
+  return [0,1,2].flatMap(level=>shuffle([0,1,2,3].flatMap(category=>{
+    const op=category%2===0?'+':'-';const pool: Question[]=[];
+    for(let a=level===0?1:-20;a<=(level===0?10:level===1?-1:20);a++){
+      for(let magnitude=level===0?1:6;magnitude<=(level===0?9:15);magnitude++){
+        const b=magnitude*(category>=2?-1:1);const q: Question={a,b,op};
+        if(Math.abs(result(q))>20)continue;
+        if(level<2){pool.push(q);continue;}
+        for(let n=1;n<=12;n++){
+          const third: NonNullable<Question['third']>={op:category<2?'+':'-',value:n*(category%2===0?-1:1)};
+          const candidate={...q,third};
+          if(Math.abs(result(candidate))<=20&&result(candidate)!==a)pool.push(candidate);
+        }
+      }
+    }
+    return draw(pool,1);
+  })));
 }
+
 export function startSession(game: GameId, questions = makeQuestions(game), now = Date.now()): Session {
   return {game,questions,index:0,stage:0,errors:0,stageErrors:0,firstTry:0,questionErrors:0,solved:false,finished:false,feedback:'',startedAt:now};
 }
