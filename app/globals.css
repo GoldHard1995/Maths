@@ -32,3 +32,5 @@
 .three-term-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:660px;margin:24px auto;gap:18px}.three-term-options .choice[data-slot=button]{min-width:0;white-space:normal;font-size:22px}@media(max-width:500px){.three-term-options{grid-template-columns:1fr}.task-title.math{overflow-wrap:anywhere}}
 
 .round-bottom>.block-btn{margin-left:auto}
+
+.final-score{display:flex;flex-direction:column;gap:8px;margin:24px auto 0;color:var(--tone)}.final-score>span{font-size:17px;font-weight:700}.final-score strong{font:400 64px var(--font-math);line-height:1.25}.final-score small{font:400 20px var(--font-math);color:#53664e}.round-top{flex-wrap:wrap;gap:10px}.live-score{background:var(--tint);padding:5px 12px;border:1px solid var(--tone)}

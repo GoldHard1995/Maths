@@ -3,7 +3,7 @@ export type Question = { a: number; b: number; op: '+' | '-'; third?: { op: '+' 
 export type Session = {
   game: GameId; questions: Question[]; index: number; stage: number;
   errors: number; stageErrors: number; firstTry: number; questionErrors: number;
-  solved: boolean; finished: boolean; feedback: string; startedAt: number;
+  solved: boolean; finished: boolean; feedback: string; startedAt: number; completedAt: number | null;
 };
 export const gameIds: GameId[] = ['locate', 'compare', 'move', 'brackets'];
 export const signed = (n: number) => n < 0 ? `−${Math.abs(n)}` : n > 0 ? `+${n}` : '0';
@@ -88,7 +88,7 @@ export function makeQuestions(game: GameId, previous: Question[] = []): Question
 }
 
 export function startSession(game: GameId, questions = makeQuestions(game), now = Date.now()): Session {
-  return {game,questions,index:0,stage:0,errors:0,stageErrors:0,firstTry:0,questionErrors:0,solved:false,finished:false,feedback:'',startedAt:now};
+  return {game,questions,index:0,stage:0,errors:0,stageErrors:0,firstTry:0,questionErrors:0,solved:false,finished:false,feedback:'',startedAt:now,completedAt:null};
 }
 export function expected(s: Session): string {
   const q=s.questions[s.index];
@@ -97,7 +97,7 @@ export function expected(s: Session): string {
   if(s.game==='move')return s.stage===0?(delta(q)<0?'left':'right'):s.stage===1?String(Math.abs(q.b)):String(result(q));
   return s.stage===0?bracketAnswer(q):String(result(q));
 }
-export function submit(s: Session, answer: string): Session {
+export function submit(s: Session, answer: string, now = Date.now()): Session {
   if(s.finished || s.solved) return s;
   const q=s.questions[s.index];
   if(answer!==expected(s)) {
@@ -111,8 +111,10 @@ export function submit(s: Session, answer: string): Session {
   }
   const lastStage = s.game==='move'?2:s.game==='brackets'?1:0;
   if(s.stage<lastStage) return {...s,stage:s.stage+1,stageErrors:0,feedback:s.game==='move'?(s.stage===0?'方向正確！接着選擇步數。':'步數正確！最後點選終點。'):'拆括號正確！接着計算答案。'};
-  return {...s,solved:true,firstTry:s.firstTry+(s.questionErrors===0?1:0),feedback:'答對了！你完成了這個任務。'};
+  return {...s,solved:true,finished:s.index===s.questions.length-1,completedAt:s.index===s.questions.length-1?now:null,firstTry:s.firstTry+(s.questionErrors===0?1:0),feedback:`答對了！這題獲得 ${s.questionErrors===0?10:5} 分。`};
 }
+export const score = (s: Session) => s.firstTry * 10 + (s.index + (s.solved ? 1 : 0) - s.firstTry) * 5;
+export const elapsedSeconds = (s: Session, now: number) => Math.max(0,Math.floor(((s.completedAt ?? now)-s.startedAt)/1000));
 export function nextQuestion(s: Session): Session {
   if(!s.solved||s.finished) return s;
   if(s.index===s.questions.length-1)return {...s,finished:true};

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified, result, simplificationChoices, questionKey } from '../lib/game.ts';
+import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified, result, simplificationChoices, questionKey, score, elapsedSeconds } from '../lib/game.ts';
 
 test('negative comparisons and equality use mathematical ordering',()=>{
  for(const [a,b,answer] of [[-7,-3,'<'],[-3,-7,'>'],[-4,-4,'='],[0,-8,'>'],[-2,6,'<']]) {
@@ -122,5 +122,26 @@ test('all games generate distinct rounds and avoid memorising the previous round
    }
    previous=qs;
   }
+ }
+});
+
+
+test('points are awarded once per whole question and completion freezes time',()=>{
+ let s=startSession('brackets',[{a:5,b:-3,op:'-'},{a:2,b:3,op:'+'}],1000);
+ assert.equal(score(s),0);s=submit(s,'+',2000);assert.equal(score(s),0);
+ s=submit(s,'8',3000);assert.equal(score(s),10);assert.equal(s.completedAt,null);
+ s=submit(s,'8',4000);assert.equal(score(s),10);
+ s=nextQuestion(s);s=submit(s,'-',5000);assert.equal(score(s),10);
+ s=submit(s,'+',6000);s=submit(s,'0',7000);assert.equal(score(s),10);
+ s=submit(s,'5',11200);assert.equal(score(s),15);assert.equal(s.finished,true);
+ assert.equal(elapsedSeconds(s,90000),10);assert.equal(s.completedAt,11200);
+ assert.equal(submit(s,'5',99000),s);assert.equal(score(nextQuestion(s)),15);
+ const fresh=startSession('move',undefined,20000);assert.equal(score(fresh),0);assert.equal(fresh.completedAt,null);
+});
+test('a perfect round reaches its game-specific maximum',()=>{
+ for(const game of ['locate','compare','move','brackets']) {
+  let s=startSession(game);
+  while(!s.finished){s=submit(s,expected(s));if(s.solved&&!s.finished)s=nextQuestion(s);}
+  assert.equal(score(s),s.questions.length*10);
  }
 });
