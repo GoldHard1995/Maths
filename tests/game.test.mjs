@@ -20,9 +20,9 @@ test('all four movements check direction, distance, then endpoint',()=>{
   s=submit(s,end);assert.equal(s.solved,true);assert.equal(s.firstTry,0);
  }
 });
-test('brackets and arithmetic are graded separately, including unary expressions',()=>{
- for(const [a,op,b,sign,answer,unary] of [[5,'-',-3,'+','8',false],[-7,'+',-4,'-','-11',false],[-10,'-',5,'-','-15',false],[0,'-',-20,'+','20',true],[0,'+',-20,'-','-20',true],[0,'-',20,'-','-20',true],[0,'+',20,'+','20',true]]) {
-  let s=startSession('brackets',[{a,b,op,unary}],0);
+test('brackets and arithmetic are graded separately, including positive and negative operands',()=>{
+ for(const [a,op,b,sign,answer] of [[5,'-',-3,'+','8'],[-7,'+',-4,'-','-11'],[-10,'-',5,'-','-15'],[0,'-',-20,'+','20'],[0,'+',-20,'-','-20'],[0,'-',20,'-','-20'],[0,'+',20,'+','20']]) {
+  let s=startSession('brackets',[{a,b,op}],0);
   s=submit(s,sign);assert.equal(s.stage,1);assert.equal(s.solved,false);
   const wrong=submit(s,'99');assert.equal(wrong.stage,1);assert.equal(wrong.solved,false);
   s=submit(s,answer);assert.equal(s.solved,true);assert.equal(s.firstTry,1);
@@ -32,13 +32,13 @@ test('brackets and arithmetic are graded separately, including unary expressions
 });
 test('generated rounds cover all signs and stay within agreed bounds',()=>{
  for(const game of ['locate','compare','move','brackets'])for(let run=0;run<150;run++) {
-  const qs=makeQuestions(game);assert.equal(qs.length,16);
+  const qs=makeQuestions(game);assert.equal(qs.length,game==='brackets'?12:16);
   const max=game==='brackets'?20:10;
   for(const q of qs) {
    assert.ok(Number.isInteger(q.a)&&Number.isInteger(q.b));
    assert.ok(Math.abs(q.a)<=max&&Math.abs(q.b)<=max);
    if(game==='move'||game==='brackets') {
-    const end=(q.unary?0:q.a)+(q.op==='+'?q.b:-q.b);
+    const end=q.a+(q.op==='+'?q.b:-q.b);
     assert.ok(Math.abs(end)<=max);assert.notEqual(q.b,0);
     if(game==='move')assert.ok(Math.abs(q.b)<=10);
    }
@@ -60,10 +60,10 @@ test('round completion, retry statistics, duplicate submits, and reset',()=>{
 test('every generated question can complete through the intended stages',()=>{
  for(const game of ['locate','compare','move','brackets']) {
   let s=startSession(game);
-  for(let i=0;i<16;i++) {
+  for(let i=0;i<s.questions.length;i++) {
    let limit=0;while(!s.solved&&limit++<4)s=submit(s,expected(s));
    assert.equal(s.solved,true);s=nextQuestion(s);
   }
-  assert.equal(s.finished,true);assert.equal(s.firstTry,16);
+  assert.equal(s.finished,true);assert.equal(s.firstTry,s.questions.length);
  }
 });

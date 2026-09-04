@@ -1,5 +1,5 @@
 export type GameId = 'locate' | 'compare' | 'move' | 'brackets';
-export type Question = { a: number; b: number; op: '+' | '-'; unary?: boolean };
+export type Question = { a: number; b: number; op: '+' | '-' };
 export type Session = {
   game: GameId; questions: Question[]; index: number; stage: number;
   errors: number; stageErrors: number; firstTry: number; questionErrors: number;
@@ -9,10 +9,10 @@ export const gameIds: GameId[] = ['locate', 'compare', 'move', 'brackets'];
 export const signed = (n: number) => n < 0 ? `−${Math.abs(n)}` : n > 0 ? `+${n}` : '0';
 export const plain = (n: number) => String(n).replace('-', '−');
 export const delta = (q: Question) => q.op === '+' ? q.b : -q.b;
-export const result = (q: Question) => (q.unary ? 0 : q.a) + delta(q);
+export const result = (q: Question) => q.a + delta(q);
 export const relation = (q: Question) => q.a < q.b ? '<' : q.a > q.b ? '>' : '=';
-export const expression = (q: Question) => `${q.unary ? '' : plain(q.a) + ' '}${q.op === '-' ? '−' : '+'} (${signed(q.b)})`;
-export const simplified = (q: Question) => q.unary ? signed(delta(q)) : `${plain(q.a)} ${delta(q) < 0 ? '−' : '+'} ${Math.abs(q.b)}`;
+export const expression = (q: Question) => `${plain(q.a)} ${q.op === '-' ? '−' : '+'} (${signed(q.b)})`;
+export const simplified = (q: Question) => `${plain(q.a)} ${delta(q) < 0 ? '−' : '+'} ${Math.abs(q.b)}`;
 const choose = <T,>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
 const int = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo + 1));
 export function makeQuestions(game: GameId): Question[] {
@@ -24,15 +24,14 @@ export function makeQuestions(game: GameId): Question[] {
     const pairs = [[-7,-3],[4,8],[-2,3],[0,-4],[-5,-5],[-1,-8],[-10,-6],[6,-6],[-9,-2],[-3,-7],[0,0],[10,9],[-4,-1],[-2,-10],[0,5],[-6,-6]];
     return pairs.map(([a,b]) => ({a,b,op:'+'}));
   }
-  return Array.from({length:16},(_,i) => {
+  return Array.from({length:game === 'brackets' ? 12 : 16},(_,i) => {
     const category = game === 'move' ? Math.floor(i/4) : i%4;
     const op = category%2 === 0 ? '+' : '-';
     const max = game === 'brackets' ? 20 : 10;
     const b = int(1, game === 'move' ? 8 : 20) * (category>=2 ? -1 : 1);
     const change = op==='+'?b:-b;
-    const unary = game === 'brackets' && i<4;
-    const a = unary ? 0 : int(Math.max(-max,-max-change),Math.min(max,max-change));
-    return {a,b,op,unary};
+    const a = int(Math.max(-max,-max-change),Math.min(max,max-change));
+    return {a,b,op};
   });
 }
 export function startSession(game: GameId, questions = makeQuestions(game), now = Date.now()): Session {
