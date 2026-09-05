@@ -43,8 +43,8 @@ export function makeQuestions(game: GameId, previous: Question[] = []): Question
   };
   if(game==='locate') {
     const values=Array.from({length:21},(_,i)=>i-10).filter(n=>n!==0);
-    const zeroIndex=choose(Array.from({length:16},(_,i)=>i).filter(i=>previous[i]?.a!==0));
-    return Array.from({length:16},(_,i)=>{
+    const zeroIndex=choose(Array.from({length:15},(_,i)=>i).filter(i=>previous[i]?.a!==0));
+    return Array.from({length:15},(_,i)=>{
       const a=i===zeroIndex?0:choose(values.filter(n=>n!==previous[i]?.a));
       if(a!==0)values.splice(values.indexOf(a),1);
       return {a,b:0,op:'+'};
@@ -54,22 +54,22 @@ export function makeQuestions(game: GameId, previous: Question[] = []): Question
     const pool: Question[]=[];
     for(let a=-10;a<=10;a++)for(let b=-10;b<=10;b++)pool.push({a,b,op:'+'});
     return [
-      ...shuffle([...draw(pool.filter(q=>q.a>=0&&q.b>=0&&q.a!==q.b),3),...draw(pool.filter(q=>q.a===q.b&&q.a>=0),1)]),
-      ...shuffle(draw(pool.filter(q=>q.a*q.b<=0&&q.a!==q.b&&(q.a<0||q.b<0)),4)),
-      ...shuffle([...draw(pool.filter(q=>q.a<0&&q.b<0&&q.a!==q.b),7),...draw(pool.filter(q=>q.a===q.b&&q.a<0),1)]),
+      ...shuffle([...draw(pool.filter(q=>q.a>=0&&q.b>=0&&q.a!==q.b),4),...draw(pool.filter(q=>q.a===q.b&&q.a>=0),1)]),
+      ...shuffle(draw(pool.filter(q=>q.a*q.b<=0&&q.a!==q.b&&(q.a<0||q.b<0)),5)),
+      ...shuffle([...draw(pool.filter(q=>q.a<0&&q.b<0&&q.a!==q.b),4),...draw(pool.filter(q=>q.a===q.b&&q.a<0),1)]),
     ];
   }
   if(game==='move') {
-    return [0,1,2,3].flatMap(category=>{
+    return [0,1,2,3].flatMap((category)=>{
       const op=category%2===0?'+':'-';const pool: Question[]=[];
       for(let a=-10;a<=10;a++)for(let magnitude=1;magnitude<=8;magnitude++){
         const b=magnitude*(category>=2?-1:1);const q: Question={a,b,op};
         if(Math.abs(result(q))<=10)pool.push(q);
       }
-      return draw(pool,4);
+      return draw(pool,category===3?3:4);
     });
   }
-  return [0,1,2].flatMap(level=>shuffle([0,1,2,3].flatMap(category=>{
+  return [0,1,2].flatMap(level=>shuffle([...([0,1,2,3] as number[]),choose([0,1,2,3])].flatMap(category=>{
     const op=category%2===0?'+':'-';const pool: Question[]=[];
     for(let a=level===0?1:-20;a<=(level===0?10:level===1?-1:20);a++){
       for(let magnitude=level===0?1:6;magnitude<=(level===0?9:15);magnitude++){

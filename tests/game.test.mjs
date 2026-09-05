@@ -32,7 +32,7 @@ test('brackets and arithmetic are graded separately, including positive and nega
 });
 test('generated rounds cover all signs and stay within agreed bounds',()=>{
  for(const game of ['locate','compare','move','brackets'])for(let run=0;run<150;run++) {
-  const qs=makeQuestions(game);assert.equal(qs.length,game==='brackets'?12:16);
+  const qs=makeQuestions(game);assert.equal(qs.length,15);
   const max=game==='brackets'?20:10;
   for(const q of qs) {
    assert.ok(Number.isInteger(q.a)&&Number.isInteger(q.b));
@@ -73,8 +73,8 @@ test('bracket difficulty increases in three blocks and all three-term values rem
  for(let run=0;run<150;run++) {
   const qs=makeQuestions('brackets');
   qs.forEach((q,i)=>{
-   if(i<4){assert.ok(q.a>=1&&q.a<=10);assert.ok(Math.abs(q.b)<=9);assert.equal(q.third,undefined);}
-   else if(i<8){assert.ok(q.a<0);assert.equal(q.third,undefined);}
+   if(i<5){assert.ok(q.a>=1&&q.a<=10);assert.ok(Math.abs(q.b)<=9);assert.equal(q.third,undefined);}
+   else if(i<10){assert.ok(q.a<0);assert.equal(q.third,undefined);}
    else {
     assert.ok(q.third);assert.ok(Math.abs(q.third.value)<=20);
     const intermediate=q.a+(q.op==='+'?q.b:-q.b);
@@ -116,8 +116,8 @@ test('all games generate distinct rounds and avoid memorising the previous round
     qs.forEach(q=>assert.equal(old.has(questionKey(q)),false));
    }
    if(game==='compare') {
-    assert.ok(qs.slice(0,4).every(q=>q.a>=0&&q.b>=0));
-    assert.ok(qs.slice(8).every(q=>q.a<0&&q.b<0));
+    assert.ok(qs.slice(0,5).every(q=>q.a>=0&&q.b>=0));
+    assert.ok(qs.slice(10).every(q=>q.a<0&&q.b<0));
     assert.equal(qs.filter(q=>q.a===q.b).length,2);
    }
    previous=qs;

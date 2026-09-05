@@ -33,7 +33,7 @@ export default function Home() {
       annotations:{readOnlyHint:false,untrustedContentHint:false},
       execute(input:unknown){
         if(!input||typeof input!=='object'||!('game' in input)||!gameIds.includes(input.game as GameId)||Object.keys(input).length!==1)throw new Error('Choose locate, compare, move, or brackets.');
-        const game=input.game as GameId;flushSync(()=>start(game));return {game,question:1,totalQuestions:game==='brackets'?12:16};
+        const game=input.game as GameId;flushSync(()=>start(game));return {game,question:1,totalQuestions:15};
       },
     },{signal:controller.signal})).catch(()=>{});} catch {}
     return ()=>controller.abort();
