@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified, result, simplificationChoices, questionKey, score, elapsedSeconds } from '../lib/game.ts';
+import { formatDuration, validStudent } from '../lib/leaderboard.ts';
 
 test('negative comparisons and equality use mathematical ordering',()=>{
  for(const [a,b,answer] of [[-7,-3,'<'],[-3,-7,'>'],[-4,-4,'='],[0,-8,'>'],[-2,6,'<']]) {
@@ -139,9 +140,60 @@ test('points are awarded once per whole question and completion freezes time',()
  const fresh=startSession('move',undefined,20000);assert.equal(score(fresh),0);assert.equal(fresh.completedAt,null);
 });
 test('a perfect round reaches its game-specific maximum',()=>{
- for(const game of ['locate','compare','move','brackets']) {
+ for(const game of ['locate','compare','move','brackets','multiply','divide','mixed']) {
   let s=startSession(game);
   while(!s.finished){s=submit(s,expected(s));if(s.solved&&!s.finished)s=nextQuestion(s);}
   assert.equal(score(s),s.questions.length*10);
  }
+});
+
+test('multiplication rounds use the three difficulty blocks and cover sign rules',()=>{
+ for(let run=0;run<60;run++){
+  const qs=makeQuestions('multiply');assert.equal(qs.length,15);assert.equal(new Set(qs.map(questionKey)).size,15);
+  assert.ok(qs.slice(0,5).every(q=>q.values.length===2&&q.values.every(n=>n!==0&&Math.abs(n)<=9)));
+  assert.ok(qs.slice(5,10).every(q=>q.values.length===2&&q.values.every(n=>n!==0&&Math.abs(n)<=20)));
+  assert.ok(qs.slice(10).every(q=>q.values.length===3));
+  qs.forEach(q=>{assert.ok(Number.isInteger(result(q)));assert.ok(Math.abs(result(q))<=100);q.values.forEach(n=>assert.notEqual(n,0));});
+  assert.equal(new Set(qs.slice(0,10).map(q=>`${Math.sign(q.values[0])},${Math.sign(q.values[1])}`)).size,4);
+ }
+});
+
+test('division rounds are exact at every step and use both layouts',()=>{
+ for(let run=0;run<60;run++){
+  const qs=makeQuestions('divide');assert.equal(qs.length,15);assert.equal(new Set(qs.map(questionKey)).size,15);
+  assert.ok(qs.slice(0,5).every(q=>q.values.length===2&&q.display==='inline'));
+  assert.ok(qs.slice(10).every(q=>q.values.length===3));
+  assert.ok(qs.some(q=>q.display==='fraction'));
+  qs.forEach(q=>{let value=q.values[0];for(const divisor of q.values.slice(1)){assert.notEqual(divisor,0);assert.equal(Math.abs(value%divisor),0);value/=divisor}assert.equal(value,result(q));assert.ok(Math.abs(value)<=100);});
+ }
+});
+
+test('mixed arithmetic provides ordered selection and integer substitution steps',()=>{
+ for(let run=0;run<60;run++){
+  const qs=makeQuestions('mixed');assert.equal(qs.length,15);assert.equal(new Set(qs.map(questionKey)).size,15);
+  qs.forEach((q,i)=>{assert.equal(q.level,Math.floor(i/5));assert.ok(q.steps.length>=2+q.level);q.steps.forEach(step=>{assert.ok(step.choices.includes(step.target));assert.ok(Number.isInteger(step.result));assert.ok(Math.abs(step.result)<=100)});assert.equal(q.steps.at(-1).result,q.answer);});
+  assert.ok(qs.slice(0,5).some(q=>q.steps[0].display.includes('÷')));
+  assert.ok(qs.slice(0,5).some(q=>q.steps.at(-1).display.includes(' − ')));
+  assert.ok(qs.slice(5,10).some(q=>q.steps.some(step=>step.display.includes('÷'))));
+  assert.ok(qs.slice(10).every(q=>q.steps.some(step=>step.display.includes('÷'))));
+ }
+ let s=startSession('mixed',[makeQuestions('mixed')[10]],0);while(!s.solved)s=submit(s,expected(s));assert.equal(s.firstTry,1);
+});
+
+test('new games avoid every question from the immediately previous round',()=>{
+ for(const game of ['multiply','divide','mixed']){
+  const first=makeQuestions(game),second=makeQuestions(game,first),old=new Set(first.map(questionKey));
+  second.forEach(q=>assert.equal(old.has(questionKey(q)),false));
+ }
+});
+
+test('leaderboard student fields and durations use the agreed ranges',()=>{
+ assert.equal(validStudent('1A',1),true);
+ assert.equal(validStudent('1D',33),true);
+ assert.equal(validStudent('1E',1),false);
+ assert.equal(validStudent('1A',0),false);
+ assert.equal(validStudent('1A',34),false);
+ assert.equal(validStudent('1A',1.5),false);
+ assert.equal(formatDuration(0),'0:00');
+ assert.equal(formatDuration(629),'10:29');
 });
