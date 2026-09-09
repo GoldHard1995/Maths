@@ -29,6 +29,8 @@
     "build/**",
     "dist/**",
     "coverage/**",
+    "algebra-block-world/**",
+    "maths-block-world-hub/**",
     "next-env.d.ts"
   ],
   "rules": {

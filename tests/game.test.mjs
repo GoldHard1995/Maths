@@ -98,7 +98,7 @@ test('three-term answers require both bracket signs before accepting the final t
   s=submit(s,signs[0]);assert.equal(s.stage,0);
   for(const option of simplificationChoices(q))if(option.value!==signs)assert.equal(submit(s,option.value).stage,0);
   s=submit(s,signs);assert.equal(s.stage,1);assert.equal(simplified(q),text);
-  s=submit(s,String(total));assert.equal(s.solved,true);
+  s=submit(s,String(Number(total)));assert.equal(s.solved,true);
  }
 });
 
@@ -145,6 +145,13 @@ test('a perfect round reaches its game-specific maximum',()=>{
   while(!s.finished){s=submit(s,expected(s));if(s.solved&&!s.finished)s=nextQuestion(s);}
   assert.equal(score(s),s.questions.length*10);
  }
+});
+test('first-try streak grows across questions and resets after a genuine error',()=>{
+ let s=startSession('locate',[{a:1},{a:2},{a:3}],0);
+ s=submit(s,'1');assert.equal(s.longestFirstTryStreak,1);s=nextQuestion(s);
+ s=submit(s,'2');assert.equal(s.longestFirstTryStreak,2);s=nextQuestion(s);
+ s=submit(s,'0');assert.equal(s.currentFirstTryStreak,0);s=submit(s,'3');
+ assert.equal(s.longestFirstTryStreak,2);assert.equal(s.firstTry,2);assert.equal(s.errors,1);
 });
 
 test('multiplication rounds use the three difficulty blocks and cover sign rules',()=>{

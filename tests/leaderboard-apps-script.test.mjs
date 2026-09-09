@@ -34,7 +34,7 @@ test('per-game and overall leaderboards keep the best attempt and require seven 
     {roundId:'R1',submittedAt:8,className:'1A',studentNo:1,gameId:'mixed',score:135,maxScore:150,elapsedSeconds:35},
     {roundId:'R1',submittedAt:9,className:'1B',studentNo:2,gameId:'locate',score:150,maxScore:150,elapsedSeconds:40},
     {roundId:'OLD',submittedAt:1,className:'1C',studentNo:3,gameId:'locate',score:150,maxScore:150,elapsedSeconds:1},
-  ];
+  ].map(record => ({...record, worldId:'directed-number'}));
   context.currentRound_ = () => 'R1';
   context.readRecords_ = () => records;
   const game = context.leaderboard_('locate', 'ALL', {className:'1A',studentNo:1});
@@ -45,4 +45,41 @@ test('per-game and overall leaderboards keep the best attempt and require seven 
   assert.equal(overall.rankings.length, 1);
   assert.equal(overall.rankings[0].score, 960);
   assert.equal(overall.rankings[0].elapsedSeconds, 390);
+});
+
+test('badge profile covers stages, streaks, masters, cumulative goals, and duplicate submissions', () => {
+  const make = (submissionId, worldId, gameId, firstTryCorrect=10, longestFirstTryStreak=5) => ({submissionId,worldId,gameId,questionCount:15,firstTryCorrect,longestFirstTryStreak});
+  const directed = ['locate','compare','move','brackets','multiply','divide','mixed'].map((game,index) => make(`directed-${index}`, 'directed-number', game, index===0?15:10, index===0?15:7));
+  const algebra = ['words','add-subtract','multiply-divide','expand','mixed-expand','substitute','sequence'].map((game,index) => make(`algebra-${index}`, 'algebra', game, 10, 6));
+  const duplicate = {...directed[0]};
+  const profile = context.profileFromRecords_('2026-27','1A',1,[...directed,...algebra,duplicate],[]);
+  assert.equal(profile.summary.completedStages, 14);
+  assert.equal(profile.summary.completedWorlds, 2);
+  assert.equal(profile.summary.firstTryCorrect, 145);
+  for (const id of ['ten-streak','perfectionist','directed-master','algebra-master','maths-explorer','mystery-100']) {
+    assert.equal(profile.badges.find(badge => badge.id === id).earned, true, id);
+  }
+  assert.equal(profile.badges.find(badge => badge.id === 'all-rounder').earned, false);
+  const mystery500 = profile.badges.find(badge => badge.id === 'mystery-500');
+  assert.equal(mystery500.name, '？？？');
+  assert.equal(mystery500.progress, null);
+});
+
+test('replays can reach the hidden 500 goal without duplicating a submission', () => {
+  const records = Array.from({length:34}, (_,index) => ({submissionId:`replay-${index}`,worldId:'directed-number',gameId:'locate',questionCount:15,firstTryCorrect:15,longestFirstTryStreak:15}));
+  records.push({...records[0]});
+  const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
+  assert.equal(profile.summary.firstTryCorrect, 510);
+  const badge = profile.badges.find(item => item.id === 'mystery-500');
+  assert.equal(badge.earned, true);
+  assert.equal(badge.name, '神秘數字 500');
+});
+
+test('score validation rejects mismatched worlds, counts, scores, and school years', () => {
+  context.currentSchoolYear_ = () => '2026-27';
+  const valid = {submissionId:'submission-12345',schoolYear:'2026-27',worldId:'algebra',className:'1A',studentNo:1,gameId:'words',score:125,maxScore:150,elapsedSeconds:80,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:6,wrongAttempts:2};
+  assert.doesNotThrow(() => context.validateSubmission_(valid));
+  for (const change of [{worldId:'unknown'},{questionCount:14},{score:120},{schoolYear:'2025-26'},{studentNo:34},{longestFirstTryStreak:11}]) {
+    assert.throws(() => context.validateSubmission_({...valid,...change}));
+  }
 });

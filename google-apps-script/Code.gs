@@ -1,226 +1,49 @@
-const SETTINGS_SHEET = '設定';
-const RECORDS_SHEET = '成績紀錄';
-const SPREADSHEET_ID = '1xStb4PmteX7iACLcHxVZXBUBl6pK6Ipf7ayC3Pll7Bs';
-const CLASSES = ['1A', '1B', '1C', '1D'];
-const GAMES = ['locate', 'compare', 'move', 'brackets', 'multiply', 'divide', 'mixed'];
+const SETTINGS_SHEET='設定',RECORDS_SHEET='成績紀錄',BADGES_SHEET='襟章紀錄';
+const SPREADSHEET_ID='1xStb4PmteX7iACLcHxVZXBUBl6pK6Ipf7ayC3Pll7Bs',CLASSES=['1A','1B','1C','1D'];
+const RECORD_HEADERS=['輪次','提交編號','提交時間','班別','學號','遊戲','分數','滿分','遊戲秒數','學年','課題世界','題數','首次答對','最長首次答對連勝','錯答次數'];
+const CATALOG=[
+ {id:'directed-number',name:'有向數方塊世界',order:1,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['locate','數線定位','定位先鋒'],['compare','比較大小','大小判官'],['move','數線移動','數線旅人'],['brackets','拆括號與計算','符號破解者'],['multiply','有向數乘法','乘法戰士'],['divide','有向數除法','除法術士'],['mixed','有向數四則運算','四則統領']]},
+ {id:'algebra',name:'代數方塊世界',order:2,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['words','文字變代數','語言鍊金師'],['add-subtract','代數式加減','同類項整理師'],['multiply-divide','代數式乘除','係數工匠'],['expand','拆括號','括號破壁者'],['mixed-expand','括號四則化簡','化簡策士'],['substitute','公式代入','公式代入師'],['sequence','數列代入','數列追蹤者']]}
+];
+const BADGES=buildBadges_();
+function buildBadges_(){const a=[];CATALOG.forEach(w=>w.stages.forEach(s=>a.push({id:`stage-${w.id}-${s[0]}`,name:s[2],description:`完成「${s[1]}」全部 ${w.questionCount} 題。`,category:'stage',hidden:false,asset:`stage-${w.id}-${s[0]}`,rule:'stage',worldId:w.id,gameId:s[0],target:1})));return a.concat([
+ {id:'first-expedition',name:'初次出征',description:'完成任何一個 15 題關卡。',category:'exploration',hidden:false,asset:'first-expedition',rule:'distinctStages',target:1},
+ {id:'ten-streak',name:'十連斬',description:'任何一局最長連續首次答對達 10 題。',category:'skill',hidden:false,asset:'ten-streak',rule:'streak',target:10},
+ {id:'perfectionist',name:'完美主義者',description:'任何一關 15 題全部首次答對。',category:'skill',hidden:false,asset:'perfectionist',rule:'perfect',target:1},
+ {id:'directed-master',name:'有向數大師',description:'完成有向數全部 7 關。',category:'exploration',hidden:false,asset:'directed-master',rule:'world',worldId:'directed-number',target:7},
+ {id:'algebra-master',name:'代數大師',description:'完成代數全部 7 關。',category:'exploration',hidden:false,asset:'algebra-master',rule:'world',worldId:'algebra',target:7},
+ {id:'maths-explorer',name:'數學探索家',description:'完成 5 個不同關卡。',category:'exploration',hidden:false,asset:'maths-explorer',rule:'distinctStages',target:5},
+ {id:'all-rounder',name:'全能數學家',description:'完成 5 個不同課題世界的全部指定關卡。',category:'exploration',hidden:false,asset:'all-rounder',rule:'worlds',target:5},
+ {id:'mystery-100',name:'神秘數字 100',description:'所有有效紀錄累積首次答對 100 題。',category:'cumulative',hidden:true,asset:'mystery-100',rule:'firstTry',target:100},
+ {id:'mystery-500',name:'神秘數字 500',description:'所有有效紀錄累積首次答對 500 題。',category:'cumulative',hidden:true,asset:'mystery-500',rule:'firstTry',target:500}]);}
 
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('排行榜管理')
-    .addItem('建立排行榜工作表', 'setupLeaderboard')
-    .addItem('開始新一輪', 'startNewRound')
-    .addToUi();
-}
+function onOpen(){SpreadsheetApp.getUi().createMenu('數學遊戲平台').addItem('初始化數學遊戲平台','setupMathsPlatform').addItem('開始新排行榜輪次','startNewRound').addItem('開始新學年','startNewSchoolYear').addToUi()}
+function setupMathsPlatform(){const book=SpreadsheetApp.openById(SPREADSHEET_ID);PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID',book.getId());let s=book.getSheetByName(SETTINGS_SHEET);if(!s)s=book.insertSheet(SETTINGS_SHEET);if(!s.getLastRow()){const now=new Date();s.getRange(1,1,7,2).setValues([['設定項目','內容'],['目前輪次',roundId_(now)],['輪次名稱','數學遊戲排行榜'],['建立時間',now],['允許班別',CLASSES.join(',')],['學號範圍','1-33'],['目前學年',defaultSchoolYear_(now)]])}else if(!findSetting_(s,'目前學年'))s.appendRow(['目前學年',defaultSchoolYear_(new Date())]);styleHeader_(s,2);let r=book.getSheetByName(RECORDS_SHEET);if(!r)r=book.insertSheet(RECORDS_SHEET);ensureHeaders_(r,RECORD_HEADERS);migrateLegacyRecords_(r);let b=book.getSheetByName(BADGES_SHEET);if(!b)b=book.insertSheet(BADGES_SHEET);ensureHeaders_(b,['學年','班別','學號','襟章','取得時間','來源提交編號']);backfillBadges_();if(!ScriptApp.getProjectTriggers().some(t=>t.getHandlerFunction()==='onOpen'))ScriptApp.newTrigger('onOpen').forSpreadsheet(SPREADSHEET_ID).onOpen().create()}
+function setupLeaderboard(){setupMathsPlatform()}
+function startNewRound(){const ui=SpreadsheetApp.getUi(),reply=ui.prompt('開始新排行榜輪次','輸入新輪次名稱：',ui.ButtonSet.OK_CANCEL);if(reply.getSelectedButton()!==ui.Button.OK)return;const s=requiredSettings_(),now=new Date();setSetting_(s,'目前輪次',roundId_(now));setSetting_(s,'輪次名稱',reply.getResponseText().trim()||'數學遊戲排行榜');setSetting_(s,'建立時間',now);ui.alert('新排行榜輪次已開始；襟章及舊成績不受影響。')}
+function startNewSchoolYear(){const ui=SpreadsheetApp.getUi(),reply=ui.prompt('開始新學年','輸入學年，例如 2026-27：',ui.ButtonSet.OK_CANCEL);if(reply.getSelectedButton()!==ui.Button.OK)return;const year=reply.getResponseText().trim();if(!/^20\d{2}-\d{2}$/.test(year))throw new Error('學年格式必須為 2026-27。');setSetting_(requiredSettings_(),'目前學年',year);ui.alert('已切換至新學年；舊資料完整保留。')}
 
-function setupLeaderboard() {
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-  PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', spreadsheet.getId());
-  let settings = spreadsheet.getSheetByName(SETTINGS_SHEET);
-  if (!settings) settings = spreadsheet.insertSheet(SETTINGS_SHEET);
-  settings.clear();
-  const now = new Date();
-  settings.getRange('A1:B6').setValues([
-    ['設定項目', '內容'],
-    ['目前輪次', Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss')],
-    ['輪次名稱', '有向數排行榜'],
-    ['建立時間', now],
-    ['允許班別', CLASSES.join(',')],
-    ['學號範圍', '1-33'],
-  ]);
-  settings.setFrozenRows(1);
-  settings.getRange('A1:B1').setBackground('#294f38').setFontColor('#ffffff').setFontWeight('bold');
-  settings.setColumnWidth(1, 130);
-  settings.setColumnWidth(2, 240);
-  let records = spreadsheet.getSheetByName(RECORDS_SHEET);
-  if (!records) records = spreadsheet.insertSheet(RECORDS_SHEET);
-  if (records.getLastRow() === 0) {
-    records.getRange(1, 1, 1, 9).setValues([['輪次', '提交編號', '提交時間', '班別', '學號', '遊戲', '分數', '滿分', '遊戲秒數']]);
-    records.setFrozenRows(1);
-    records.getRange(1, 1, 1, 9).setBackground('#294f38').setFontColor('#ffffff').setFontWeight('bold');
-    records.setColumnWidths(1, 9, 120);
-    records.setColumnWidth(2, 280);
-    records.setColumnWidth(3, 170);
-  }
-  const hasOpenTrigger = ScriptApp.getProjectTriggers().some(trigger => trigger.getHandlerFunction() === 'onOpen');
-  if (!hasOpenTrigger) ScriptApp.newTrigger('onOpen').forSpreadsheet(SPREADSHEET_ID).onOpen().create();
-}
+function doGet(e){const cb=String(e.parameter.callback||'callback');if(!/^[A-Za-z_$][\w$]*$/.test(cb))return ContentService.createTextOutput('/* invalid callback */').setMimeType(ContentService.MimeType.JAVASCRIPT);try{const action=String(e.parameter.action||'leaderboard');if(action==='config')return jsonp_(cb,config_());if(action==='catalog')return jsonp_(cb,{ok:true,worlds:publicCatalog_(),badges:publicBadges_()});if(action==='profile')return jsonp_(cb,profile_(String(e.parameter.schoolYear||currentSchoolYear_()),String(e.parameter.className||''),Number(e.parameter.studentNo)));if(action!=='leaderboard')throw new Error('介面動作無效。');const student=validStudent_(e.parameter.className,Number(e.parameter.studentNo))?{className:String(e.parameter.className),studentNo:Number(e.parameter.studentNo)}:null;return jsonp_(cb,leaderboard_(String(e.parameter.board||'locate'),String(e.parameter.classFilter||'ALL'),student,String(e.parameter.worldId||'directed-number')))}catch(error){return jsonp_(cb,{ok:false,message:error.message})}}
+function doPost(e){const submissionId=String(e.parameter.submissionId||'');try{const p={submissionId,schoolYear:String(e.parameter.schoolYear||currentSchoolYear_()),worldId:String(e.parameter.worldId||'directed-number'),className:String(e.parameter.className||''),studentNo:Number(e.parameter.studentNo),gameId:String(e.parameter.gameId||''),score:Number(e.parameter.score),maxScore:Number(e.parameter.maxScore),elapsedSeconds:Number(e.parameter.elapsedSeconds),questionCount:Number(e.parameter.questionCount||15),firstTryCorrect:Number(e.parameter.firstTryCorrect),longestFirstTryStreak:Number(e.parameter.longestFirstTryStreak||0),wrongAttempts:Number(e.parameter.wrongAttempts||0)};validateSubmission_(p);const lock=LockService.getScriptLock();lock.waitLock(10000);let inserted,newBadges;try{inserted=appendIfNew_(p);newBadges=inserted?awardBadges_(p):[]}finally{lock.releaseLock()}const identity={className:p.className,studentNo:p.studentNo},grade=leaderboard_(p.gameId,'ALL',identity,p.worldId),classBoard=leaderboard_(p.gameId,p.className,identity,p.worldId);return postMessage_({source:'maths-platform',ok:true,submissionId,message:inserted?'成績已成功上傳。':'這次成績早已上傳。',best:grade.self,gradeRank:grade.self?grade.self.rank:null,classRank:classBoard.self?classBoard.self.rank:null,newBadges})}catch(error){return postMessage_({source:'maths-platform',ok:false,submissionId,message:error.message,newBadges:[]})}}
+function validateSubmission_(p){if(!/^[A-Za-z0-9-]{10,80}$/.test(p.submissionId))throw new Error('提交編號無效。');if(p.schoolYear!==currentSchoolYear_())throw new Error('學年無效。請返回入口重新選擇學生。');if(!validStudent_(p.className,p.studentNo))throw new Error('班別或學號無效。');const world=world_(p.worldId);if(!world||!stage_(p.worldId,p.gameId))throw new Error('課題世界或關卡無效。');const keys=['score','maxScore','elapsedSeconds','questionCount','firstTryCorrect','longestFirstTryStreak','wrongAttempts'];if(keys.some(k=>!Number.isInteger(p[k])||p[k]<0))throw new Error('成績格式無效。');if(p.questionCount!==world.questionCount||p.maxScore!==world.maxScore||p.firstTryCorrect>world.questionCount||p.longestFirstTryStreak>p.firstTryCorrect)throw new Error('成績內容無效。');if(p.score!==p.firstTryCorrect*world.firstTryPoints+(world.questionCount-p.firstTryCorrect)*world.retryPoints)throw new Error('分數與首次答對統計不一致。')}
+function appendIfNew_(p){const s=getSpreadsheet_().getSheetByName(RECORDS_SHEET);if(!s)throw new Error('平台尚未完成設定。');if(s.getLastRow()>1&&s.getRange(2,2,s.getLastRow()-1,1).getDisplayValues().flat().indexOf(p.submissionId)!==-1)return false;s.appendRow([currentRound_(),p.submissionId,new Date(),p.className,p.studentNo,p.gameId,p.score,p.maxScore,p.elapsedSeconds,p.schoolYear,p.worldId,p.questionCount,p.firstTryCorrect,p.longestFirstTryStreak,p.wrongAttempts]);return true}
 
-function startNewRound() {
-  const spreadsheet = getSpreadsheet_();
-  const settings = spreadsheet.getSheetByName(SETTINGS_SHEET);
-  if (!settings) throw new Error('請先執行「建立排行榜工作表」。');
-  const ui = SpreadsheetApp.getUi();
-  const response = ui.prompt('開始新一輪', '輸入新輪次名稱：', ui.ButtonSet.OK_CANCEL);
-  if (response.getSelectedButton() !== ui.Button.OK) return;
-  const now = new Date();
-  settings.getRange('B2:B4').setValues([
-    [Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss')],
-    [response.getResponseText().trim() || '有向數排行榜'],
-    [now],
-  ]);
-  ui.alert('新一輪已開始。舊成績仍保留在「成績紀錄」。');
-}
+function awardBadges_(p){const result=profile_(p.schoolYear,p.className,p.studentNo),earned=new Set(readBadgeRecords_().filter(r=>r.schoolYear===p.schoolYear&&r.className===p.className&&r.studentNo===p.studentNo).map(r=>r.badgeId)),newly=result.badges.filter(b=>b.earned&&!earned.has(b.id)),sheet=getSpreadsheet_().getSheetByName(BADGES_SHEET);newly.forEach(b=>sheet.appendRow([p.schoolYear,p.className,p.studentNo,b.id,new Date(),p.submissionId]));return newly.map(publicBadge_)}
+function profile_(year,className,studentNo){if(year!==currentSchoolYear_()||!validStudent_(className,studentNo))throw new Error('學生身份無效。');return profileFromRecords_(year,className,studentNo,readRecords_().filter(r=>r.schoolYear===year&&r.className===className&&r.studentNo===studentNo),readBadgeRecords_().filter(r=>r.schoolYear===year&&r.className===className&&r.studentNo===studentNo))}
+function profileFromRecords_(year,className,studentNo,records,awards){const seen=new Set(),unique=records.filter(r=>!seen.has(r.submissionId)&&seen.add(r.submissionId)),completed=new Set(unique.filter(r=>{const w=world_(r.worldId);return w&&r.questionCount===w.questionCount}).map(r=>`${r.worldId}:${r.gameId}`)),byWorld={};CATALOG.forEach(w=>byWorld[w.id]=w.stages.filter(s=>completed.has(`${w.id}:${s[0]}`)).length);const worlds=CATALOG.filter(w=>byWorld[w.id]===w.stages.length).length,total=unique.reduce((n,r)=>n+Number(r.firstTryCorrect||0),0),streak=unique.reduce((n,r)=>Math.max(n,Number(r.longestFirstTryStreak||0)),0),perfect=unique.some(r=>{const w=world_(r.worldId);return w&&Number(r.firstTryCorrect)===w.questionCount}),dates={};(awards||[]).forEach(r=>dates[r.badgeId]=r.earnedAt);const badges=BADGES.map(b=>{let progress=0;if(b.rule==='stage')progress=completed.has(`${b.worldId}:${b.gameId}`)?1:0;if(b.rule==='distinctStages')progress=completed.size;if(b.rule==='streak')progress=streak;if(b.rule==='perfect')progress=perfect?1:0;if(b.rule==='world')progress=byWorld[b.worldId]||0;if(b.rule==='worlds')progress=worlds;if(b.rule==='firstTry')progress=total;const earned=progress>=b.target;return Object.assign({},publicBadge_(b),{earned,earnedAt:dates[b.id]||null,progress:earned||!b.hidden?Math.min(progress,b.target):null,target:earned||!b.hidden?b.target:null,name:earned||!b.hidden?b.name:'？？？',description:earned||!b.hidden?b.description:''})});return{ok:true,schoolYear:year,className,studentNo,summary:{earnedBadges:badges.filter(b=>b.earned).length,totalBadges:BADGES.length,completedStages:completed.size,firstTryCorrect:total,maxFirstTryStreak:streak,completedWorlds:worlds},worldProgress:CATALOG.map(w=>({worldId:w.id,completed:byWorld[w.id],total:w.stages.length})),badges}}
 
-function doGet(e) {
-  const callback = String(e.parameter.callback || 'callback');
-  if (!/^[A-Za-z_$][\w$]*$/.test(callback)) {
-    return ContentService.createTextOutput('/* invalid callback */').setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  try {
-    const board = String(e.parameter.board || 'locate');
-    const classFilter = String(e.parameter.classFilter || 'ALL');
-    const student = validStudent_(e.parameter.className, Number(e.parameter.studentNo))
-      ? { className: String(e.parameter.className), studentNo: Number(e.parameter.studentNo) }
-      : null;
-    return jsonp_(callback, leaderboard_(board, classFilter, student));
-  } catch (error) {
-    return jsonp_(callback, { ok: false, message: error.message });
-  }
-}
-
-function doPost(e) {
-  const submissionId = String(e.parameter.submissionId || '');
-  try {
-    const payload = {
-      submissionId,
-      className: String(e.parameter.className || ''),
-      studentNo: Number(e.parameter.studentNo),
-      gameId: String(e.parameter.gameId || ''),
-      score: Number(e.parameter.score),
-      maxScore: Number(e.parameter.maxScore),
-      elapsedSeconds: Number(e.parameter.elapsedSeconds),
-    };
-    validateSubmission_(payload);
-    const lock = LockService.getScriptLock();
-    lock.waitLock(10000);
-    try {
-      appendIfNew_(payload);
-    } finally {
-      lock.releaseLock();
-    }
-    const identity = { className: payload.className, studentNo: payload.studentNo };
-    const grade = leaderboard_(payload.gameId, 'ALL', identity);
-    const classBoard = leaderboard_(payload.gameId, payload.className, identity);
-    return postMessage_({
-      source: 'directed-number-leaderboard',
-      ok: true,
-      submissionId,
-      message: '成績已成功上傳。',
-      best: grade.self,
-      gradeRank: grade.self ? grade.self.rank : null,
-      classRank: classBoard.self ? classBoard.self.rank : null,
-    });
-  } catch (error) {
-    return postMessage_({ source: 'directed-number-leaderboard', ok: false, submissionId, message: error.message });
-  }
-}
-
-function validateSubmission_(payload) {
-  if (!/^[A-Za-z0-9-]{10,80}$/.test(payload.submissionId)) throw new Error('提交編號無效。');
-  if (!validStudent_(payload.className, payload.studentNo)) throw new Error('班別或學號無效。');
-  if (GAMES.indexOf(payload.gameId) === -1) throw new Error('遊戲類別無效。');
-  if (!Number.isFinite(payload.score) || !Number.isFinite(payload.maxScore) || !Number.isFinite(payload.elapsedSeconds)) throw new Error('成績格式無效。');
-}
-
-function appendIfNew_(payload) {
-  const spreadsheet = getSpreadsheet_();
-  const sheet = spreadsheet.getSheetByName(RECORDS_SHEET);
-  if (!sheet) throw new Error('排行榜尚未完成設定。');
-  const lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    const ids = sheet.getRange(2, 2, lastRow - 1, 1).getDisplayValues().flat();
-    if (ids.indexOf(payload.submissionId) !== -1) return;
-  }
-  sheet.appendRow([currentRound_(), payload.submissionId, new Date(), payload.className, payload.studentNo, payload.gameId, payload.score, payload.maxScore, payload.elapsedSeconds]);
-}
-
-function leaderboard_(board, classFilter, student) {
-  if (GAMES.indexOf(board) === -1 && board !== 'overall') throw new Error('排行榜類別無效。');
-  if (classFilter !== 'ALL' && CLASSES.indexOf(classFilter) === -1) throw new Error('班別篩選無效。');
-  const roundId = currentRound_();
-  const records = readRecords_().filter(row => row.roundId === roundId);
-  const bestByGame = {};
-  records.forEach(row => {
-    const key = `${row.className}:${row.studentNo}:${row.gameId}`;
-    if (!bestByGame[key] || better_(row, bestByGame[key])) bestByGame[key] = row;
-  });
-  let entries;
-  if (board === 'overall') {
-    const students = {};
-    Object.values(bestByGame).forEach(row => {
-      const key = `${row.className}:${row.studentNo}`;
-      if (!students[key]) students[key] = [];
-      students[key].push(row);
-    });
-    entries = Object.values(students).filter(rows => GAMES.every(game => rows.some(row => row.gameId === game))).map(rows => ({
-      className: rows[0].className,
-      studentNo: rows[0].studentNo,
-      score: rows.reduce((sum, row) => sum + row.score, 0),
-      maxScore: rows.reduce((sum, row) => sum + row.maxScore, 0),
-      elapsedSeconds: rows.reduce((sum, row) => sum + row.elapsedSeconds, 0),
-      submittedAt: Math.max.apply(null, rows.map(row => row.submittedAt)),
-    }));
-  } else {
-    entries = Object.values(bestByGame).filter(row => row.gameId === board);
-  }
-  if (classFilter !== 'ALL') entries = entries.filter(row => row.className === classFilter);
-  entries.sort(compare_);
-  const ranked = entries.map((entry, index) => ({
-    rank: index + 1,
-    className: entry.className,
-    studentNo: entry.studentNo,
-    score: entry.score,
-    maxScore: entry.maxScore,
-    elapsedSeconds: entry.elapsedSeconds,
-  }));
-  const self = student ? ranked.find(row => row.className === student.className && row.studentNo === student.studentNo) || null : null;
-  return { ok: true, roundId, board, classFilter, rankings: ranked.slice(0, 10), self };
-}
-
-function readRecords_() {
-  const sheet = getSpreadsheet_().getSheetByName(RECORDS_SHEET);
-  if (!sheet || sheet.getLastRow() < 2) return [];
-  return sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues().map(row => ({
-    roundId: String(row[0]),
-    submissionId: String(row[1]),
-    submittedAt: new Date(row[2]).getTime(),
-    className: String(row[3]),
-    studentNo: Number(row[4]),
-    gameId: String(row[5]),
-    score: Number(row[6]),
-    maxScore: Number(row[7]),
-    elapsedSeconds: Number(row[8]),
-  }));
-}
-
-function better_(left, right) {
-  return left.score > right.score || (left.score === right.score && (left.elapsedSeconds < right.elapsedSeconds || (left.elapsedSeconds === right.elapsedSeconds && left.submittedAt < right.submittedAt)));
-}
-
-function compare_(left, right) {
-  return right.score - left.score || left.elapsedSeconds - right.elapsedSeconds || left.submittedAt - right.submittedAt || left.className.localeCompare(right.className) || left.studentNo - right.studentNo;
-}
-
-function validStudent_(className, studentNo) {
-  return CLASSES.indexOf(String(className)) !== -1 && Number.isInteger(studentNo) && studentNo >= 1 && studentNo <= 33;
-}
-
-function currentRound_() {
-  const sheet = getSpreadsheet_().getSheetByName(SETTINGS_SHEET);
-  if (!sheet) throw new Error('排行榜尚未完成設定。');
-  return String(sheet.getRange('B2').getDisplayValue());
-}
-
-function getSpreadsheet_() {
-  const id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || SPREADSHEET_ID;
-  return SpreadsheetApp.openById(id);
-}
-
-function jsonp_(callback, payload) {
-  return ContentService.createTextOutput(`${callback}(${JSON.stringify(payload).replace(/</g, '\\u003c')});`).setMimeType(ContentService.MimeType.JAVASCRIPT);
-}
-
-function postMessage_(payload) {
-  const json = JSON.stringify(payload).replace(/</g, '\\u003c');
-  return HtmlService.createHtmlOutput(`<script>window.top.postMessage(${json}, '*');</script>`).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
+function leaderboard_(board,classFilter,student,worldId){const world=world_(worldId||'directed-number');if(!world||(!world.stages.some(s=>s[0]===board)&&board!=='overall'))throw new Error('排行榜類別無效。');if(classFilter!=='ALL'&&CLASSES.indexOf(classFilter)===-1)throw new Error('班別篩選無效。');const roundId=currentRound_(),records=readRecords_().filter(r=>r.roundId===roundId&&r.worldId===world.id),best={};records.forEach(r=>{const k=`${r.className}:${r.studentNo}:${r.gameId}`;if(!best[k]||better_(r,best[k]))best[k]=r});let entries;if(board==='overall'){const students={};Object.values(best).forEach(r=>{const k=`${r.className}:${r.studentNo}`;(students[k]||(students[k]=[])).push(r)});entries=Object.values(students).filter(rows=>world.stages.every(s=>rows.some(r=>r.gameId===s[0]))).map(rows=>({className:rows[0].className,studentNo:rows[0].studentNo,score:rows.reduce((n,r)=>n+r.score,0),maxScore:rows.reduce((n,r)=>n+r.maxScore,0),elapsedSeconds:rows.reduce((n,r)=>n+r.elapsedSeconds,0),submittedAt:Math.max.apply(null,rows.map(r=>r.submittedAt))}))}else entries=Object.values(best).filter(r=>r.gameId===board);if(classFilter!=='ALL')entries=entries.filter(r=>r.className===classFilter);entries.sort(compare_);const ranked=entries.map((r,i)=>({rank:i+1,className:r.className,studentNo:r.studentNo,score:r.score,maxScore:r.maxScore,elapsedSeconds:r.elapsedSeconds})),self=student?ranked.find(r=>r.className===student.className&&r.studentNo===student.studentNo)||null:null;return{ok:true,roundId,board,classFilter,rankings:ranked.slice(0,10),self}}
+function readRecords_(){const s=getSpreadsheet_().getSheetByName(RECORDS_SHEET);if(!s||s.getLastRow()<2)return[];return s.getRange(2,1,s.getLastRow()-1,Math.max(s.getLastColumn(),15)).getValues().map(r=>({roundId:String(r[0]),submissionId:String(r[1]),submittedAt:new Date(r[2]).getTime(),className:String(r[3]),studentNo:Number(r[4]),gameId:String(r[5]),score:Number(r[6]),maxScore:Number(r[7]),elapsedSeconds:Number(r[8]),schoolYear:String(r[9]||currentSchoolYear_()),worldId:String(r[10]||'directed-number'),questionCount:Number(r[11]||15),firstTryCorrect:Number(r[12]||Math.max(0,Math.min(15,(Number(r[6])-75)/5))),longestFirstTryStreak:Number(r[13]||0),wrongAttempts:Number(r[14]||0)}))}
+function readBadgeRecords_(){const s=getSpreadsheet_().getSheetByName(BADGES_SHEET);if(!s||s.getLastRow()<2)return[];return s.getRange(2,1,s.getLastRow()-1,6).getValues().map(r=>({schoolYear:String(r[0]),className:String(r[1]),studentNo:Number(r[2]),badgeId:String(r[3]),earnedAt:r[4],submissionId:String(r[5])}))}
+function better_(l,r){return l.score>r.score||(l.score===r.score&&(l.elapsedSeconds<r.elapsedSeconds||(l.elapsedSeconds===r.elapsedSeconds&&l.submittedAt<r.submittedAt)))}
+function compare_(l,r){return r.score-l.score||l.elapsedSeconds-r.elapsedSeconds||l.submittedAt-r.submittedAt||l.className.localeCompare(r.className)||l.studentNo-r.studentNo}
+function validStudent_(c,n){return CLASSES.indexOf(String(c))!==-1&&Number.isInteger(n)&&n>=1&&n<=33}
+function world_(id){return CATALOG.find(w=>w.id===id)}function stage_(wid,gid){const w=world_(wid);return w&&w.stages.find(s=>s[0]===gid)}
+function publicCatalog_(){return CATALOG.map(w=>({id:w.id,name:w.name,order:w.order,questionCount:w.questionCount,maxScore:w.maxScore,stages:w.stages.map((s,i)=>({id:s[0],name:s[1],order:i+1}))}))}function publicBadge_(b){return{id:b.id,name:b.name,description:b.description,category:b.category,hidden:b.hidden,asset:b.asset}}function publicBadges_(){return BADGES.map(publicBadge_)}function config_(){return{ok:true,schoolYear:currentSchoolYear_(),classes:CLASSES,studentNoMin:1,studentNoMax:33}}
+function currentRound_(){return String(findSetting_(requiredSettings_(),'目前輪次'))}function currentSchoolYear_(){return String(findSetting_(requiredSettings_(),'目前學年'))}function requiredSettings_(){const s=getSpreadsheet_().getSheetByName(SETTINGS_SHEET);if(!s)throw new Error('平台尚未完成設定。');return s}
+function findSetting_(s,name){if(!s.getLastRow())return'';const row=s.getRange(1,1,s.getLastRow(),2).getValues().find(r=>String(r[0])===name);return row?row[1]:''}function setSetting_(s,name,value){const rows=s.getRange(1,1,s.getLastRow(),2).getValues(),i=rows.findIndex(r=>String(r[0])===name);if(i<0)s.appendRow([name,value]);else s.getRange(i+1,2).setValue(value)}
+function ensureHeaders_(s,headers){if(!s.getLastRow())s.getRange(1,1,1,headers.length).setValues([headers]);else{const current=s.getRange(1,1,1,Math.max(s.getLastColumn(),headers.length)).getDisplayValues()[0];headers.forEach((h,i)=>{if(!current[i])s.getRange(1,i+1).setValue(h)})}styleHeader_(s,headers.length)}
+function migrateLegacyRecords_(s){if(s.getLastRow()<2)return;const rows=s.getRange(2,1,s.getLastRow()-1,15).getValues(),year=currentSchoolYear_();rows.forEach((r,i)=>{if(!r[9])r[9]=year;if(!r[10])r[10]='directed-number';if(!r[11])r[11]=15;if(r[12]==='')r[12]=Math.max(0,Math.min(15,(Number(r[6])-75)/5));if(r[13]==='')r[13]=0;if(r[14]==='')r[14]=0;s.getRange(i+2,10,1,6).setValues([r.slice(9,15)])})}
+function backfillBadges_(){const sheet=getSpreadsheet_().getSheetByName(BADGES_SHEET),existing=new Set(readBadgeRecords_().map(r=>`${r.schoolYear}:${r.className}:${r.studentNo}:${r.badgeId}`)),groups={};readRecords_().forEach(r=>{const k=`${r.schoolYear}:${r.className}:${r.studentNo}`;(groups[k]||(groups[k]=[])).push(r)});Object.values(groups).forEach(rows=>{rows.sort((a,b)=>a.submittedAt-b.submittedAt);const first=rows[0];BADGES.forEach(b=>{const key=`${first.schoolYear}:${first.className}:${first.studentNo}:${b.id}`;if(existing.has(key))return;for(let i=0;i<rows.length;i++){const state=profileFromRecords_(first.schoolYear,first.className,first.studentNo,rows.slice(0,i+1),[]),badge=state.badges.find(x=>x.id===b.id);if(badge&&badge.earned){sheet.appendRow([first.schoolYear,first.className,first.studentNo,b.id,new Date(rows[i].submittedAt),rows[i].submissionId]);existing.add(key);break}}})})}
+function styleHeader_(s,w){s.setFrozenRows(1);s.getRange(1,1,1,w).setBackground('#294f38').setFontColor('#ffffff').setFontWeight('bold')}function roundId_(d){return Utilities.formatDate(d,Session.getScriptTimeZone(),'yyyyMMdd-HHmmss')}function defaultSchoolYear_(d){const y=d.getFullYear()-(d.getMonth()<7?1:0);return `${y}-${String(y+1).slice(-2)}`}
+function getSpreadsheet_(){const id=PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID')||SPREADSHEET_ID;return SpreadsheetApp.openById(id)}function jsonp_(cb,payload){return ContentService.createTextOutput(`${cb}(${JSON.stringify(payload).replace(/</g,'\\u003c')});`).setMimeType(ContentService.MimeType.JAVASCRIPT)}function postMessage_(payload){const json=JSON.stringify(payload).replace(/</g,'\\u003c');return HtmlService.createHtmlOutput(`<script>window.top.postMessage(${json}, '*');</script>`).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)}

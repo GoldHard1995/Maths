@@ -1,4 +1,5 @@
 'use client';
+/* oxlint-disable react/react-compiler, jsx-a11y/prefer-tag-over-role -- Loading resets belong to the request effect; the CSS grid exposes explicit table semantics. */
 import { useEffect, useState } from 'react';
 import { ArrowLeft, RotateCcw, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
