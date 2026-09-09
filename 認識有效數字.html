@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>有效數字大挑戰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=JetBrains+Mono:wght@700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+    <div id="app" class="flex items-center justify-center min-h-screen p-4">
+        <!-- 內容將由 JavaScript 動態渲染 -->
+    </div>
+
+    <script>
+        // --- 遊戲狀態管理 ---
+        let state = {
+            gameState: 'intro', // intro, level1, level1_fail, level1_pass, level2, complete
+            currentQuestionIndex: 0,
+            score: 0,
+            questions: [],
+            selectedOption: null,
+            showFeedback: false,
+            isCorrect: false
+        };
+
+        // --- 工具函式 ---
+        function analyzeSigFigs(numStr) {
+            let workingStr = numStr.replace('-', '');
+            const hasDecimal = workingStr.includes('.');
+            let sigFigsStr = '';
+            
+            if (hasDecimal) {
+                let temp = workingStr;
+                let firstNonZeroIndex = -1;
+                for (let i = 0; i < temp.length; i++) {
+                    if (temp[i] !== '0' && temp[i] !== '.') {
+                        firstNonZeroIndex = i;
+                        break;
+                    }
+                }
+
+                if (firstNonZeroIndex === -1) {
+                    sigFigsStr = workingStr.replace('.', '').replace(/^0+/, ''); 
+                    if (sigFigsStr === '') sigFigsStr = '0'; 
+                } else {
+                    sigFigsStr = temp.slice(firstNonZeroIndex).replace('.', '');
+                }
+            } else {
+                sigFigsStr = workingStr.replace(/^0+/, '');
+            }
+
+            return {
+                count: sigFigsStr.length,
+                digits: sigFigsStr.split('')
+            };
+        }
+
+        function generateNumber(forceTrailingZero = false) {
+            const type = Math.random() > 0.7 ? 1 : 0; 
+            let numStr = "";
+            
+            if (type === 0) {
+                const leadingZeros = Math.floor(Math.random() * 3) + 1;
+                numStr = "0." + "0".repeat(leadingZeros - 1);
+                let coreNum = Math.floor(Math.random() * 900) + 1;
+                numStr += coreNum.toString();
+            } else {
+                const integerPart = Math.floor(Math.random() * 99) + 1;
+                const decimalPart = Math.floor(Math.random() * 900) + 1;
+                numStr = `${integerPart}.${decimalPart}`;
+            }
+
+            if (forceTrailingZero) {
+                const zeros = Math.floor(Math.random() * 2) + 1;
+                numStr += "0".repeat(zeros);
+            }
+
+            return numStr;
+        }
+
+        // --- 題目生成 ---
+        function generateLevel1Questions() {
+            state.questions = [];
+            for (let i = 0; i < 10; i++) {
+                const isTrailingZeroCase = (i === 2 || i === 6) ? true : (Math.random() < 0.2);
+                const numStr = generateNumber(isTrailingZeroCase);
+                const analysis = analyzeSigFigs(numStr);
+                const correctAnswer = analysis.count;
+
+                const options = new Set();
+                options.add(correctAnswer);
+                while (options.size < 4) {
+                    let offset = Math.floor(Math.random() * 5) - 2;
+                    let fake = correctAnswer + offset;
+                    if (fake > 0 && fake !== correctAnswer) {
+                        options.add(fake);
+                    } else {
+                        options.add(correctAnswer + options.size + 1);
+                    }
+                }
+
+                state.questions.push({
+                    qText: `請問數字 ${numStr} 有幾位有效數字？`,
+                    numStr: numStr,
+                    correctAnswer: correctAnswer,
+                    options: Array.from(options).sort((a, b) => a - b)
+                });
+            }
+        }
+
+        function generateLevel2Questions() {
+            state.questions = [];
+            for (let i = 0; i < 10; i++) {
+                const isTrailingZeroCase = (i === 1 || i === 5) ? true : (Math.random() * 0.3);
+                let numStr = generateNumber(isTrailingZeroCase);
+                let analysis = analyzeSigFigs(numStr);
+                
+                while (analysis.count < 2) {
+                    numStr = generateNumber(true);
+                    analysis = analyzeSigFigs(numStr);
+                }
+
+                const targetIndex = Math.floor(Math.random() * analysis.count);
+                const targetPosition = targetIndex + 1;
+                const correctDigit = parseInt(analysis.digits[targetIndex]);
+
+                let positionText = `第 ${targetPosition} 位有效數字`;
+                if (targetPosition === 1 && Math.random() > 0.5) {
+                    positionText = "「最有效數字」";
+                }
+
+                const options = new Set();
+                options.add(correctDigit);
+                while (options.size < 4) {
+                    const fake = Math.floor(Math.random() * 10);
+                    if (fake !== correctDigit) options.add(fake);
+                }
+
+                state.questions.push({
+                    qText: `在數字 ${numStr} 中，${positionText}是哪一個數字？`,
+                    numStr: numStr,
+                    correctAnswer: correctDigit,
+                    options: Array.from(options).sort((a, b) => a - b)
+                });
+            }
+        }
+
+        // --- 遊戲邏輯 ---
+        function startGame() {
+            state.gameState = 'level1';
+            state.score = 0;
+            state.currentQuestionIndex = 0;
+            state.showFeedback = false;
+            generateLevel1Questions();
+            render();
+        }
+
+        function startLevel2() {
+            state.gameState = 'level2';
+            state.score = 0;
+            state.currentQuestionIndex = 0;
+            state.showFeedback = false;
+            generateLevel2Questions();
+            render();
+        }
+
+        function handleAnswer(option) {
+            if (state.showFeedback) return;
+            
+            state.selectedOption = option;
+            const currentQ = state.questions[state.currentQuestionIndex];
+            state.isCorrect = (option === currentQ.correctAnswer);
+            state.showFeedback = true;
+            
+            if (state.isCorrect) state.score++;
+            render();
+        }
+
+        function nextQuestion() {
+            if (state.currentQuestionIndex < 9) {
+                state.currentQuestionIndex++;
+                state.selectedOption = null;
+                state.showFeedback = false;
+                render();
+            } else {
+                handleLevelComplete();
+            }
+        }
+
+        function handleLevelComplete() {
+            if (state.gameState === 'level1') {
+                state.gameState = (state.score === 10) ? 'level1_pass' : 'level1_fail';
+            } else {
+                state.gameState = 'complete';
+            }
+            render();
+        }
+
+        // --- 渲染引擎 ---
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.gameState === 'intro') {
+                app.innerHTML = `
+                    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden fade-in">
+                        <div class="bg-blue-600 p-6 text-center text-white">
+                            <i class="fa-solid fa-calculator text-5xl mb-4"></i>
+                            <h1 class="text-3xl font-bold mb-2">有效數字大挑戰</h1>
+                            <p class="text-blue-100 italic">Significant Figures Challenge</p>
+                        </div>
+                        <div class="p-8">
+                            <div class="space-y-4 mb-8">
+                                <div class="flex items-start">
+                                    <div class="bg-blue-100 p-2 rounded-lg mr-3 text-blue-700 font-bold">L1</div>
+                                    <div>
+                                        <h3 class="font-bold text-gray-800">Level 1: 數量判斷</h3>
+                                        <p class="text-sm text-gray-600">判斷有效數字位數。必須取得 <span class="text-red-500 font-bold">10/10 滿分</span> 才能晉級！</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="bg-indigo-100 p-2 rounded-lg mr-3 text-indigo-700 font-bold">L2</div>
+                                    <div>
+                                        <h3 class="font-bold text-gray-800">Level 2: 位值判斷</h3>
+                                        <p class="text-sm text-gray-600">找出特定位置的有效數字。小心那些陷阱零！</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="startGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center transition-all shadow-lg active:scale-95">
+                                開始挑戰 <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (state.gameState === 'level1_fail') {
+                app.innerHTML = `
+                    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center fade-in">
+                        <i class="fa-solid fa-circle-xmark text-7xl text-red-500 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">挑戰失敗</h2>
+                        <p class="text-gray-600 mb-6">你在 Level 1 獲得了 <span class="font-bold text-xl text-red-600">${state.score} / 10</span> 分。<br>必須 <span class="text-red-600 font-bold">10分滿分</span> 才能進入下一關。</p>
+                        <div class="bg-orange-50 p-4 rounded-lg mb-6 text-left text-sm border-l-4 border-orange-400">
+                            <p class="font-bold mb-1">💡 小提示：</p>
+                            <p>小數點後的零也是有效數字喔！例如：0.50 是 2 位有效數字。</p>
+                        </div>
+                        <button onclick="startGame()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center transition-all">
+                            <i class="fa-solid fa-rotate-left mr-2"></i> 重新挑戰 Level 1
+                        </button>
+                    </div>
+                `;
+            } else if (state.gameState === 'level1_pass') {
+                app.innerHTML = `
+                    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center fade-in">
+                        <i class="fa-solid fa-trophy text-7xl text-yellow-500 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Level 1 滿分通關！</h2>
+                        <p class="text-gray-600 mb-8">太強了！準備好進入 <span class="font-bold text-indigo-600">Level 2</span> 了嗎？<br>記住：第一位有效數字也叫「最有效數字」。</p>
+                        <button onclick="startLevel2()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center transition-all">
+                            進入 Level 2 <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                `;
+            } else if (state.gameState === 'complete') {
+                app.innerHTML = `
+                    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center fade-in">
+                        <i class="fa-solid fa-brain text-7xl text-indigo-500 mb-4"></i>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-2">恭喜完成！</h2>
+                        <p class="text-gray-600 mb-6 text-xl">Level 2 成績：<span class="font-bold text-indigo-600">${state.score} / 10</span></p>
+                        <p class="mb-8 text-gray-500">你已經通過了所有有效數字的考驗。</p>
+                        <button onclick="location.reload()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center transition-all">
+                            回到主選單
+                        </button>
+                    </div>
+                `;
+            } else {
+                // 遊戲進行中 (level1 或 level2)
+                const currentQ = state.questions[state.currentQuestionIndex];
+                const isL1 = state.gameState === 'level1';
+                
+                app.innerHTML = `
+                    <div class="max-w-lg w-full bg-white rounded-2xl shadow-2xl overflow-hidden relative fade-in">
+                        <div class="p-4 flex justify-between items-center text-white ${isL1 ? 'bg-blue-600' : 'bg-indigo-600'}">
+                            <div class="font-bold text-lg">${isL1 ? 'Level 1: 數量判斷' : 'Level 2: 進階判斷'}</div>
+                            <div class="bg-white/20 px-3 py-1 rounded-full text-sm font-mono">目前分數: ${state.score}</div>
+                        </div>
+
+                        <div class="p-6 md:p-8">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+                                <div class="${isL1 ? 'bg-blue-600' : 'bg-indigo-600'} h-2.5 rounded-full transition-all duration-300" style="width: ${((state.currentQuestionIndex + 1) / 10) * 100}%"></div>
+                                <div class="text-right text-xs text-gray-500 mt-1">題數: ${state.currentQuestionIndex + 1} / 10</div>
+                            </div>
+
+                            <div class="text-center mb-8">
+                                <div class="text-5xl md:text-6xl font-mono font-bold text-gray-800 tracking-wider mb-4 py-4 bg-gray-50 rounded-xl border border-gray-200">
+                                    ${currentQ.numStr}
+                                </div>
+                                <h2 class="text-xl font-bold text-gray-700 leading-relaxed">${currentQ.qText}</h2>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                ${currentQ.options.map(option => {
+                                    let style = "bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-400 hover:bg-blue-50";
+                                    if (state.showFeedback) {
+                                        if (option === currentQ.correctAnswer) style = "bg-green-500 border-green-600 text-white scale-105";
+                                        else if (option === state.selectedOption) style = "bg-red-500 border-red-600 text-white";
+                                        else style = "bg-gray-100 border-gray-200 text-gray-400 opacity-50";
+                                    }
+                                    return `<button onclick="handleAnswer(${option})" ${state.showFeedback ? 'disabled' : ''} class="py-4 px-2 rounded-xl text-xl font-bold transition-all duration-200 shadow-sm ${style}">${option}</button>`;
+                                }).join('')}
+                            </div>
+
+                            ${state.showFeedback ? `
+                                <div class="rounded-xl p-4 mb-4 flex items-center justify-between animate-in fade-in slide-in-from-bottom-2 ${state.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    <div class="flex items-center">
+                                        <i class="fa-solid ${state.isCorrect ? 'fa-circle-check' : 'fa-circle-exclamation'} w-6 h-6 mr-2"></i>
+                                        <span class="font-bold">${state.isCorrect ? '答對了！' : `答錯了！答案是 ${currentQ.correctAnswer}`}</span>
+                                    </div>
+                                    <button onclick="nextQuestion()" class="px-4 py-2 rounded-lg font-bold text-sm transition-colors ${state.isCorrect ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-red-600 text-white hover:bg-red-700'}">
+                                        ${state.currentQuestionIndex < 9 ? '下一題' : '查看結果'}
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 初始化
+        window.onload = render;
+    </script>
+</body>
+</html>

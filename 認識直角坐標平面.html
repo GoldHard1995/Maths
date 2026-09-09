@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>坐標寶藏獵人 - 學習直角坐標系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f0f4f8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overscroll-behavior: none; /* 防止下拉刷新影響體驗 */
+            height: 100vh; /* 強制全螢幕高度 */
+            width: 100vw;
+            overflow: hidden; /* 禁止捲動 */
+        }
+        canvas {
+            background-color: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            cursor: default;
+            touch-action: none;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
+        }
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .stats-card {
+            transition: all 0.3s ease;
+        }
+        /* 數字鍵盤樣式 - 4欄排列 */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4欄 */
+            grid-auto-rows: minmax(50px, 1fr); /* 設定最小高度 */
+            gap: 6px; 
+        }
+        /* 象限按鈕樣式 - 4欄排列 */
+        .quadpad-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4欄 */
+            grid-auto-rows: minmax(60px, 1fr);
+            gap: 6px; 
+        }
+        .num-btn {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1.25rem; 
+            font-weight: bold;
+            color: #475569;
+            transition: all 0.1s;
+            box-shadow: 0 1px 0 #cbd5e1;
+            touch-action: manipulation;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+        }
+        .quad-btn {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.8rem; 
+        }
+        .num-btn:active, .num-btn.active-selection {
+            transform: translateY(1px);
+            box-shadow: none;
+            background-color: #f1f5f9;
+            border-color: #6366f1;
+            color: #4f46e5;
+        }
+        .num-btn.special {
+            background-color: #f8fafc;
+            color: #64748b;
+        }
+        /* 活躍輸入框的樣式 */
+        .input-active {
+            background-color: #fff !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
+            transform: scale(1.05);
+        }
+        
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .anim-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        .anim-pop {
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-[#f0f4f8] text-slate-800">
+    <div class="w-full h-full max-w-7xl mx-auto flex flex-col p-2 safe-area-inset-bottom">
+        
+        <!-- 已移除全域 Header，直接進入主內容區 -->
+
+        <!-- 主內容區 -->
+        <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-3 h-full">
+            
+            <!-- 左側 Canvas 區 -->
+            <div class="md:col-span-7 lg:col-span-8 flex flex-col justify-center items-center bg-white rounded-xl shadow-md border border-slate-200 p-2 relative h-full">
+                
+                <!-- 標題移至左側畫布上方 -->
+                <div class="w-full flex justify-between items-center mb-1 flex-none px-1">
+                    <h1 class="text-lg md:text-xl font-bold text-indigo-700 flex items-center gap-1 truncate">
+                        📍 坐標寶藏獵人
+                    </h1>
+                    <p id="instructionText" class="text-[10px] md:text-xs text-slate-600 font-medium hidden sm:block truncate bg-slate-100 px-2 py-1 rounded-full">
+                        觀察紅點的位置，寫出它的坐標！
+                    </p>
+                </div>
+
+                <div class="relative w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+                    <div id="canvasWrapper" class="aspect-square h-full max-h-full max-w-full relative">
+                        <canvas id="gameCanvas" class="w-full h-full block rounded-lg"></canvas>
+                    </div>
+                </div>
+                
+                <div class="w-full mt-1 pt-1 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500 gap-1 flex-none">
+                    <span class="flex items-center gap-1 truncate">
+                        💡 提示：先看橫軸(<span class="font-bold text-red-500">x</span>)，再看縱軸(<span class="font-bold text-blue-500">y</span>)
+                    </span>
+                    <span id="levelDisplay" class="font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] whitespace-nowrap">第一象限</span>
+                </div>
+            </div>
+
+            <!-- 右側 控制區 -->
+            <div class="md:col-span-5 lg:col-span-4 flex flex-col h-full overflow-hidden justify-center">
+                <div class="control-panel p-3 rounded-xl shadow-md border border-white w-full flex flex-col gap-2 overflow-y-auto max-h-full">
+                    
+                    <!-- 頂部工具列：設定、得分、Combo -->
+                    <div class="flex gap-2 flex-none mb-1">
+                        <!-- 設定按鈕 -->
+                        <button onclick="toggleSettings()" class="bg-white p-2 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-all text-slate-600 hover:text-indigo-600 flex flex-col items-center justify-center flex-1 h-14">
+                            <span class="text-xl mb-0.5">⚙️</span>
+                            <span class="text-[10px] font-bold uppercase leading-none">設定</span>
+                        </button>
+
+                        <div class="stats-card bg-white p-2 rounded-lg shadow-sm border-b-4 border-indigo-500 text-center flex-1 flex flex-col justify-center h-14">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold leading-none mb-1">得分</p>
+                            <p id="score" class="text-xl font-black text-indigo-600 leading-none">0</p>
+                        </div>
+                        <div class="stats-card bg-white p-2 rounded-lg shadow-sm border-b-4 border-emerald-500 text-center flex-1 flex flex-col justify-center h-14">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold leading-none mb-1">Combo</p>
+                            <p id="combo" class="text-xl font-black text-emerald-600 leading-none">0</p>
+                        </div>
+                    </div>
+
+                    <!-- 模式 A：輸入坐標 (預設顯示) -->
+                    <div id="modeCoordinates" class="flex flex-col gap-2 flex-1 min-h-0">
+                        <div id="targetContainer" class="flex-none p-2 bg-indigo-50 rounded-lg text-center border-2 border-dashed border-indigo-200 transition-colors">
+                            <span class="text-[10px] text-indigo-700 font-bold block mb-0.5">點 <span class="text-sm">A</span> 的坐標：</span>
+                            
+                            <div class="flex items-center justify-center gap-1 text-2xl font-mono font-bold text-slate-700">
+                                <span>(</span>
+                                <div class="relative group">
+                                    <input type="text" id="inputX" class="w-14 text-center border-b-2 border-red-300 focus:border-red-500 focus:outline-none bg-white/50 rounded-t py-0.5 transition-all cursor-pointer no-select" placeholder="x" autocomplete="off" readonly>
+                                </div>
+                                <span>,</span>
+                                <div class="relative group">
+                                    <input type="text" id="inputY" class="w-14 text-center border-b-2 border-blue-300 focus:border-blue-500 focus:outline-none bg-white/50 rounded-t py-0.5 transition-all cursor-pointer no-select" placeholder="y" autocomplete="off" readonly>
+                                </div>
+                                <span>)</span>
+                            </div>
+                        </div>
+
+                        <!-- 數字鍵盤 (4x3排列) -->
+                        <div class="numpad-grid no-select w-full flex-1">
+                            <!-- Row 1 -->
+                            <button class="num-btn" onclick="handleNumpad('7')">7</button>
+                            <button class="num-btn" onclick="handleNumpad('8')">8</button>
+                            <button class="num-btn" onclick="handleNumpad('9')">9</button>
+                            <button class="num-btn special text-red-500" onclick="handleNumpad('back')">⌫</button>
+
+                            <!-- Row 2 -->
+                            <button class="num-btn" onclick="handleNumpad('4')">4</button>
+                            <button class="num-btn" onclick="handleNumpad('5')">5</button>
+                            <button class="num-btn" onclick="handleNumpad('6')">6</button>
+                            <button class="num-btn special" onclick="handleNumpad('-')">－</button>
+
+                            <!-- Row 3 -->
+                            <button class="num-btn" onclick="handleNumpad('1')">1</button>
+                            <button class="num-btn" onclick="handleNumpad('2')">2</button>
+                            <button class="num-btn" onclick="handleNumpad('3')">3</button>
+                            <button class="num-btn" onclick="handleNumpad('0')">0</button>
+                        </div>
+                    </div>
+
+                    <!-- 模式 B：象限判斷 (預設隱藏) -->
+                    <div id="modeQuadrant" class="hidden flex flex-col gap-2 flex-1 min-h-0">
+                        <div id="targetContainerQuad" class="flex-none p-2 bg-indigo-50 rounded-lg text-center border-2 border-dashed border-indigo-200 transition-colors">
+                            <span class="text-[10px] text-indigo-700 font-bold block mb-0.5">點 <span class="text-sm">A</span> 在哪個象限？</span>
+                            <div class="h-10 flex items-center justify-center">
+                                <span id="selectedQuadDisplay" class="text-2xl font-bold text-indigo-600 font-serif">?</span>
+                            </div>
+                        </div>
+
+                        <!-- 象限鍵盤 (4x1排列) -->
+                        <div class="quadpad-grid no-select w-full flex-1">
+                            <button class="num-btn quad-btn" onclick="selectQuadrant('II')" id="btnQuadII">II</button>
+                            <button class="num-btn quad-btn" onclick="selectQuadrant('I')" id="btnQuadI">I</button>
+                            <button class="num-btn quad-btn" onclick="selectQuadrant('III')" id="btnQuadIII">III</button>
+                            <button class="num-btn quad-btn" onclick="selectQuadrant('IV')" id="btnQuadIV">IV</button>
+                        </div>
+                    </div>
+
+                    <!-- 確認按鈕區 - 緊接在鍵盤下方 -->
+                    <div class="flex-none">
+                         <button id="checkBtn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 md:py-4 rounded-lg shadow-md shadow-indigo-200 transition-all active:scale-95 text-lg flex items-center justify-center gap-2 group">
+                            <span>確認</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="feedback" class="flex-none p-1 rounded-lg hidden text-center font-bold text-xs anim-pop shadow-inner absolute bottom-16 left-4 right-4 z-10 md:static md:z-0">
+                        <!-- 回饋訊息 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定 Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-opacity duration-200 opacity-0" onclick="if(event.target === this) toggleSettings()">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm transform transition-all scale-95 duration-200 max-h-[90vh] flex flex-col">
+            <div class="flex-none flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    ⚙️ 遊戲模式設定
+                </h3>
+                <button onclick="toggleSettings()" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto pr-1 space-y-3">
+                <div class="text-xs font-bold text-slate-400 uppercase mb-1">寫出坐標練習</div>
+                
+                <button onclick="changeLevel(1)" id="btnLvl1" class="lvl-btn w-full py-3 px-4 rounded-lg bg-slate-50 hover:bg-slate-100 text-left transition-all border-l-4 border-emerald-400 active text-slate-800 font-bold shadow-sm mb-2">
+                    <div class="flex items-center justify-between">
+                        <span>第一象限 (初學者)</span>
+                        <span class="text-emerald-500">★</span>
+                    </div>
+                    <span class="text-xs text-slate-500 font-normal">x > 0, y > 0</span>
+                </button>
+                
+                <button onclick="changeLevel(4)" id="btnLvl2" class="lvl-btn w-full py-3 px-4 rounded-lg bg-slate-50 hover:bg-slate-100 text-left transition-all border-l-4 border-amber-400 font-medium opacity-70 shadow-sm mb-2">
+                    <div class="flex items-center justify-between">
+                        <span>四個象限 (標準)</span>
+                        <span class="text-amber-500">★★</span>
+                    </div>
+                    <span class="text-xs text-slate-500 font-normal">正數與負數</span>
+                </button>
+                
+                <button onclick="changeLevel(0)" id="btnLvl3" class="lvl-btn w-full py-3 px-4 rounded-lg bg-slate-50 hover:bg-slate-100 text-left transition-all border-l-4 border-red-400 font-medium opacity-70 shadow-sm mb-4">
+                    <div class="flex items-center justify-between">
+                        <span>包含軸上點 (進階)</span>
+                        <span class="text-red-500">★★★</span>
+                    </div>
+                    <span class="text-xs text-slate-500 font-normal">包含 x=0 或 y=0</span>
+                </button>
+
+                <div class="text-xs font-bold text-slate-400 uppercase mb-1 border-t pt-2">象限判斷練習</div>
+
+                <button onclick="changeLevel('quad_quiz')" id="btnLvlQuiz" class="lvl-btn w-full py-3 px-4 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-left transition-all border-l-4 border-indigo-500 font-medium opacity-70 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-indigo-900">象限判斷題</span>
+                        <span class="text-indigo-500 font-serif font-bold">I, II, III, IV</span>
+                    </div>
+                    <span class="text-xs text-slate-500 font-normal">指出點所在的象限 (羅馬數字)</span>
+                </button>
+            </div>
+
+            <div class="flex-none mt-4 pt-4 border-t border-slate-100 text-center">
+                <button onclick="toggleSettings()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors">
+                    返回遊戲
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo');
+        const checkBtn = document.getElementById('checkBtn');
+        const feedback = document.getElementById('feedback');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const settingsModal = document.getElementById('settingsModal');
+        const instructionText = document.getElementById('instructionText');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+
+        // 輸入模式的元素
+        const modeCoordinates = document.getElementById('modeCoordinates');
+        const inputX = document.getElementById('inputX');
+        const inputY = document.getElementById('inputY');
+        const targetContainer = document.getElementById('targetContainer');
+
+        // 象限模式的元素
+        const modeQuadrant = document.getElementById('modeQuadrant');
+        const targetContainerQuad = document.getElementById('targetContainerQuad');
+        const selectedQuadDisplay = document.getElementById('selectedQuadDisplay');
+
+        // 追蹤當前輸入框
+        let activeInput = inputX;
+
+        // 遊戲狀態
+        let state = {
+            score: 0,
+            combo: 0,
+            level: 1, // 1: 第一象限, 4: 四個象限, 0: 包含軸上點
+            mode: 'coord', // 'coord': 輸入坐標, 'quiz': 判斷象限
+            target: { x: 0, y: 0 },
+            showGuide: false, // 是否顯示輔助線
+            isCorrect: false, // 這一題是否已答對
+            resetX: false, 
+            resetY: false,
+            gridSize: 30,
+            range: 6, // 默認範圍
+            maxRange: 8,
+            width: 0,
+            height: 0,
+            origin: { x: 0, y: 0 },
+            selectedQuad: null, // 象限模式下選擇的答案
+            correctQuad: null   // 象限模式下的正確答案
+        };
+
+        // Modal 控制
+        function toggleSettings() {
+            const isHidden = settingsModal.classList.contains('hidden');
+            if (isHidden) {
+                settingsModal.classList.remove('hidden');
+                setTimeout(() => {
+                    settingsModal.classList.remove('opacity-0');
+                    settingsModal.querySelector('div').classList.remove('scale-95');
+                    settingsModal.querySelector('div').classList.add('scale-100');
+                }, 10);
+            } else {
+                settingsModal.classList.add('opacity-0');
+                settingsModal.querySelector('div').classList.remove('scale-100');
+                settingsModal.querySelector('div').classList.add('scale-95');
+                setTimeout(() => {
+                    settingsModal.classList.add('hidden');
+                }, 200);
+            }
+        }
+
+        // 初始化
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 設定輸入框點擊事件 (切換 activeInput)
+            inputX.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveInput(inputX);
+            });
+            inputY.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveInput(inputY);
+            });
+
+            // 初始設定 X 為活躍
+            setActiveInput(inputX);
+
+            // 監聽實體鍵盤
+            document.addEventListener('keydown', (e) => {
+                if (state.mode !== 'coord') return; // 只在坐標模式下監聽鍵盤數字
+
+                // 如果是數字鍵
+                if ((e.key >= '0' && e.key <= '9')) {
+                    handleNumpad(e.key);
+                }
+                // 負號
+                else if (e.key === '-' || e.key === 'Subtract') {
+                    handleNumpad('-');
+                }
+                // 負號 (Numpad)
+                else if (e.key === 'Subtract') {
+                     handleNumpad('-');
+                }
+                // Backspace
+                else if (e.key === 'Backspace') {
+                    handleNumpad('back');
+                }
+                // Enter 鍵
+                else if (e.key === 'Enter') {
+                    if (activeInput === inputX) {
+                        setActiveInput(inputY);
+                    } else {
+                        checkAnswer();
+                    }
+                }
+                // Tab 鍵
+                else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    setActiveInput(activeInput === inputX ? inputY : inputX);
+                }
+                // 左右方向鍵切換
+                else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    setActiveInput(activeInput === inputX ? inputY : inputX);
+                }
+            });
+
+            checkBtn.onclick = checkAnswer;
+
+            // 啟動遊戲
+            startNewRound();
+        }
+
+        // 設定活躍輸入框
+        function setActiveInput(el) {
+            activeInput = el;
+            inputX.classList.remove('input-active');
+            inputY.classList.remove('input-active');
+            el.classList.add('input-active');
+        }
+
+        // 處理象限選擇
+        function selectQuadrant(quad) {
+            if (state.isCorrect) return; // 已答對後鎖定
+
+            state.selectedQuad = quad;
+            selectedQuadDisplay.textContent = quad;
+            
+            // 更新按鈕視覺狀態
+            document.querySelectorAll('.quad-btn').forEach(btn => btn.classList.remove('active-selection'));
+            document.getElementById('btnQuad' + quad).classList.add('active-selection');
+        }
+
+        // 處理虛擬鍵盤輸入
+        function handleNumpad(key) {
+            if (state.isCorrect) return; // 已答對狀態鎖定輸入
+
+            let currentVal = activeInput.value;
+            const shouldReset = (activeInput === inputX && state.resetX) || (activeInput === inputY && state.resetY);
+
+            if (shouldReset) {
+                if ((key >= '0' && key <= '9') || key === '-') {
+                    currentVal = ''; 
+                    activeInput.value = '';
+                }
+                if (activeInput === inputX) state.resetX = false;
+                if (activeInput === inputY) state.resetY = false;
+            }
+
+            if (key === 'back') {
+                activeInput.value = currentVal.slice(0, -1);
+            } else if (key === '-') {
+                if (currentVal.startsWith('-')) {
+                    activeInput.value = currentVal.substring(1);
+                } else {
+                    activeInput.value = '-' + currentVal;
+                }
+            } else {
+                if (currentVal.replace('-', '').length >= 2) return;
+                activeInput.value = currentVal + key;
+            }
+        }
+
+        // 調整畫布大小 - 修復高解析度螢幕下的縮放問題
+        function resizeCanvas() {
+            // 使用 canvasWrapper 的尺寸來決定 canvas 大小
+            const rect = canvasWrapper.getBoundingClientRect();
+            const size = Math.floor(rect.width); // 確保是整數
+            const dpr = window.devicePixelRatio || 1;
+            
+            // 設定內部像素（物理像素），解決模糊問題
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            
+            // 設定 canvas context 的縮放，讓後續繪圖指令使用邏輯像素（CSS 像素）
+            ctx.scale(dpr, dpr);
+
+            // 重要修正：state 中的寬高和格子大小應該使用「邏輯像素」(size)，而不是物理像素 (size * dpr)
+            // 這樣在 ctx.scale(dpr, dpr) 之後，繪製的大小才會正確，不會被放大兩倍
+            state.width = size;
+            state.height = size;
+            state.origin = { x: state.width / 2, y: state.height / 2 };
+            
+            // 計算格子大小：使用邏輯寬度減去 padding (60px)
+            state.gridSize = (Math.min(state.width, state.height) - 60) / (state.maxRange * 2);
+            
+            draw();
+        }
+
+        // 繪製主函數
+        function draw() {
+            ctx.clearRect(0, 0, state.width, state.height);
+            
+            drawGrid();
+            drawAxes();
+            
+            // 在象限模式下，可以選擇性地標示象限 (這裏不標示，作為考題)
+            // if (state.mode === 'quiz') drawQuadrantLabels();
+
+            if (state.showGuide) {
+                drawGuideLines(state.target.x, state.target.y);
+            }
+            
+            drawPoint(state.target.x, state.target.y);
+        }
+
+        // 繪製網格
+        function drawGrid() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+
+            for (let i = -state.maxRange; i <= state.maxRange; i++) {
+                const x = state.origin.x + i * state.gridSize;
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, state.height);
+            }
+            for (let i = -state.maxRange; i <= state.maxRange; i++) {
+                const y = state.origin.y - i * state.gridSize;
+                ctx.moveTo(0, y);
+                ctx.lineTo(state.width, y);
+            }
+            ctx.stroke();
+        }
+
+        // 繪製軸與標籤
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+
+            ctx.moveTo(0, state.origin.y);
+            ctx.lineTo(state.width, state.origin.y);
+            
+            ctx.moveTo(state.origin.x, 0);
+            ctx.lineTo(state.origin.x, state.height);
+            ctx.stroke();
+
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.moveTo(state.width - 5, state.origin.y - 5);
+            ctx.lineTo(state.width, state.origin.y);
+            ctx.lineTo(state.width - 5, state.origin.y + 5);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(state.origin.x - 5, 5);
+            ctx.lineTo(state.origin.x, 0);
+            ctx.lineTo(state.origin.x + 5, 5);
+            ctx.fill();
+
+            ctx.font = '14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 20px "Segoe UI", sans-serif'; // Make axis labels slightly bigger too to match
+            ctx.fillText('x', state.width - 15, state.origin.y + 25);
+
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillText('y', state.origin.x + 25, 15);
+
+            // 數字標籤
+            ctx.font = 'bold 16px "Segoe UI", sans-serif'; 
+            ctx.fillStyle = '#1d4ed8'; 
+            
+            for (let i = -state.maxRange; i <= state.maxRange; i++) {
+                if (i === 0) continue; 
+                ctx.fillText(i, state.origin.x + i * state.gridSize, state.origin.y + 20);
+                ctx.fillText(i, state.origin.x - 20, state.origin.y - i * state.gridSize);
+            }
+            // Origin
+            ctx.fillStyle = '#475569';
+            ctx.fillText('O', state.origin.x - 15, state.origin.y + 15);
+        }
+
+        // 繪製目標點
+        function drawPoint(x, y) {
+            const px = state.origin.x + x * state.gridSize;
+            const py = state.origin.y - y * state.gridSize;
+
+            ctx.beginPath();
+            ctx.arc(px, py, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#dc2626';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(px, py, 12, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(220, 38, 38, 0.2)';
+            ctx.fill();
+
+            ctx.fillStyle = '#dc2626';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText('A', px + 15, py - 15);
+        }
+
+        // 繪製輔助線
+        function drawGuideLines(x, y) {
+            const px = state.origin.x + x * state.gridSize;
+            const py = state.origin.y - y * state.gridSize;
+
+            ctx.setLineDash([5, 3]);
+            ctx.lineWidth = 1.5;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#ef4444'; 
+            ctx.moveTo(px, py);
+            ctx.lineTo(px, state.origin.y);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#3b82f6'; 
+            ctx.moveTo(px, py);
+            ctx.lineTo(state.origin.x, py);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+        }
+
+        // 生成新題目
+        function startNewRound() {
+            state.showGuide = false;
+            state.isCorrect = false;
+            state.resetX = false;
+            state.resetY = false;
+            state.selectedQuad = null;
+
+            // Reset UI inputs
+            if (state.mode === 'coord') {
+                inputX.value = '';
+                inputY.value = '';
+                setActiveInput(inputX);
+                targetContainer.classList.remove('bg-red-50', 'border-red-200', 'bg-green-50', 'border-green-200');
+                targetContainer.classList.add('bg-indigo-50', 'border-indigo-200');
+            } else {
+                selectedQuadDisplay.textContent = '?';
+                document.querySelectorAll('.quad-btn').forEach(btn => btn.classList.remove('active-selection'));
+                targetContainerQuad.classList.remove('bg-red-50', 'border-red-200', 'bg-green-50', 'border-green-200');
+                targetContainerQuad.classList.add('bg-indigo-50', 'border-indigo-200');
+            }
+
+            checkBtn.innerHTML = `<span>確認</span><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>`;
+            checkBtn.className = "w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 md:py-4 rounded-lg shadow-md shadow-indigo-200 transition-all active:scale-95 text-lg flex items-center justify-center gap-2 group";
+            feedback.classList.add('hidden');
+            feedback.classList.remove('block');
+
+            // 隨機生成坐標
+            let x, y;
+            const range = 7; 
+            const lastX = state.target.x;
+            const lastY = state.target.y;
+
+            let attempts = 0;
+            do {
+                if (state.mode === 'quiz') {
+                    // 象限練習模式：必須在象限內，不能在軸上
+                    do {
+                        x = Math.floor(Math.random() * (range * 2 + 1)) - range;
+                        y = Math.floor(Math.random() * (range * 2 + 1)) - range;
+                    } while (x === 0 || y === 0);
+                    
+                    // 計算正確答案
+                    if (x > 0 && y > 0) state.correctQuad = 'I';
+                    else if (x < 0 && y > 0) state.correctQuad = 'II';
+                    else if (x < 0 && y < 0) state.correctQuad = 'III';
+                    else state.correctQuad = 'IV';
+
+                } else {
+                    // 坐標輸入模式
+                    if (state.level === 1) {
+                        x = Math.floor(Math.random() * range) + 1;
+                        y = Math.floor(Math.random() * range) + 1;
+                    } else if (state.level === 4) {
+                        do {
+                            x = Math.floor(Math.random() * (range * 2 + 1)) - range;
+                            y = Math.floor(Math.random() * (range * 2 + 1)) - range;
+                        } while (x === 0 || y === 0);
+                    } else {
+                        x = Math.floor(Math.random() * (range * 2 + 1)) - range;
+                        y = Math.floor(Math.random() * (range * 2 + 1)) - range;
+                        if (Math.random() > 0.5 && x !== 0 && y !== 0) {
+                            if (Math.random() > 0.5) x = 0; else y = 0;
+                        }
+                    }
+                }
+                attempts++;
+            } while (attempts < 10 && (x === lastX && y === lastY));
+
+            state.target = { x, y };
+            draw();
+        }
+
+        // 檢查答案
+        function checkAnswer() {
+            if (state.isCorrect) {
+                startNewRound();
+                return;
+            }
+
+            let isRight = false;
+
+            if (state.mode === 'coord') {
+                const userX = parseInt(inputX.value);
+                const userY = parseInt(inputY.value);
+
+                if (isNaN(userX) || isNaN(userY)) {
+                    showFeedback('請輸入數字！', 'error');
+                    return;
+                }
+                isRight = (userX === state.target.x && userY === state.target.y);
+            } else {
+                // 象限模式
+                if (!state.selectedQuad) {
+                    showFeedback('請選擇一個象限！', 'error');
+                    return;
+                }
+                isRight = (state.selectedQuad === state.correctQuad);
+            }
+
+            if (isRight) {
+                handleCorrect();
+            } else {
+                handleIncorrect();
+            }
+        }
+
+        function handleCorrect() {
+            state.isCorrect = true;
+            state.score += 10 + state.combo * 2;
+            state.combo++;
+            updateStats();
+
+            showFeedback('答對了！太棒了！ 🎉', 'success');
+            
+            const targetEl = state.mode === 'coord' ? targetContainer : targetContainerQuad;
+            targetEl.classList.remove('bg-indigo-50', 'border-indigo-200', 'bg-red-50', 'border-red-200');
+            targetEl.classList.add('bg-emerald-50', 'border-emerald-200');
+
+            checkBtn.innerHTML = `<span>下一題</span><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>`;
+            checkBtn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 md:py-4 rounded-lg shadow-md shadow-emerald-200 transition-all active:scale-95 text-lg flex items-center justify-center gap-2";
+            
+            if (state.mode === 'coord') {
+                inputX.classList.remove('input-active');
+                inputY.classList.remove('input-active');
+            }
+        }
+
+        function handleIncorrect() {
+            state.combo = 0;
+            updateStats();
+            
+            if (state.mode === 'coord') {
+                state.resetX = true;
+                state.resetY = true;
+                targetContainer.classList.add('anim-shake');
+                setTimeout(() => targetContainer.classList.remove('anim-shake'), 500);
+            } else {
+                targetContainerQuad.classList.add('anim-shake');
+                setTimeout(() => targetContainerQuad.classList.remove('anim-shake'), 500);
+            }
+            
+            state.showGuide = true;
+            draw();
+            
+            showFeedback('再試一次！請看圖上的提示。', 'error');
+            
+            const targetEl = state.mode === 'coord' ? targetContainer : targetContainerQuad;
+            targetEl.classList.remove('bg-indigo-50', 'border-indigo-200');
+            targetEl.classList.add('bg-red-50', 'border-red-200');
+        }
+
+        function showFeedback(msg, type) {
+            feedback.textContent = msg;
+            feedback.classList.remove('hidden');
+            
+            if (type === 'success') {
+                feedback.className = "flex-none mt-1 p-1 rounded-lg hidden text-center font-bold text-xs anim-pop shadow-inner absolute bottom-14 left-4 right-4 z-10 md:static md:z-0 bg-emerald-100 text-emerald-700 border border-emerald-200";
+                feedback.classList.remove('hidden');
+                feedback.classList.add('block');
+            } else {
+                feedback.className = "flex-none mt-1 p-1 rounded-lg hidden text-center font-bold text-xs anim-pop shadow-inner absolute bottom-14 left-4 right-4 z-10 md:static md:z-0 bg-red-100 text-red-700 border border-red-200";
+                feedback.classList.remove('hidden');
+                feedback.classList.add('block');
+            }
+        }
+
+        function updateStats() {
+            scoreEl.textContent = state.score;
+            comboEl.textContent = state.combo;
+        }
+
+        function changeLevel(level) {
+            // 判斷目標模式與等級
+            let nextMode = 'coord';
+            let nextLevel = level;
+            
+            if (level === 'quad_quiz') {
+                nextMode = 'quiz';
+                nextLevel = 4;
+            }
+
+            // 如果選擇的難度與當前相同，則直接關閉選單，保留分數與進度
+            if (state.level === nextLevel && state.mode === nextMode) {
+                toggleSettings();
+                return;
+            }
+
+            // 重置按鈕樣式
+            document.querySelectorAll('.lvl-btn').forEach(btn => {
+                btn.classList.add('opacity-70', 'font-medium');
+                btn.classList.remove('active', 'font-bold', 'opacity-100');
+                // 移除特定邊框色，統一恢復預設，然後下面再加回
+                if(btn.id === 'btnLvlQuiz') {
+                   btn.classList.remove('border-indigo-600', 'bg-indigo-100');
+                }
+            });
+            
+            let btnId = '';
+            let text = '';
+            
+            if (level === 'quad_quiz') {
+                // 進入象限判斷模式
+                state.mode = 'quiz';
+                state.level = 4; // 內部邏輯使用全範圍
+                btnId = 'btnLvlQuiz';
+                text = '象限判斷練習';
+                
+                // UI 切換
+                modeCoordinates.classList.add('hidden');
+                modeQuadrant.classList.remove('hidden');
+                instructionText.textContent = '觀察紅點，選擇正確的象限！';
+                
+                // Quiz 按鈕樣式
+                const btn = document.getElementById(btnId);
+                btn.classList.remove('opacity-70', 'font-medium');
+                btn.classList.add('active', 'font-bold', 'opacity-100', 'border-indigo-600', 'bg-indigo-100');
+                
+            } else {
+                // 回到坐標輸入模式
+                state.mode = 'coord';
+                state.level = level;
+                
+                if (level === 1) { btnId = 'btnLvl1'; text = '第一象限'; }
+                else if (level === 4) { btnId = 'btnLvl2'; text = '四個象限'; }
+                else { btnId = 'btnLvl3'; text = '包含軸上點'; }
+                
+                // UI 切換
+                modeCoordinates.classList.remove('hidden');
+                modeQuadrant.classList.add('hidden');
+                instructionText.textContent = '觀察紅點的位置，寫出它的坐標！';
+
+                const btn = document.getElementById(btnId);
+                btn.classList.remove('opacity-70', 'font-medium');
+                btn.classList.add('active', 'font-bold', 'opacity-100');
+            }
+            
+            levelDisplay.textContent = text;
+            toggleSettings();
+
+            state.score = 0;
+            state.combo = 0;
+            updateStats();
+            startNewRound();
+        }
+
+        // 初始化
+        init();
+
+    </script>
+</body>
+</html>

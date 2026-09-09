@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中一數學：近似值挑戰 (上捨入、下捨入、捨入)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+        }
+        .option-btn {
+            transition: all 0.2s;
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .correct {
+            background-color: #d1fae5 !important;
+            border-color: #10b981 !important;
+            color: #065f46 !important;
+        }
+        .wrong {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #991b1b !important;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom Input Styling */
+        .custom-input:focus {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-blue-100 relative min-h-[500px] flex flex-col">
+        
+        <!-- Header (Always visible) -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center shadow-md relative z-10">
+            <h1 class="text-2xl font-bold tracking-wider">近似值挑戰</h1>
+            <p class="text-blue-100 text-sm mt-1">上捨入 · 下捨入 · 捨入</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="progress-container" class="w-full bg-gray-200 h-2 hidden">
+            <div id="progress-bar" class="bg-blue-500 h-2 transition-all duration-300" style="width: 0%"></div>
+        </div>
+
+        <!-- 1. Start Screen (Cover) -->
+        <div id="start-screen" class="flex-1 flex flex-col items-center justify-center p-8 text-center fade-in">
+            <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 text-5xl shadow-inner">
+                🔢
+            </div>
+            <h2 class="text-3xl font-black text-gray-800 mb-4">準備好接受挑戰了嗎？</h2>
+            <div class="space-y-2 text-gray-600 mb-8 max-w-md">
+                <p>📝 總共 30 條題目</p>
+                <p>🎯 前 15 題為選擇題，後 15 題為短答題</p>
+                <p>⚠️ <strong>注意格式：</strong>當題目要求取至小數位時，即使是 0 也要寫出來！(例如：10.0)</p>
+            </div>
+            <button onclick="startQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-4 px-12 rounded-full shadow-lg transition-transform transform hover:scale-105 hover:shadow-xl active:scale-95">
+                開始測驗
+            </button>
+        </div>
+
+        <!-- 2. Quiz Container -->
+        <div id="quiz-container" class="hidden flex-1 flex flex-col p-6 md:p-8 fade-in">
+            
+            <!-- Stats -->
+            <div class="flex justify-between items-center text-gray-500 text-sm mb-6 font-medium border-b pb-2">
+                <span id="question-counter" class="bg-gray-100 px-3 py-1 rounded-full">Q 1 / 30</span>
+                <span id="current-score" class="text-blue-600 font-bold text-lg">得分: 0</span>
+            </div>
+
+            <!-- Question Area -->
+            <div class="mb-8 text-center">
+                <span id="q-tag" class="inline-block px-3 py-1 text-xs font-semibold tracking-wide text-indigo-500 uppercase bg-indigo-50 rounded-full mb-3">選擇題</span>
+                <h2 id="question-text" class="text-2xl md:text-3xl font-bold text-gray-800 leading-snug">
+                    題目載入中...
+                </h2>
+            </div>
+
+            <!-- Interaction Area (Dynamic) -->
+            <div id="interaction-area" class="w-full max-w-lg mx-auto">
+                <!-- Options or Input will be injected here -->
+            </div>
+
+            <!-- Feedback Section -->
+            <div id="feedback-area" class="hidden mt-6 p-5 rounded-xl border-l-4 bg-gray-50 fade-in shadow-sm">
+                <div class="flex items-start">
+                    <div id="feedback-icon" class="text-2xl mr-3"></div>
+                    <div>
+                        <h3 id="feedback-title" class="font-bold text-lg mb-1"></h3>
+                        <p id="feedback-text" class="text-gray-600 text-sm leading-relaxed"></p>
+                    </div>
+                </div>
+                <button id="next-btn" onclick="nextQuestion()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors w-full md:w-auto text-sm shadow-md">
+                    下一題 ➔
+                </button>
+            </div>
+
+            <!-- Spacer to push content up slightly -->
+            <div class="flex-grow"></div>
+        </div>
+
+        <!-- 3. Results Screen -->
+        <div id="result-screen" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center fade-in">
+            <div class="text-7xl mb-4 animate-bounce">🏆</div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">測驗完成！</h2>
+            <p class="text-gray-600 mb-8">以下是你的最終成績</p>
+            
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 mb-8 w-full max-w-xs border border-blue-100">
+                <div class="text-5xl font-black text-blue-600 mb-2" id="final-score">0</div>
+                <div class="text-gray-500 font-medium">總分 (100分)</div>
+            </div>
+
+            <p id="result-message" class="text-lg text-gray-700 mb-8 font-medium px-4"></p>
+
+            <button onclick="restartQuiz()" class="bg-gray-800 hover:bg-black text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
+                再挑戰一次
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // 題目資料庫 (30 題)
+        // strictMode: true 代表必須符合字串格式 (例如 "10.0" 不能寫成 "10")
+        const questions = [
+            // ==========================================
+            // PART 1: 選擇題 (15 題)
+            // ==========================================
+            
+            // --- 上捨入 / 下捨入 (原 1-10 題) ---
+            {
+                type: 'choice',
+                question: "將 4.1 以「上捨入法」取近似值至整數。",
+                options: ["4", "5", "4.1", "4.5"],
+                correct: 1, // index "5"
+                explanation: "上捨入法：整數部分加 1，結果為 5。"
+            },
+            {
+                type: 'choice',
+                question: "將 8.99 以「下捨入法」取近似值至整數。",
+                options: ["8", "9", "8.9", "10"],
+                correct: 0, // index "8"
+                explanation: "下捨入法：直接捨去小數，結果為 8。"
+            },
+            {
+                type: 'choice',
+                question: "把 2.31 以「上捨入法」取近似值至一位小數。",
+                options: ["2.3", "2.4", "2.31", "3.0"],
+                correct: 1, // index "2.4"
+                explanation: "保留一位小數，後位有數值則進位，2.3 變 2.4。"
+            },
+            {
+                type: 'choice',
+                question: "把 7.89 以「下捨入法」取近似值至一位小數。",
+                options: ["7.8", "7.9", "8.0", "7.89"],
+                correct: 0, // index "7.8"
+                explanation: "保留一位小數，後位直接捨去，結果為 7.8。"
+            },
+            {
+                type: 'choice',
+                question: "將 9.96 以「上捨入法」取近似值至一位小數。",
+                options: ["9.9", "10", "10.0", "10.1"],
+                correct: 2, // index "10.0"
+                explanation: "小心陷阱！題目要求「一位小數」，所以 9.9 進位變成 10 後，必須寫成 10.0 來表示精確度。"
+            },
+            {
+                type: 'choice',
+                question: "將 14567 以「下捨入法」取近似值至百位。",
+                options: ["14500", "14600", "14000", "14560"],
+                correct: 0, // index "14500"
+                explanation: "百位後的數字變為 0 並捨去，結果為 14500。"
+            },
+            {
+                type: 'choice',
+                question: "將 0.92 以「上捨入法」取近似值至一位小數。",
+                options: ["0.9", "1", "1.0", "0.92"],
+                correct: 2, // index "1.0"
+                explanation: "0.9 需要進位變成 1。因為題目要求「一位小數」，正確答案必須寫成 1.0。"
+            },
+            {
+                type: 'choice',
+                question: "把 3.14159 以「上捨入法」取近似值至二位小數。",
+                options: ["3.14", "3.15", "3.10", "3.20"],
+                correct: 1, // index "3.15"
+                explanation: "保留兩位小數 (3.14)，因後續有數值，進位成 3.15。"
+            },
+            {
+                type: 'choice',
+                question: "把 0.05 以「下捨入法」取近似值至一位小數。",
+                options: ["0.0", "0.1", "0.5", "0"],
+                correct: 0, // index "0.0"
+                explanation: "保留一位小數 (0.0)，後面的 5 直接捨去，結果為 0.0 (必須保留小數點)。"
+            },
+            {
+                type: 'choice',
+                question: "將 59.91 以「上捨入法」取近似值至一位小數。",
+                options: ["59.9", "60.0", "60", "60.1"],
+                correct: 1, // index "60.0"
+                explanation: "59.9 進位變成 60。為了符合「一位小數」的要求，必須寫成 60.0。"
+            },
+            // --- 捨入 (原 21-25 題，現移至 11-15 題) ---
+            {
+                type: 'choice',
+                question: "將 3.6 以「捨入」取近似值至整數。",
+                options: ["3", "4", "3.6", "3.5"],
+                correct: 1, // index "4"
+                explanation: "捨入：小數第一位是 6 (>=5)，所以進位，結果為 4。"
+            },
+            {
+                type: 'choice',
+                question: "將 8.49 以「捨入」取近似值至一位小數。",
+                options: ["8.4", "8.5", "8.49", "9.0"],
+                correct: 1, // index "8.5"
+                explanation: "取至一位小數，看小數第二位是 9 (>=5)，所以 8.4 進位成 8.5。"
+            },
+            {
+                type: 'choice',
+                question: "將 12.345 以「捨入」取近似值至二位小數。",
+                options: ["12.34", "12.35", "12.30", "12.40"],
+                correct: 1, // index "12.35"
+                explanation: "取至二位小數，看小數第三位是 5 (>=5)，所以 12.34 進位成 12.35。"
+            },
+            {
+                type: 'choice',
+                question: "將 0.06 以「捨入」取近似值至一位小數。",
+                options: ["0.0", "0.1", "0.6", "0.06"],
+                correct: 1, // index "0.1"
+                explanation: "取至一位小數，看小數第二位是 6 (>=5)，所以 0.0 進位成 0.1。"
+            },
+            {
+                type: 'choice',
+                question: "將 9.95 以「捨入」取近似值至一位小數。",
+                options: ["9.9", "10.0", "10", "9.95"],
+                correct: 1, // index "10.0"
+                explanation: "取至一位小數，第二位是 5，需進位。9.9 + 0.1 = 10.0 (記得保留一位小數)。"
+            },
+
+            // ==========================================
+            // PART 2: 短答題 (15 題)
+            // ==========================================
+
+            // --- 上捨入 / 下捨入 (原 11-20 題，現移至 16-25 題) ---
+            {
+                type: 'input',
+                question: "將 6.7 以「上捨入法」取近似值至整數。",
+                correctAnswer: "7",
+                explanation: "上捨入法：6.7 進位成 7。"
+            },
+            {
+                type: 'input',
+                question: "將 6.7 以「下捨入法」取近似值至整數。",
+                correctAnswer: "6",
+                explanation: "下捨入法：6.7 捨去小數成 6。"
+            },
+            {
+                type: 'input',
+                question: "將 123.456 以「上捨入法」取近似值至一位小數。",
+                correctAnswer: "123.5",
+                explanation: "保留一位 (123.4)，後位有數需進位，成 123.5。"
+            },
+            {
+                type: 'input',
+                question: "將 123.456 以「下捨入法」取近似值至二位小數。",
+                correctAnswer: "123.45",
+                explanation: "保留二位 (123.45)，後位直接捨去，成 123.45。"
+            },
+            {
+                type: 'input',
+                question: "將 29.92 以「上捨入法」取近似值至一位小數。",
+                correctAnswer: "30.0",
+                strictMode: true,
+                explanation: "29.9 需進位變成 30。因為要求一位小數，必須填寫 30.0。"
+            },
+            {
+                type: 'input',
+                question: "將 5678 以「下捨入法」取近似值至百位。",
+                correctAnswer: "5600",
+                explanation: "百位後歸零，5678 變成 5600。"
+            },
+            {
+                type: 'input',
+                question: "將 7.0001 以「下捨入法」取近似值至二位小數。",
+                correctAnswer: "7.00",
+                strictMode: true,
+                explanation: "下捨入至二位小數。雖然數值是 7，但為了符合格式，必須填寫 7.00。"
+            },
+            {
+                type: 'input',
+                question: "將 99.991 以「上捨入法」取近似值至二位小數。",
+                correctAnswer: "100.00",
+                strictMode: true,
+                explanation: "99.99 進位變成 100。要求二位小數，所以必須填寫 100.00。"
+            },
+            {
+                type: 'input',
+                question: "將 0.8 以「上捨入法」取近似值至整數。",
+                correctAnswer: "1",
+                explanation: "0.8 進位成 1。"
+            },
+            {
+                type: 'input',
+                question: "將 100.5 以「下捨入法」取近似值至整數。",
+                correctAnswer: "100",
+                explanation: "直接捨去 .5，結果為 100。"
+            },
+
+            // --- 捨入 (原 26-30 題) ---
+            {
+                type: 'input',
+                question: "將 7.5 以「捨入」取近似值至整數。",
+                correctAnswer: "8",
+                explanation: "捨入：小數部分是 0.5 (>=5)，進位成 8。"
+            },
+            {
+                type: 'input',
+                question: "將 4.23 以「捨入」取近似值至一位小數。",
+                correctAnswer: "4.2",
+                explanation: "取至一位小數，第二位是 3 (<5)，捨去，結果為 4.2。"
+            },
+            {
+                type: 'input',
+                question: "將 6.789 以「捨入」取近似值至二位小數。",
+                correctAnswer: "6.79",
+                explanation: "取至二位小數，第三位是 9 (>=5)，6.78 進位成 6.79。"
+            },
+            {
+                type: 'input',
+                question: "將 19.99 以「捨入」取近似值至一位小數。",
+                correctAnswer: "20.0",
+                strictMode: true,
+                explanation: "取至一位小數，第二位是 9 (>=5)，進位後變為 20。因要求一位小數，必須寫成 20.0。"
+            },
+            {
+                type: 'input',
+                question: "將 0.44 以「捨入」取近似值至一位小數。",
+                correctAnswer: "0.4",
+                explanation: "取至一位小數，第二位是 4 (<5)，捨去，結果為 0.4。"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+
+        function startQuiz() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('flex');
+            document.getElementById('quiz-container').classList.remove('hidden');
+            document.getElementById('progress-container').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestion];
+            const interactionArea = document.getElementById('interaction-area');
+            const feedbackArea = document.getElementById('feedback-area');
+            const nextBtn = document.getElementById('next-btn');
+
+            // Reset UI
+            feedbackArea.classList.add('hidden');
+            answered = false;
+
+            // Update Header Info
+            document.getElementById('question-counter').innerText = `Q ${currentQuestion + 1} / ${questions.length}`;
+            document.getElementById('question-text').innerText = q.question;
+            
+            // Update Progress
+            const progress = (currentQuestion / questions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+
+            // Tag Update
+            const tag = document.getElementById('q-tag');
+            if(q.type === 'choice') {
+                tag.innerText = "選擇題";
+                tag.className = "inline-block px-3 py-1 text-xs font-semibold tracking-wide text-indigo-500 uppercase bg-indigo-50 rounded-full mb-3";
+            } else {
+                tag.innerText = "短答題";
+                tag.className = "inline-block px-3 py-1 text-xs font-semibold tracking-wide text-orange-500 uppercase bg-orange-50 rounded-full mb-3";
+            }
+
+            // Render Interaction Area
+            interactionArea.innerHTML = '';
+
+            if (q.type === 'choice') {
+                // Render Multiple Choice Buttons
+                const grid = document.createElement('div');
+                grid.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
+                
+                q.options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn w-full text-center p-4 rounded-xl border-2 border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 text-xl font-medium text-gray-700';
+                    btn.innerText = opt;
+                    btn.onclick = () => checkChoiceAnswer(index, btn);
+                    grid.appendChild(btn);
+                });
+                interactionArea.appendChild(grid);
+            } else {
+                // Render Input Field
+                const wrapper = document.createElement('div');
+                wrapper.className = "flex flex-col md:flex-row gap-4 justify-center items-center";
+
+                const input = document.createElement('input');
+                input.type = "text"; 
+                input.id = "user-input";
+                input.placeholder = q.strictMode ? "輸入數字 (注意小數格式)" : "輸入數字答案";
+                input.className = "custom-input w-full md:w-2/3 p-4 text-center text-2xl border-2 border-gray-300 rounded-xl outline-none transition-colors focus:border-blue-500";
+                input.autocomplete = "off";
+
+                const submitBtn = document.createElement('button');
+                submitBtn.innerText = "提交";
+                submitBtn.className = "w-full md:w-1/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-lg";
+                submitBtn.onclick = () => checkInputAnswer();
+
+                // Allow Enter key to submit
+                input.addEventListener("keypress", function(event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        checkInputAnswer();
+                    }
+                });
+
+                wrapper.appendChild(input);
+                wrapper.appendChild(submitBtn);
+                interactionArea.appendChild(wrapper);
+                
+                // Focus input automatically
+                setTimeout(() => input.focus(), 100);
+            }
+        }
+
+        // --- Logic for Choice Questions ---
+        function checkChoiceAnswer(selectedIndex, btnElement) {
+            if (answered) return;
+            answered = true;
+
+            const q = questions[currentQuestion];
+            const isCorrect = selectedIndex === q.correct;
+            
+            // Visual feedback on buttons
+            const buttons = document.getElementById('interaction-area').getElementsByTagName('button');
+            for (let btn of buttons) {
+                btn.disabled = true;
+                btn.classList.add('cursor-not-allowed');
+            }
+
+            if (isCorrect) {
+                btnElement.classList.add('correct');
+                handleCorrect();
+            } else {
+                btnElement.classList.add('wrong');
+                // Highlight correct one
+                buttons[q.correct].classList.add('correct');
+                handleWrong(q.options[q.correct]);
+            }
+        }
+
+        // --- Logic for Input Questions ---
+        function checkInputAnswer() {
+            if (answered) return;
+            
+            const inputField = document.getElementById('user-input');
+            const val = inputField.value.trim();
+            const q = questions[currentQuestion];
+            
+            if (val === "") return; // Don't submit empty
+
+            answered = true;
+            
+            let isCorrect = false;
+
+            // Validation Logic
+            if (q.strictMode) {
+                // Strict string equality (e.g., must be "10.0", "10" is wrong)
+                isCorrect = (val === q.correctAnswer);
+            } else {
+                // Loose equality (allows "10" for "10.0" if strict mode is off)
+                const userNum = parseFloat(val);
+                const correctNum = parseFloat(q.correctAnswer);
+                isCorrect = (val === q.correctAnswer) || (userNum === correctNum);
+            }
+
+            inputField.disabled = true;
+            inputField.classList.add('bg-gray-100');
+            
+            // Disable the submit button inside interaction area
+            const submitBtn = document.querySelector('#interaction-area button');
+            if(submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            if (isCorrect) {
+                inputField.classList.add('border-green-500', 'text-green-600', 'bg-green-50');
+                handleCorrect();
+            } else {
+                inputField.classList.add('border-red-500', 'text-red-600', 'bg-red-50');
+                
+                // Custom error message for strict mode misses (e.g., typed 30 instead of 30.0)
+                let extraMsg = "";
+                const userNum = parseFloat(val);
+                const correctNum = parseFloat(q.correctAnswer);
+                if (q.strictMode && userNum === correctNum && val !== q.correctAnswer) {
+                    extraMsg = " (數值正確，但格式錯誤！)";
+                }
+                
+                handleWrong(q.correctAnswer + extraMsg);
+            }
+        }
+
+        // --- Common Feedback Handlers ---
+        function handleCorrect() {
+            score++;
+            document.getElementById('current-score').innerText = `得分: ${score}`;
+            showFeedback(true, questions[currentQuestion].explanation);
+        }
+
+        function handleWrong(correctAnswerText) {
+            let explanation = questions[currentQuestion].explanation;
+            // Add correct answer info if input question
+            if(questions[currentQuestion].type === 'input') {
+                explanation = `正確答案是 ${correctAnswerText}。<br><br>` + explanation;
+            }
+            showFeedback(false, explanation);
+        }
+
+        function showFeedback(isCorrect, text) {
+            const feedbackArea = document.getElementById('feedback-area');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackText = document.getElementById('feedback-text');
+            const feedbackIcon = document.getElementById('feedback-icon');
+
+            if (isCorrect) {
+                feedbackTitle.innerText = "答對了！";
+                feedbackTitle.className = "font-bold text-lg mb-1 text-green-700";
+                feedbackIcon.innerText = "🎉";
+                feedbackArea.className = "mt-6 p-5 rounded-xl border-l-4 border-green-500 bg-green-50 fade-in shadow-sm";
+            } else {
+                feedbackTitle.innerText = "答錯了";
+                feedbackTitle.className = "font-bold text-lg mb-1 text-red-700";
+                feedbackIcon.innerText = "❌";
+                feedbackArea.className = "mt-6 p-5 rounded-xl border-l-4 border-red-500 bg-red-50 fade-in shadow-sm";
+            }
+
+            feedbackText.innerHTML = text; // Changed to innerHTML to support <br>
+            feedbackArea.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('progress-bar').style.width = '100%';
+
+            // Calculate score out of 100
+            const finalScore = Math.round((score / questions.length) * 100);
+            document.getElementById('final-score').innerText = finalScore;
+
+            let msg = "";
+            if (finalScore === 100) msg = "完美！看來你已經完全精通了所有近似值的技巧！🌟";
+            else if (finalScore >= 80) msg = "太棒了！你的數學基礎非常紮實！👍";
+            else if (finalScore >= 60) msg = "做得不錯，留意小數點和進位的細節！💪";
+            else msg = "別灰心，近似值需要多練習，再挑戰一次吧！🙂";
+            
+            document.getElementById('result-message').innerText = msg;
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            document.getElementById('current-score').innerText = `得分: 0`;
+            
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('start-screen').classList.add('flex');
+            document.getElementById('progress-container').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

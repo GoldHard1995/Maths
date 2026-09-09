@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <!-- iPad 關鍵優化：防止雙擊縮放與捏合縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>展開數式教學與練習</title>
+    
+    <!-- 引入 React 與 Babel (用於在瀏覽器直接解析 JSX) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* iPad 關鍵優化：隱藏數字輸入框自帶的上下箭頭 */
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        /* iPad 關鍵優化：移除點擊時的半透明高亮，讓體驗更像原生 App */
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-stone-100 text-slate-800 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // -----------------------------------------------------------------
+        // 圖示元件 (內建 SVG，免依賴外部字體)
+        // -----------------------------------------------------------------
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const icons = {
+                'book-open': <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></>,
+                'layers': <><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></>,
+                'pen-tool': <><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></>,
+                'play': <polygon points="5 3 19 12 5 21 5 3"></polygon>,
+                'arrow-left': <><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></>,
+                'check-circle': <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></>,
+                'x': <><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></>,
+                'chevron-right': <polyline points="9 18 15 12 9 6"></polyline>,
+                'rotate-ccw': <><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></>,
+                'settings': <><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></>,
+                'lightbulb': <><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></>,
+                'star': <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></>,
+                'award': <><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></>
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        // -----------------------------------------------------------------
+        // 數學格式化輔助函數
+        // -----------------------------------------------------------------
+        const toSuperscript = (num) => {
+            if (num === 1) return '';
+            const map = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+            return num.toString().split('').map(c => map[c]).join('');
+        };
+
+        const fmt = (coeff, exp = 0, isFirst = false) => {
+            if (coeff === 0) return isFirst ? '0' : '';
+            const absC = Math.abs(coeff);
+            const showNum = (absC !== 1 || exp === 0);
+            const numStr = showNum ? absC : '';
+            const sign = coeff < 0 ? '-' : '+';
+            
+            let varStr = '';
+            if (exp !== 0) {
+                varStr = 'x' + toSuperscript(exp);
+            }
+            
+            if (isFirst) {
+                return coeff < 0 ? `-${numStr}${varStr}` : `${numStr}${varStr}`;
+            } else {
+                return ` ${sign} ${numStr}${varStr}`;
+            }
+        };
+
+        const wrapIfNeg = (str) => str.startsWith('-') ? `(${str})` : str;
+
+        const getRand = (min = -5, max = 5) => {
+            let val = 0;
+            while (val === 0) {
+                val = Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+            return val;
+        };
+        const getRandPos = (max = 4) => Math.floor(Math.random() * max) + 1;
+
+        // -----------------------------------------------------------------
+        // 主應用程式元件
+        // -----------------------------------------------------------------
+        function AlgebraicExpansionApp() {
+            const [mode, setMode] = useState('learn'); 
+            const [activeTab, setActiveTab] = useState(1);
+            const [questions, setQuestions] = useState([]);
+            const [currentQIdx, setCurrentQIdx] = useState(0);
+            const [score, setScore] = useState(0); // 新增總分狀態
+
+            const startPractice = (level) => {
+                const qs = [];
+                if (level === 1) {
+                    for (let i = 0; i < 10; i++) {
+                        qs.push({
+                            id: i, type: 'single', level: 1,
+                            outC: getRand(-6, 6), outExp: 0, outHasX: false,
+                            inXC: getRandPos(3), inExp: 1,
+                            inC: getRand(-6, 6),
+                            points: 10 // 每題預設 10 分
+                        });
+                    }
+                } else {
+                    for (let i = 0; i < 10; i++) {
+                        qs.push({
+                            id: i, type: 'double', level: 2,
+                            a: getRandPos(3), exp1: 1, b: getRand(-5, 5), 
+                            c: getRandPos(3), exp2: 1, d: getRand(-5, 5),
+                            points: 10 // 每題預設 10 分
+                        });
+                    }
+                }
+                setQuestions(qs);
+                setCurrentQIdx(0);
+                setScore(0); // 重新開始時分數歸零
+                setMode('practice');
+            };
+
+            return (
+                <div className="min-h-screen pb-12 relative overflow-x-hidden">
+                    <header className="bg-teal-700 text-white py-6 md:py-8 px-4 md:px-6 shadow-md mb-8">
+                        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <Icon name="book-open" size={40} className="text-teal-200" />
+                                <div>
+                                    <h1 className="text-2xl md:text-3xl font-bold mb-1">展開數式</h1>
+                                    <p className="text-teal-100 text-base md:text-lg">跟著顏色，一步步看懂括號是怎麼被拆開的！</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex bg-teal-800 p-1 rounded-full border border-teal-600">
+                                <button onClick={() => setMode('learn')} className={`px-4 md:px-6 py-2 rounded-full font-bold transition-all text-sm md:text-base ${mode === 'learn' ? 'bg-white text-teal-700 shadow' : 'text-teal-100 hover:text-white'}`}>
+                                    學習示範
+                                </button>
+                                <button onClick={() => setMode(mode.startsWith('practice') ? mode : 'practice_intro')} className={`px-4 md:px-6 py-2 rounded-full font-bold transition-all text-sm md:text-base ${(mode.startsWith('practice')) ? 'bg-white text-teal-700 shadow' : 'text-teal-100 hover:text-white'}`}>
+                                    實戰練習
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-5xl mx-auto px-4 md:px-6">
+                        {mode === 'learn' && (
+                            <div className="animate-in fade-in duration-500">
+                                <div className="flex justify-center gap-4 mb-8">
+                                    <button onClick={() => setActiveTab(1)} className={`flex items-center gap-2 px-6 md:px-8 py-3 rounded-full font-bold text-base md:text-lg transition-all shadow-sm ${activeTab === 1 ? 'bg-teal-600 text-white scale-105 shadow-md' : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-200'}`}>
+                                        <Icon name="layers" size={20} /> 單括號
+                                    </button>
+                                    <button onClick={() => setActiveTab(2)} className={`flex items-center gap-2 px-6 md:px-8 py-3 rounded-full font-bold text-base md:text-lg transition-all shadow-sm ${activeTab === 2 ? 'bg-indigo-600 text-white scale-105 shadow-md' : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-200'}`}>
+                                        <Icon name="layers" size={20} /> 雙括號
+                                    </button>
+                                </div>
+                                {activeTab === 1 ? <SingleBracketPage /> : <DoubleBracketPage />}
+                            </div>
+                        )}
+
+                        {mode === 'practice_intro' && (
+                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 md:p-12 text-center max-w-2xl mx-auto animate-in duration-500 mt-6 md:mt-12">
+                                <div className="bg-teal-100 w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Icon name="pen-tool" size={40} className="text-teal-600" />
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-4">我已明白如何展開數式，<br/>開始做練習吧！</h2>
+                                <p className="text-slate-500 text-base md:text-lg mb-8">
+                                    請選擇你想挑戰的難度，每個難度各有 10 題隨機題目：
+                                </p>
+                                <div className="flex flex-col gap-4 max-w-md mx-auto">
+                                    <button onClick={() => startPractice(1)} className="flex items-center justify-center gap-3 px-6 py-4 rounded-full font-bold text-base md:text-lg text-white bg-teal-600 hover:bg-teal-700 shadow-lg active:scale-95 transition-transform">
+                                        <Icon name="play" size={20} /> 第一難度：單括號展開
+                                    </button>
+                                    <button onClick={() => startPractice(2)} className="flex items-center justify-center gap-3 px-6 py-4 rounded-full font-bold text-base md:text-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg active:scale-95 transition-transform">
+                                        <Icon name="play" size={20} /> 第二難度：雙括號展開
+                                    </button>
+                                    <button onClick={() => setMode('learn')} className="flex items-center justify-center gap-2 mt-2 md:mt-4 px-6 py-4 rounded-full font-bold text-base md:text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-transform">
+                                        <Icon name="arrow-left" size={20} /> 返回示範
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {mode === 'practice' && (
+                            <PracticeSession 
+                                question={questions[currentQIdx]} 
+                                currentIndex={currentQIdx} 
+                                total={questions.length}
+                                score={score}
+                                onDeduct={(amount) => {
+                                    // 扣分機制：修改 questions 狀態中該題的分數
+                                    setQuestions(prev => {
+                                        const newQs = [...prev];
+                                        newQs[currentQIdx] = { 
+                                            ...newQs[currentQIdx], 
+                                            points: Math.max(newQs[currentQIdx].points - amount, 2) 
+                                        };
+                                        return newQs;
+                                    });
+                                }}
+                                onNext={(earnedPoints) => {
+                                    setScore(prev => prev + earnedPoints);
+                                    if (currentQIdx + 1 < questions.length) setCurrentQIdx(prev => prev + 1);
+                                    else setMode('practice_complete');
+                                }}
+                                onHint={() => setMode('practice_hint')}
+                                onExit={() => setMode('practice_intro')}
+                            />
+                        )}
+
+                        {mode === 'practice_hint' && (
+                            <div className="space-y-6 animate-in duration-500">
+                                <div className="bg-amber-100 text-amber-800 px-4 md:px-6 py-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm border border-amber-200 gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <Icon name="lightbulb" size={24} className="text-amber-600" />
+                                        <span className="font-bold text-base md:text-lg">提示模式：正在示範剛才題目的展開步驟</span>
+                                    </div>
+                                    <button onClick={() => setMode('practice')} className="flex items-center gap-2 bg-white text-amber-700 px-6 py-2 rounded-full font-bold shadow-sm active:scale-95 transition-transform w-full md:w-auto justify-center">
+                                        <Icon name="arrow-left" size={18} /> 返回練習
+                                    </button>
+                                </div>
+                                
+                                {questions[currentQIdx].type === 'single' ? (
+                                    <SingleBracketPage forcedParams={questions[currentQIdx]} />
+                                ) : (
+                                    <DoubleBracketPage forcedParams={questions[currentQIdx]} />
+                                )}
+                            </div>
+                        )}
+
+                        {mode === 'practice_complete' && (
+                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 md:p-12 text-center max-w-2xl mx-auto animate-in duration-500 mt-6 md:mt-12">
+                                <div className="bg-amber-100 w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Icon name="award" size={48} className="text-amber-600" />
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">太棒了！你完成了所有練習！</h2>
+                                
+                                <div className="text-4xl md:text-6xl font-mono font-bold text-amber-500 mb-4 py-4">
+                                    總得分: {score} <span className="text-2xl md:text-3xl text-amber-400">/ 100</span>
+                                </div>
+
+                                <p className="text-slate-600 font-bold text-lg md:text-xl mb-8 bg-slate-50 py-3 rounded-lg border border-slate-100">
+                                    {score >= 90 ? '🌟 太厲害了！你幾乎完美地掌握了展開數式！' : 
+                                     score >= 70 ? '👍 表現不錯！繼續保持，熟能生巧！' : 
+                                     '💪 繼續努力！多加練習一定會越來越熟悉！'}
+                                </p>
+                                <div className="flex flex-col md:flex-row justify-center gap-4">
+                                    <button onClick={() => setMode('learn')} className="flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-transform">
+                                        返回學習區
+                                    </button>
+                                    <button onClick={() => setMode('practice_intro')} className="flex items-center justify-center gap-2 px-10 py-4 rounded-full font-bold text-lg text-white bg-teal-600 hover:bg-teal-700 shadow-lg active:scale-95 transition-transform">
+                                        <Icon name="layers" size={20} /> 選擇其他難度
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        // -----------------------------------------------------------------
+        // 練習互動元件
+        // -----------------------------------------------------------------
+        function PracticeSession({ question, currentIndex, total, score, onNext, onHint, onExit, onDeduct }) {
+            const [ans1, setAns1] = useState('');
+            const [ans2, setAns2] = useState('');
+            const [ans3, setAns3] = useState('');
+            const [status, setStatus] = useState('typing');
+            const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+            // 依賴 question.id，確保只有換題時才清空作答紀錄 (保留分數與狀態)
+            useEffect(() => {
+                setAns1(''); setAns2(''); setAns3('');
+                setStatus('typing');
+            }, [question.id]);
+
+            const isSingle = question.type === 'single';
+
+            let qStr = '';
+            if (isSingle) {
+                const { outC, inXC, inC } = question;
+                qStr = `${fmt(outC, 0, true)}(${fmt(inXC, 1, true)}${fmt(inC, 0, false)})`;
+            } else {
+                const { a, b, c, d } = question;
+                qStr = `(${fmt(a, 1, true)}${fmt(b, 0, false)})(${fmt(c, 1, true)}${fmt(d, 0, false)})`;
+            }
+
+            const checkAnswer = () => {
+                let correct = false;
+                if (isSingle) {
+                    const v1 = parseInt(ans1);
+                    const v2 = parseInt(ans2);
+                    const expected1 = question.outC * question.inXC;
+                    const expected2 = question.outC * question.inC;
+                    if (v1 === expected1 && v2 === expected2) correct = true;
+                } else {
+                    const v1 = parseInt(ans1);
+                    const v2 = parseInt(ans2);
+                    const v3 = parseInt(ans3);
+                    const expected1 = question.a * question.c;
+                    const expected2 = (question.a * question.d) + (question.b * question.c);
+                    const expected3 = question.b * question.d;
+                    if (v1 === expected1 && v2 === expected2 && v3 === expected3) correct = true;
+                }
+
+                if (correct) {
+                    setStatus('correct');
+                } else {
+                    onDeduct(3); // 答錯扣 3 分
+                    setStatus('incorrect');
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden relative">
+                    {/* 離開確認彈出視窗 */}
+                    {showExitConfirm && (
+                        <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center z-50 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl p-6 md:p-8 max-w-sm w-full shadow-2xl mx-4 animate-in zoom-in-95 duration-200">
+                                <h3 className="text-xl font-bold text-slate-800 mb-3">確定要離開練習嗎？</h3>
+                                <p className="text-slate-500 mb-6 md:mb-8 text-sm md:text-base">離開後目前的練習與分數進度將會遺失。</p>
+                                <div className="flex justify-end gap-3 md:gap-4">
+                                    <button onClick={() => setShowExitConfirm(false)} className="px-5 py-2 rounded-full font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-transform text-sm md:text-base">繼續練習</button>
+                                    <button onClick={onExit} className="px-5 py-2 rounded-full font-bold text-white bg-red-500 hover:bg-red-600 active:scale-95 transition-transform text-sm md:text-base">確認離開</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className={`px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-3 ${question.level === 1 ? 'bg-teal-50 border-b border-teal-100' : 'bg-indigo-50 border-b border-indigo-100'}`}>
+                        <div className="flex items-center gap-2 md:gap-4">
+                            <button onClick={() => setShowExitConfirm(true)} className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/50 hover:bg-white text-slate-600 shadow-sm active:scale-95 transition-all" title="返回">
+                                <Icon name="arrow-left" size={18} />
+                            </button>
+                            <div>
+                                <span className={`inline-block text-xs md:text-sm font-bold px-3 py-1 rounded-full mr-2 md:mr-3 mb-1 md:mb-0 ${question.level === 1 ? 'bg-teal-200 text-teal-800' : 'bg-indigo-200 text-indigo-800'}`}>
+                                    {question.level === 1 ? '第一難度：單括號' : '第二難度：雙括號'}
+                                </span>
+                                <span className="font-bold text-slate-600 text-sm md:text-base block md:inline">題號 {currentIndex + 1} / {total}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <div className="font-bold text-amber-600 bg-amber-100 px-3 py-1.5 rounded-full flex items-center gap-1 text-sm md:text-base shadow-sm">
+                                <Icon name="star" size={16} /> <span className="hidden md:inline">總分: </span>{score}
+                            </div>
+                            <button onClick={() => { onDeduct(5); onHint(); }} className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-amber-900 px-3 py-1.5 rounded-full font-bold text-sm shadow-sm active:scale-95 transition-transform">
+                                <Icon name="lightbulb" size={16} /> 提示
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="p-6 md:p-10 flex flex-col items-center">
+                        <div className="text-3xl md:text-5xl font-mono font-bold text-slate-800 mb-2 text-center">
+                            {qStr}
+                        </div>
+                        <div className="text-sm font-bold text-amber-500 mb-6 md:mb-10 text-center bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                            本題答對可得: {question.points} 分
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 text-2xl md:text-4xl font-mono text-slate-700 bg-slate-50 p-4 md:p-8 rounded-2xl border border-slate-200 shadow-inner w-full max-w-3xl">
+                            <span>=</span>
+                            <input type="number" value={ans1} onChange={e => {setAns1(e.target.value); setStatus('typing')}} 
+                                className={`w-20 md:w-24 text-center border-b-4 bg-white rounded-md p-2 outline-none transition-colors ${status==='incorrect'?'border-red-400 text-red-600':status==='correct'?'border-emerald-400 text-emerald-600':'border-slate-400 focus:border-blue-500'}`} placeholder="?" />
+                            <span className="font-bold text-blue-600">{isSingle ? 'x' : 'x²'}</span>
+                            
+                            <span className="text-slate-400">+</span>
+                            <input type="number" value={ans2} onChange={e => {setAns2(e.target.value); setStatus('typing')}} 
+                                className={`w-20 md:w-24 text-center border-b-4 bg-white rounded-md p-2 outline-none transition-colors ${status==='incorrect'?'border-red-400 text-red-600':status==='correct'?'border-emerald-400 text-emerald-600':'border-slate-400 focus:border-emerald-500'}`} placeholder="?" />
+                            {!isSingle && <span className="font-bold text-emerald-600">x</span>}
+
+                            {!isSingle && (
+                                <>
+                                    <span className="text-slate-400">+</span>
+                                    <input type="number" value={ans3} onChange={e => {setAns3(e.target.value); setStatus('typing')}} 
+                                        className={`w-20 md:w-24 text-center border-b-4 bg-white rounded-md p-2 outline-none transition-colors ${status==='incorrect'?'border-red-400 text-red-600':status==='correct'?'border-emerald-400 text-emerald-600':'border-slate-400 focus:border-purple-500'}`} placeholder="?" />
+                                </>
+                            )}
+                        </div>
+                        <p className="text-xs md:text-sm text-slate-400 mt-4 text-center">(若答案為負數，請直接輸入負號，例如：-5)</p>
+
+                        <div className="mt-8 md:mt-10 h-16 md:h-20 flex items-center justify-center w-full">
+                            {status === 'typing' && (
+                                <button onClick={checkAnswer} disabled={ans1==='' || ans2==='' || (!isSingle && ans3==='')} className="bg-slate-800 hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 md:px-10 py-3 md:py-4 rounded-full font-bold text-lg md:text-xl shadow-lg active:scale-95 transition-transform">
+                                    提交答案
+                                </button>
+                            )}
+                            
+                            {status === 'correct' && (
+                                <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+                                    <span className="flex items-center gap-2 text-emerald-600 font-bold text-xl md:text-2xl">
+                                        <Icon name="check-circle" size={32} /> 答對了！ (+{question.points} 分)
+                                    </span>
+                                    <button onClick={() => onNext(question.points)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 md:px-8 py-3 rounded-full font-bold text-lg shadow-lg active:scale-95 transition-transform flex items-center gap-2">
+                                        下一題 <Icon name="chevron-right" size={24} />
+                                    </button>
+                                </div>
+                            )}
+
+                            {status === 'incorrect' && (
+                                <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+                                    <span className="flex items-center gap-2 text-red-500 font-bold text-lg md:text-xl">
+                                        <Icon name="x" size={28} /> 哎呀，不對喔！ (-3 分)
+                                    </span>
+                                    <button onClick={() => setStatus('typing')} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-2 rounded-full font-bold active:scale-95 transition-transform">
+                                        重新修改
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // -----------------------------------------------------------------
+        // 單括號學習元件
+        // -----------------------------------------------------------------
+        function SingleBracketPage({ forcedParams }) {
+            const [step, setStep] = useState(0);
+            const isHintMode = !!forcedParams;
+
+            const [outCoeff, setOutCoeff] = useState(1);
+            const [outHasX, setOutHasX] = useState(true);
+            const [outExp, setOutExp] = useState(1);
+            const [inXCoeff, setInXCoeff] = useState(1);
+            const [inExp, setInExp] = useState(1);
+            const [inConst, setInConst] = useState(2);
+
+            useEffect(() => {
+                if (forcedParams) {
+                    setOutCoeff(forcedParams.outC);
+                    setOutHasX(false);
+                    setOutExp(0);
+                    setInXCoeff(forcedParams.inXC);
+                    setInExp(1);
+                    setInConst(forcedParams.inC);
+                    setStep(0);
+                }
+            }, [forcedParams]);
+
+            const nextStep = () => setStep(prev => Math.min(prev + 1, 2));
+            const resetStep = () => setStep(0);
+
+            const handleNum = (setter) => (e) => {
+                const val = e.target.value;
+                setter(val === '' ? '' : parseInt(val, 10));
+                setStep(0);
+            };
+
+            const safeOutC = outCoeff || 0; const safeOutExp = outHasX ? (outExp || 1) : 0;
+            const safeInXC = inXCoeff || 0; const safeInExp = inExp || 1; const safeInC = inConst || 0;
+
+            const outStr = fmt(safeOutC, safeOutExp, true);
+            const inTerm1 = fmt(safeInXC, safeInExp, true);
+            const inTerm2Str = fmt(safeInC, 0, false); 
+
+            const term1Coeff = safeOutC * safeInXC; const term1Exp = safeOutExp + safeInExp;
+            const term2Coeff = safeOutC * safeInC; const term2Exp = safeOutExp;
+            
+            const finalTerm1 = fmt(term1Coeff, term1Exp, true);
+            const finalTerm2 = fmt(term2Coeff, term2Exp, false);
+
+            return (
+                <section className={`bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden ${isHintMode ? 'ring-4 ring-amber-200' : ''}`}>
+                    {!isHintMode && (
+                        <div className="bg-slate-50 px-4 md:px-8 py-5 border-b border-slate-200">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Icon name="pen-tool" className="text-teal-600" size={24} />
+                                <h2 className="text-xl md:text-2xl font-bold text-slate-800">單括號展開</h2>
+                            </div>
+                            
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-3 bg-white px-4 md:px-5 py-3 rounded-xl border border-slate-200 shadow-sm">
+                                <div className="flex items-center gap-2">
+                                    <Icon name="settings" size={20} className="text-slate-400 hidden md:block" />
+                                    <span className="font-bold text-slate-700 text-sm md:text-base">自訂題目：</span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1 font-mono text-base md:text-lg bg-slate-50 p-2 rounded-lg border border-slate-100 w-full lg:w-auto overflow-x-auto">
+                                    <input type="number" value={outCoeff} onChange={handleNum(setOutCoeff)} className="w-12 md:w-16 p-1 text-center border border-slate-300 rounded text-blue-600 font-bold bg-white" />
+                                    <label className="flex items-center gap-1 text-xs md:text-sm font-sans text-slate-600 cursor-pointer mx-1">
+                                        <input type="checkbox" checked={outHasX} onChange={(e) => { setOutHasX(e.target.checked); setStep(0); }} className="w-4 h-4 text-teal-600" />
+                                        附帶 x
+                                    </label>
+                                    {outHasX && (
+                                        <div className="flex items-start mr-1 md:mr-2">
+                                            <span className="text-xs md:text-sm mt-1 text-slate-400">^</span>
+                                            <input type="number" value={outExp} onChange={handleNum(setOutExp)} className="w-10 md:w-12 h-6 text-xs md:text-sm p-0 text-center border border-slate-300 rounded text-blue-600 font-bold bg-white" />
+                                        </div>
+                                    )}
+                                    <span className="text-slate-400">(</span>
+                                    <input type="number" value={inXCoeff} onChange={handleNum(setInXCoeff)} className="w-12 md:w-16 p-1 text-center border border-slate-300 rounded text-red-500 font-bold bg-white" />
+                                    <div className="flex items-start">
+                                        <span className="text-slate-600 font-bold ml-1">x</span>
+                                        <span className="text-xs md:text-sm mt-1 text-slate-400 ml-1">^</span>
+                                        <input type="number" value={inExp} onChange={handleNum(setInExp)} className="w-10 md:w-12 h-6 text-xs md:text-sm p-0 text-center border border-slate-300 rounded text-red-500 font-bold bg-white" />
+                                    </div>
+                                    <span className="text-slate-600 mx-1 md:mx-2">+</span>
+                                    <input type="number" value={inConst} onChange={handleNum(setInConst)} className="w-12 md:w-16 p-1 text-center border border-slate-300 rounded text-emerald-500 font-bold bg-white" />
+                                    <span className="text-slate-400">)</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="p-4 md:p-8">
+                        <div className="bg-yellow-50 rounded-xl p-4 md:p-10 font-mono text-xl md:text-4xl shadow-inner border border-yellow-100 relative min-h-[220px] md:min-h-[280px]">
+                            <div className="mb-4 flex flex-wrap items-center h-auto min-h-[3rem]">
+                                <span className="w-4 md:w-8"></span>
+                                <span className="text-blue-600 font-bold">{outStr}</span>
+                                <span>(</span>
+                                <span className="text-red-500 font-bold">{inTerm1}</span>
+                                <span className="text-emerald-500 font-bold">{inTerm2Str}</span>
+                                <span>)</span>
+                            </div>
+
+                            <div className={`mb-4 flex flex-wrap items-center h-auto min-h-[3rem] transition-all duration-500 ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                                <span className="w-4 md:w-8 text-slate-400">=</span>
+                                <span className="text-blue-600 font-bold">{outStr}</span>
+                                <span>({inTerm1})</span>
+                                <span className="mx-1 md:mx-2">{safeInC < 0 ? '-' : '+'}</span>
+                                <span className="text-blue-600 font-bold">{wrapIfNeg(outStr)}</span>
+                                <span>({Math.abs(safeInC)})</span>
+                            </div>
+
+                            <div className={`flex flex-wrap items-center h-auto min-h-[3rem] transition-all duration-500 ${step >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                                <span className="w-4 md:w-8 text-slate-400">=</span>
+                                <span className="text-slate-800 font-bold">{finalTerm1}</span>
+                                <span className="text-slate-800 font-bold">{finalTerm2}</span>
+                                {step === 2 && <Icon name="check-circle" className="ml-4 md:ml-6 text-green-500 mt-2 lg:mt-0" size={32} />}
+                            </div>
+                        </div>
+
+                        <div className="mt-6 md:mt-8 flex justify-center">
+                            {step < 2 ? (
+                                <button onClick={nextStep} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 md:px-8 py-3 rounded-full font-bold active:scale-95 transition-transform text-base md:text-lg">
+                                    顯示下一步 <Icon name="chevron-right" size={24} />
+                                </button>
+                            ) : (
+                                <button onClick={resetStep} className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 md:px-8 py-3 rounded-full font-bold active:scale-95 transition-transform text-base md:text-lg">
+                                    重新觀看 <Icon name="rotate-ccw" size={20} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        // -----------------------------------------------------------------
+        // 雙括號學習元件
+        // -----------------------------------------------------------------
+        function DoubleBracketPage({ forcedParams }) {
+            const [step, setStep] = useState(0);
+            const isHintMode = !!forcedParams;
+            
+            const [a, setA] = useState(1); const [exp1, setExp1] = useState(1); const [b, setB] = useState(2);
+            const [c, setC] = useState(1); const [exp2, setExp2] = useState(1); const [d, setD] = useState(3);
+
+            useEffect(() => {
+                if (forcedParams) {
+                    setA(forcedParams.a); setExp1(forcedParams.exp1); setB(forcedParams.b);
+                    setC(forcedParams.c); setExp2(forcedParams.exp2); setD(forcedParams.d);
+                    setStep(0);
+                }
+            }, [forcedParams]);
+
+            const nextSingleStep = () => setStep(prev => Math.min(prev + 1, 3));
+            const resetStep = () => setStep(0);
+
+            const handleNum = (setter) => (e) => {
+                const val = e.target.value;
+                setter(val === '' ? '' : parseInt(val, 10));
+                setStep(0);
+            };
+
+            const safeA = a || 0; const safeExp1 = exp1 || 1; const safeB = b || 0;
+            const safeC = c || 0; const safeExp2 = exp2 || 1; const safeD = d || 0;
+
+            const br1_t1 = fmt(safeA, safeExp1, true); const br1_t2 = fmt(safeB, 0, false); 
+            const br2_t1 = fmt(safeC, safeExp2, true); const br2_t2 = fmt(safeD, 0, false);
+            const bracket2Str = `${br2_t1}${br2_t2}`;
+
+            const t1Str = fmt(safeA * safeC, safeExp1 + safeExp2, true);
+            const t2Str = fmt(safeA * safeD, safeExp1, false);
+            const t3Str = fmt(safeB * safeC, safeExp2, false);
+            const t4Str = fmt(safeB * safeD, 0, false);
+
+            const canCombine = safeExp1 === safeExp2;
+            const combinedXStr = fmt((safeA * safeD) + (safeB * safeC), safeExp1, false);
+
+            return (
+                <section className={`bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden ${isHintMode ? 'ring-4 ring-amber-200' : ''}`}>
+                    {!isHintMode && (
+                        <div className="bg-slate-50 px-4 md:px-8 py-5 border-b border-slate-200">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Icon name="pen-tool" className="text-indigo-600" size={24} />
+                                <h2 className="text-xl md:text-2xl font-bold text-slate-800">雙括號展開</h2>
+                            </div>
+                            
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-3 bg-white px-4 md:px-5 py-3 rounded-xl border border-slate-200 shadow-sm">
+                                <div className="flex items-center gap-2">
+                                    <Icon name="settings" size={20} className="text-slate-400 hidden md:block" />
+                                    <span className="font-bold text-slate-700 text-sm md:text-base">自訂題目：</span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1 md:gap-2 font-mono text-base md:text-lg bg-slate-50 p-2 rounded-lg border border-slate-100 w-full lg:w-auto">
+                                    <span className="text-slate-400">(</span>
+                                    <input type="number" value={a} onChange={handleNum(setA)} className="w-12 md:w-16 p-1 text-center border border-slate-300 rounded text-blue-600 font-bold bg-white" />
+                                    <div className="flex items-start">
+                                        <span className="text-blue-600 font-bold ml-1">x</span>
+                                        <span className="text-xs md:text-sm mt-1 text-slate-400 ml-1">^</span>
+                                        <input type="number" value={exp1} onChange={handleNum(setExp1)} className="w-10 md:w-12 h-6 text-xs md:text-sm p-0 text-center border border-slate-300 rounded text-blue-600 font-bold bg-white" />
+                                    </div>
+                                    <span className="text-slate-600 ml-1">+</span>
+                                    <input type="number" value={b} onChange={handleNum(setB)} className="w-12 md:w-16 p-1 text-center border border-slate-300 rounded text-emerald-600 font-bold bg-white" />
+                                    <span className="text-slate-400">)</span>
+                                    
+                                    <span className="text-slate-400 mx-1"></span>
+
+                                    <span className="text-slate-400">(</span>
+                                    <input type="number" value={c} onChange={handleNum(setC)} className="w-12 md:w-16 p-1 text-center border border-slate-300 rounded text-slate-800 font-bold bg-white" />
+                                    <div className="flex items-start">
+                                        <span className="text-slate-800 font-bold ml-1">x</span>
+                                        <span className="text-xs md:text-sm mt-1 text-slate-400 ml-1">^</span>
+                                        <input type="number" value={exp2} onChange={handleNum(setExp2)} className="w-10 md:w-12 h-6 text-xs md:text-sm p-0 text-center border border-slate-300 rounded text-slate-800 font-bold bg-white" />
+                                    </div>
+                                    <span className="text-slate-600 ml-1">+</span>
+                                    <input type="number" value={d} onChange={handleNum(setD)} className="w-12 md:w-16 p-1 text-center border border-slate-300 rounded text-slate-800 font-bold bg-white" />
+                                    <span className="text-slate-400">)</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="p-4 md:p-8">
+                        <div className="bg-blue-50 rounded-xl p-4 md:p-10 font-mono text-xl md:text-4xl shadow-inner border border-blue-100 relative min-h-[280px] md:min-h-[380px]">
+                            <div className="mb-4 flex flex-wrap items-center h-auto min-h-[3rem]">
+                                <span className="w-4 md:w-8"></span>
+                                <span>(</span>
+                                <span className="text-blue-600 font-bold">{br1_t1}</span>
+                                <span className="text-emerald-600 font-bold">{br1_t2}</span>
+                                <span>)({bracket2Str})</span>
+                            </div>
+
+                            <div className={`mb-4 flex flex-wrap items-center h-auto min-h-[3rem] transition-all duration-500 ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                                <span className="w-4 md:w-8 text-slate-400">=</span>
+                                <span className="text-blue-600 font-bold">{br1_t1}</span>
+                                <span>({bracket2Str})</span>
+                                <span className="text-emerald-600 font-bold">{br1_t2}</span>
+                                <span>({bracket2Str})</span>
+                            </div>
+
+                            <div className={`mb-4 flex flex-wrap items-center h-auto min-h-[3rem] transition-all duration-500 ${step >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                                <span className="w-4 md:w-8 text-slate-400">=</span>
+                                <span className={`transition-colors duration-700 ${step === 2 ? 'text-blue-600 font-bold' : 'text-slate-800'}`}>{t1Str}{t2Str}</span>
+                                <span className={`transition-colors duration-700 ${step === 2 ? 'text-emerald-600 font-bold' : 'text-slate-800'}`}>{t3Str}{t4Str}</span>
+                            </div>
+
+                            <div className={`flex flex-wrap items-center h-auto min-h-[3rem] transition-all duration-500 ${step >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                                <span className="w-4 md:w-8 text-slate-400">=</span>
+                                {canCombine ? (
+                                    <>
+                                        <span className="text-slate-800">{t1Str}</span>
+                                        <span className="text-purple-600 font-bold bg-purple-100 px-2 rounded-md mx-1">{combinedXStr}</span>
+                                        <span className="text-slate-800">{t4Str}</span>
+                                        {step === 3 && <Icon name="check-circle" className="ml-2 md:ml-4 text-green-500" size={32} />}
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-slate-800 font-bold">{t1Str}{t2Str}{t3Str}{t4Str}</span>
+                                        {step === 3 && <Icon name="check-circle" className="ml-2 md:ml-4 text-green-500" size={32} />}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="mt-6 md:mt-8 flex justify-center">
+                            {step < 3 ? (
+                                <button onClick={nextSingleStep} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 md:px-8 py-3 rounded-full font-bold active:scale-95 transition-transform text-base md:text-lg">
+                                    顯示下一步 <Icon name="chevron-right" size={24} />
+                                </button>
+                            ) : (
+                                <button onClick={resetStep} className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 md:px-8 py-3 rounded-full font-bold active:scale-95 transition-transform text-base md:text-lg">
+                                    重新觀看 <Icon name="rotate-ccw" size={20} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        // 渲染到網頁
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AlgebraicExpansionApp />);
+    </script>
+</body>
+</html>
