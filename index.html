@@ -3,13 +3,58 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="0; url=https://kwh-maths-block-world.kongwinghang1995.chatgpt.site">
+    <meta name="description" content="選擇數學課題，完成關卡並收集襟章。">
     <title>中一數學方塊世界</title>
-    <script>
-      window.location.replace('https://kwh-maths-block-world.kongwinghang1995.chatgpt.site');
-    </script>
+    <link rel="stylesheet" href="maths-block-world-hub/app/globals.css">
+    <style>
+      .world{background-image:linear-gradient(180deg,rgba(10,35,31,.48),rgba(14,37,23,.62)),url('maths-block-world-hub/public/world-ray-traced.png')}
+      .hidden{display:none!important}.logo{font-size:25px;font-weight:900}.notice:empty{display:none}
+      .game-card{cursor:pointer}.badge-card.hidden-by-filter{display:none}.identity-card{margin-bottom:9vh}
+    </style>
+    <script src="github-hub.js" defer></script>
   </head>
   <body>
-    <p>正在前往 <a href="https://kwh-maths-block-world.kongwinghang1995.chatgpt.site">中一數學方塊世界</a>……</p>
+    <main class="world" id="identity-view">
+      <header><span class="logo" aria-hidden="true">＋</span><strong>中一數學方塊世界</strong><span>課堂鞏固 · 襟章收藏</span></header>
+      <section class="identity-card">
+        <span class="eyebrow">選擇你的冒險身份</span>
+        <h1>準備進入方塊世界</h1>
+        <p>學年由老師設定。身份只會保留在這個瀏覽器分頁。</p>
+        <div class="identity-fields">
+          <label>學年<input id="school-year" value="正在連接" disabled></label>
+          <label>班別<select id="class-name"><option value="">請選擇</option></select></label>
+          <label>學號<input id="student-no" inputmode="numeric" placeholder="1 至 33" maxlength="2"></label>
+        </div>
+        <button class="block-button" id="choose-student" disabled>查看我的世界</button>
+        <p class="notice" id="identity-message">正在連接……</p>
+      </section>
+    </main>
+
+    <main class="world dashboard hidden" id="dashboard-view">
+      <header><span class="logo" aria-hidden="true">＋</span><strong>中一數學方塊世界</strong><span id="student-label"></span><button id="switch-student">更換學生</button></header>
+      <section class="content">
+        <div class="summary">
+          <div><span class="eyebrow">我的收藏進度</span><h1 id="student-heading"></h1><p>完成不同關卡，逐步建立你的數學收藏。</p></div>
+          <div class="summary-stats">
+            <span><strong id="earned-badges">0</strong><small>已取得襟章</small></span>
+            <span><strong id="completed-stages">0</strong><small>已完成關卡</small></span>
+            <span><strong id="first-try-correct">0</strong><small>累積首次答對</small></span>
+          </div>
+        </div>
+
+        <div class="section-heading"><div><span class="eyebrow">選擇課題世界</span><h2>繼續你的數學冒險</h2></div></div>
+        <div class="game-grid">
+          <a class="game-card" id="directed-game" href="#"><span class="game-icon" aria-hidden="true">↔</span><span class="card-label">7 個關卡</span><h3>有向數方塊世界</h3><p>數線、大小、四則運算，共 7 個關卡。</p><div class="progress"><i id="directed-progress"></i></div><span class="card-bottom"><span id="directed-count">已完成 0／7</span><b>進入遊戲　›</b></span></a>
+          <a class="game-card" id="algebra-game" href="#"><span class="game-icon" aria-hidden="true">Σ</span><span class="card-label">7 個關卡</span><h3>代數方塊世界</h3><p>代數語言、化簡、代入與數列，共 7 個關卡。</p><div class="progress"><i id="algebra-progress"></i></div><span class="card-bottom"><span id="algebra-count">已完成 0／7</span><b>進入遊戲　›</b></span></a>
+        </div>
+
+        <div class="section-heading album-heading"><div><span class="eyebrow">襟章收藏冊</span><h2>本學年收藏</h2></div><button class="refresh" id="refresh-profile">更新收藏</button></div>
+        <div class="filters" id="badge-filters">
+          <button class="active" data-filter="all">全部</button><button data-filter="stage">單一關卡</button><button data-filter="skill">技術</button><button data-filter="cumulative">累積</button><button data-filter="exploration">探索</button>
+        </div>
+        <p class="notice" id="dashboard-message"></p>
+        <div class="badge-grid" id="badge-grid"></div>
+      </section>
+    </main>
   </body>
 </html>

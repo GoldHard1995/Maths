@@ -52,7 +52,7 @@ export const leaderboardUrl =
   'https://script.google.com/macros/s/AKfycbzJRblwkScQZuKpUQjiwkpZIMKyY0-h4vO8aFhqqVU2rgINbxYDPW0nH60YL8Pxpz0r/exec';
 export const hubUrl =
   process.env.NEXT_PUBLIC_HUB_URL?.trim() ||
-  'https://kwh-maths-block-world.kongwinghang1995.chatgpt.site/';
+  'https://goldhard1995.github.io/Maths/';
 
 export function validStudent(className: string, studentNo: number) {
   return (
