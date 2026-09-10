@@ -1,14 +1,14 @@
 'use client';
 import { useEffect, useReducer, useState, useRef } from 'react';
 import { flushSync } from 'react-dom';
-import { ArrowRight, ArrowLeft, Compass, Clock3, MoveHorizontal, Equal, Footprints, Brackets, Check, RotateCcw, Trophy, X, Divide, Calculator } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Compass, Clock3, MoveHorizontal, Equal, Footprints, Brackets, Check, RotateCcw, Trophy, X, Divide, Calculator, House } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import GameBoard from '@/components/game-board';
 import LeaderboardPanel from '@/components/leaderboard-panel';
 import ScoreUpload from '@/components/score-upload';
 import { gameIds, type GameId, reducer, startSession, makeQuestions, type Question, score, elapsedSeconds } from '@/lib/game';
-import type { ClassName } from '@/lib/leaderboard';
+import { hubUrl, type ClassName } from '@/lib/leaderboard';
 const games = [
   { title: '數線定位', label: '認識座標', text: '從零出發，找出每個數的位置。', sample: '−4　−3　−2　−1　0　1　2', icon: Compass, color: 'green' },
   { title: '比較大小', label: '分清大小', text: '兩個有向數，誰大誰小？', sample: '−7　<　−3', icon: Equal, color: 'blue' },
@@ -54,7 +54,7 @@ export default function Home() {
   const elapsed=session?elapsedSeconds(session,now):0;
   const time=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
   return <main className={`world ${session||showLeaderboard?'playing':''}`}>
-    <header className="topbar"><button className="brand" disabled={Boolean(session?.finished&&!uploaded)} onClick={goHome}><span className="brand-icon"><MoveHorizontal /></span>有向數方塊世界</button><span className="top-note">中一數學 · 有向數</span></header>
+    <header className="topbar"><a className="hub-home" href={hubUrl}><House/>返回主畫面</a><button className="brand" disabled={Boolean(session?.finished&&!uploaded)} onClick={goHome}><span className="brand-icon"><MoveHorizontal /></span>有向數方塊世界</button><span className="top-note">中一數學 · 有向數</span></header>
     {showLeaderboard&&!session?<LeaderboardPanel onClose={()=>setShowLeaderboard(false)} student={lastStudent}/>:
     !session?<section className="menu"><div className="menu-heading"><span className="eyebrow">準備好，出發探索！</span><h1>選一個世界，<br/>開始你的數學冒險。</h1><p>七個小遊戲，自由選擇，學會有向數。</p><Button className="block-btn leaderboard-button" onClick={()=>setShowLeaderboard(true)}><Trophy/>查看排行榜</Button></div><div className="game-grid">{games.map((g,i)=><Button key={g.title} className={`game-card ${g.color}`} onClick={()=>start(gameIds[i])}><span className="card-top"><span className="game-icon"><g.icon /></span><span className="game-number">0{i+1}</span></span><span className="card-label">{g.label}</span><h2>{g.title}</h2><span className="card-copy">{g.text}</span><span className="sample">{g.sample}</span><span className="card-bottom"><span><Clock3/>約 10 分鐘</span><span>進入遊戲 <ArrowRight/></span></span></Button>)}</div><footer className="menu-footer"><span>自由選關 · 隨時重玩</span></footer></section>:
     <section className={`play-area ${active?.color}`}><div className="play-nav"><Button variant="secondary" className="block-btn secondary" disabled={session.finished&&!uploaded} onClick={goHome}><ArrowLeft/>返回選關</Button><div className="play-name">{active&&<active.icon/>}<h1>{active?.title}</h1></div><span className="elapsed"><Clock3/>已練習 {time}</span></div>
