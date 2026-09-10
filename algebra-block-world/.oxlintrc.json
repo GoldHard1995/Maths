@@ -28,6 +28,7 @@
     "out/**",
     "build/**",
     "dist/**",
+    "dist-github/**",
     "coverage/**",
     "components/ui/**",
     "hooks/**",

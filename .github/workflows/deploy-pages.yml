@@ -1,0 +1,62 @@
+name: Deploy maths games to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            algebra-block-world/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: algebra-block-world
+      - name: Build directed-number game
+        run: npm run build:github
+      - name: Build algebra game
+        run: npm run build:github
+        working-directory: algebra-block-world
+      - name: Assemble GitHub Pages site
+        run: |
+          mkdir -p _site/directed-number _site/algebra _site/maths-block-world-hub/app _site/maths-block-world-hub/public
+          cp index.html github-hub.js _site/
+          cp maths-block-world-hub/app/globals.css _site/maths-block-world-hub/app/
+          cp -R maths-block-world-hub/public/. _site/maths-block-world-hub/public/
+          cp -R dist-github/. _site/directed-number/
+          mv _site/directed-number/github-game.html _site/directed-number/index.html
+          cp -R algebra-block-world/dist-github/. _site/algebra/
+          mv _site/algebra/github-game.html _site/algebra/index.html
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

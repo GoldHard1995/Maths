@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:github": "vite build --config vite.github.config.ts",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint --config .oxlintrc.json app/page.tsx components/leaderboard-panel.tsx components/score-upload.tsx lib/game.ts lib/leaderboard.ts tests/game.test.mjs tests/leaderboard-apps-script.test.mjs",
     "format": "oxfmt"

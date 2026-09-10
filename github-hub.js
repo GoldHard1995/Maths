@@ -1,6 +1,6 @@
 const PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbzJRblwkScQZuKpUQjiwkpZIMKyY0-h4vO8aFhqqVU2rgINbxYDPW0nH60YL8Pxpz0r/exec';
-const DIRECTED_URL = 'https://kwh-number-blocks.kongwinghang1995.chatgpt.site/';
-const ALGEBRA_URL = 'https://kwh-algebra-blocks.kongwinghang1995.chatgpt.site/';
+const DIRECTED_URL = 'directed-number/';
+const ALGEBRA_URL = 'algebra/';
 const STORAGE_KEY = 'maths-platform-student-v1';
 const BADGE_ASSET_ROOT = 'maths-block-world-hub/public/badges/';
 
@@ -59,7 +59,7 @@ function populateConfig(nextConfig) {
 }
 
 function gameUrl(base) {
-  const url = new URL(base);
+  const url = new URL(base, window.location.href);
   url.searchParams.set('schoolYear', identity.schoolYear);
   url.searchParams.set('className', identity.className);
   url.searchParams.set('studentNo', String(identity.studentNo));
