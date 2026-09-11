@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { equivalent, followsForm, parseExpression } from '../lib/algebra.ts';
-import { elapsedSeconds, expected, gameIds, makeQuestions, nextQuestion, questionKey, score, startSession, submit } from '../lib/game.ts';
+import { elapsedSeconds, expected, gameIds, makeQuestions, nextQuestion, questionKey, score, skipQuestion, startSession, submit } from '../lib/game.ts';
 import { leaderboardUrl, validStudent } from '../lib/leaderboard.ts';
 
 test('parser accepts equivalent linear expressions with exact fractions',()=>{
@@ -94,4 +94,13 @@ test('only mathematical errors reset the first-try streak',()=>{
  session=submit(session,'1');session=nextQuestion(session);session=submit(session,'');
  assert.equal(session.errors,0);session=submit(session,'2');assert.equal(session.longestFirstTryStreak,2);session=nextQuestion(session);
  session=submit(session,'9');assert.equal(session.currentFirstTryStreak,0);session=submit(session,'3');assert.equal(session.longestFirstTryStreak,2);
+});
+test('only comprehensive questions can be skipped and skipped questions earn no points',()=>{
+ const questions=Array.from({length:15},(_,index)=>({kind:'numeric',level:index<5?0:index<10?1:2,prompt:'',expression:'',instruction:'',answer:index+1}));
+ let session=startSession('substitute',questions,0);
+ assert.equal(skipQuestion(session),session);
+ for(let index=0;index<10;index++){session=submit(session,String(index+1));if(!session.finished)session=nextQuestion(session)}
+ assert.equal(session.index,10);assert.equal(session.firstTry,10);assert.equal(score(session),100);
+ session=skipQuestion(session,12000);assert.equal(session.solved,true);assert.equal(session.skipped,1);assert.equal(session.errors,0);assert.equal(session.currentFirstTryStreak,0);assert.equal(score(session),100);
+ session=nextQuestion(session);assert.equal(session.index,11);session=submit(session,'12');assert.equal(score(session),110);
 });

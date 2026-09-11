@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified, result, simplificationChoices, questionKey, score, elapsedSeconds } from '../lib/game.ts';
+import { makeQuestions, startSession, submit, nextQuestion, skipQuestion, expected, reducer, expression, simplified, result, simplificationChoices, questionKey, score, elapsedSeconds } from '../lib/game.ts';
 import { formatDuration, validStudent } from '../lib/leaderboard.ts';
 
 test('negative comparisons and equality use mathematical ordering',()=>{
@@ -152,6 +152,15 @@ test('first-try streak grows across questions and resets after a genuine error',
  s=submit(s,'2');assert.equal(s.longestFirstTryStreak,2);s=nextQuestion(s);
  s=submit(s,'0');assert.equal(s.currentFirstTryStreak,0);s=submit(s,'3');
  assert.equal(s.longestFirstTryStreak,2);assert.equal(s.firstTry,2);assert.equal(s.errors,1);
+});
+test('only comprehensive questions can be skipped and skipped questions earn no points',()=>{
+ const questions=Array.from({length:15},(_,index)=>({a:index+1,b:0,op:'+'}));
+ let s=startSession('locate',questions,0);
+ assert.equal(skipQuestion(s),s);
+ for(let i=0;i<10;i++){s=submit(s,String(i+1));if(!s.finished)s=nextQuestion(s)}
+ assert.equal(s.index,10);assert.equal(s.firstTry,10);assert.equal(score(s),100);
+ s=skipQuestion(s,12000);assert.equal(s.solved,true);assert.equal(s.skipped,1);assert.equal(s.errors,0);assert.equal(s.currentFirstTryStreak,0);assert.equal(score(s),100);
+ s=nextQuestion(s);assert.equal(s.index,11);s=submit(s,'12');assert.equal(score(s),110);
 });
 
 test('multiplication rounds use the three difficulty blocks and cover sign rules',()=>{
