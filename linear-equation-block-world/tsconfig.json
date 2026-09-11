@@ -3,6 +3,7 @@
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -26,5 +27,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "algebra-block-world", "directed-number-block-world", "linear-equation-block-world", "maths-block-world-hub"]
+  "exclude": ["node_modules"]
 }

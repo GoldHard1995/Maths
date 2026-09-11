@@ -92,3 +92,14 @@ test('score validation accounts for skipped questions', () => {
     assert.throws(() => context.validateSubmission_({...valid,...change}));
   }
 });
+
+test('linear-equation world is isolated and awards six stage badges plus its master badge', () => {
+  const stages = ['simple','like-terms','brackets','fractions','form-equation','applications'];
+  const records = stages.map((gameId,index) => ({submissionId:`equation-${index}`,worldId:'linear-equation',gameId,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4}));
+  const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'linear-equation').completed, 6);
+  assert.equal(profile.badges.find(item => item.id === 'linear-equation-master').earned, true);
+  stages.forEach(gameId => assert.equal(profile.badges.find(item => item.id === `stage-linear-equation-${gameId}`).earned, true));
+  context.currentSchoolYear_ = () => '2026-27';
+  assert.doesNotThrow(() => context.validateSubmission_({submissionId:'equation-submit-1',schoolYear:'2026-27',worldId:'linear-equation',className:'1A',studentNo:1,gameId:'applications',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
+});

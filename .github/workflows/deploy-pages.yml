@@ -26,17 +26,23 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             algebra-block-world/package-lock.json
+            linear-equation-block-world/package-lock.json
       - run: npm ci
       - run: npm ci
         working-directory: algebra-block-world
+      - run: npm ci
+        working-directory: linear-equation-block-world
       - name: Build directed-number game
         run: npm run build:github
       - name: Build algebra game
         run: npm run build:github
         working-directory: algebra-block-world
+      - name: Build linear-equation game
+        run: npm run build:github
+        working-directory: linear-equation-block-world
       - name: Assemble GitHub Pages site
         run: |
-          mkdir -p _site/directed-number _site/algebra _site/maths-block-world-hub/app _site/maths-block-world-hub/public
+          mkdir -p _site/directed-number _site/algebra _site/linear-equation _site/maths-block-world-hub/app _site/maths-block-world-hub/public
           cp index.html github-hub.js _site/
           cp maths-block-world-hub/app/globals.css _site/maths-block-world-hub/app/
           cp -R maths-block-world-hub/public/. _site/maths-block-world-hub/public/
@@ -44,6 +50,8 @@ jobs:
           mv _site/directed-number/github-game.html _site/directed-number/index.html
           cp -R algebra-block-world/dist-github/. _site/algebra/
           mv _site/algebra/github-game.html _site/algebra/index.html
+          cp -R linear-equation-block-world/dist-github/. _site/linear-equation/
+          mv _site/linear-equation/github-game.html _site/linear-equation/index.html
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

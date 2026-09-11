@@ -1,6 +1,7 @@
 const PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbzJRblwkScQZuKpUQjiwkpZIMKyY0-h4vO8aFhqqVU2rgINbxYDPW0nH60YL8Pxpz0r/exec';
 const DIRECTED_URL = 'directed-number/';
 const ALGEBRA_URL = 'algebra/';
+const EQUATION_URL = 'linear-equation/';
 const STORAGE_KEY = 'maths-platform-student-v1';
 const BADGE_ASSET_ROOT = 'maths-block-world-hub/public/badges/';
 
@@ -73,22 +74,25 @@ function showDashboard() {
   document.querySelector('#student-heading').textContent = `${identity.className} 班　${identity.studentNo} 號`;
   document.querySelector('#directed-game').href = gameUrl(DIRECTED_URL);
   document.querySelector('#algebra-game').href = gameUrl(ALGEBRA_URL);
+  document.querySelector('#equation-game').href = gameUrl(EQUATION_URL);
   loadProfile();
 }
 
-function setWorldProgress(id, completed) {
-  document.querySelector(`#${id}-progress`).style.width = `${completed / 7 * 100}%`;
-  document.querySelector(`#${id}-count`).textContent = `已完成 ${completed}／7`;
+function setWorldProgress(id, completed, total = 7) {
+  document.querySelector(`#${id}-progress`).style.width = `${completed / total * 100}%`;
+  document.querySelector(`#${id}-count`).textContent = `已完成 ${completed}／${total}`;
 }
 
 function renderProfile(profile) {
   document.querySelector('#earned-badges').textContent = `${profile.summary.earnedBadges}／${profile.summary.totalBadges}`;
-  document.querySelector('#completed-stages').textContent = `${profile.summary.completedStages}／14`;
+  document.querySelector('#completed-stages').textContent = `${profile.summary.completedStages}／20`;
   document.querySelector('#first-try-correct').textContent = profile.summary.firstTryCorrect;
   const directed = profile.worldProgress.find(item => item.worldId === 'directed-number');
   const algebra = profile.worldProgress.find(item => item.worldId === 'algebra');
+  const equation = profile.worldProgress.find(item => item.worldId === 'linear-equation');
   setWorldProgress('directed', directed?.completed || 0);
   setWorldProgress('algebra', algebra?.completed || 0);
+  setWorldProgress('equation', equation?.completed || 0, 6);
   badges = profile.badges || [];
   renderBadges();
 }
