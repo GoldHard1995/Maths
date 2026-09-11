@@ -24,6 +24,7 @@ export default function ScoreUpload({
   elapsedSeconds,
   questionCount,
   firstTryCorrect,
+  skippedQuestions,
   longestFirstTryStreak,
   wrongAttempts,
   onUploaded,
@@ -34,6 +35,7 @@ export default function ScoreUpload({
   elapsedSeconds: number;
   questionCount: number;
   firstTryCorrect: number;
+  skippedQuestions: number;
   longestFirstTryStreak: number;
   wrongAttempts: number;
   onUploaded: (identity: { className: ClassName; studentNo: number }) => void;
@@ -76,6 +78,7 @@ export default function ScoreUpload({
         elapsedSeconds: String(elapsedSeconds),
         questionCount: String(questionCount),
         firstTryCorrect: String(firstTryCorrect),
+        skippedQuestions: String(skippedQuestions),
         longestFirstTryStreak: String(longestFirstTryStreak),
         wrongAttempts: String(wrongAttempts),
       });

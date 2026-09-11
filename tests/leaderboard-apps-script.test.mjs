@@ -83,3 +83,12 @@ test('score validation rejects mismatched worlds, counts, scores, and school yea
     assert.throws(() => context.validateSubmission_({...valid,...change}));
   }
 });
+
+test('score validation accounts for skipped questions', () => {
+  context.currentSchoolYear_ = () => '2026-27';
+  const valid = {submissionId:'submission-skip-1',schoolYear:'2026-27',worldId:'algebra',className:'1A',studentNo:1,gameId:'words',score:100,maxScore:150,elapsedSeconds:80,questionCount:15,firstTryCorrect:10,skippedQuestions:5,longestFirstTryStreak:6,wrongAttempts:0};
+  assert.doesNotThrow(() => context.validateSubmission_(valid));
+  for (const change of [{score:125},{skippedQuestions:6},{firstTryCorrect:11}]) {
+    assert.throws(() => context.validateSubmission_({...valid,...change}));
+  }
+});
