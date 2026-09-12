@@ -36,6 +36,10 @@ test('generated rounds cover all signs and stay within agreed bounds',()=>{
   const qs=makeQuestions(game);assert.equal(qs.length,15);
   const max=game==='brackets'?20:10;
   for(const q of qs) {
+   if(game==='locate') {
+    assert.equal(q.kind,'locate');assert.ok([0.5,1,2].includes(q.step));assert.ok(Number.isInteger(q.a/q.step));assert.ok(Math.abs(q.a)<=20);
+    continue;
+   }
    assert.ok(Number.isInteger(q.a)&&Number.isInteger(q.b));
    assert.ok(Math.abs(q.a)<=max&&Math.abs(q.b)<=max);
    if(game==='move'||game==='brackets') {
@@ -110,8 +114,8 @@ test('all games generate distinct rounds and avoid memorising the previous round
    const qs=makeQuestions(game,previous);
    assert.equal(new Set(qs.map(questionKey)).size,qs.length);
    if(game==='locate') {
-    assert.ok(qs.some(q=>q.a===0));
-    qs.forEach((q,i)=>assert.notEqual(q.a,previous[i]?.a));
+    const old=new Set(previous.map(questionKey));
+    qs.forEach(q=>assert.equal(old.has(questionKey(q)),false));
    } else {
     const old=new Set(previous.map(questionKey));
     qs.forEach(q=>assert.equal(old.has(questionKey(q)),false));
@@ -123,6 +127,22 @@ test('all games generate distinct rounds and avoid memorising the previous round
    }
    previous=qs;
   }
+ }
+});
+
+test('number-line location uses the agreed scales, prompts, and reference labels',()=>{
+ for(let run=0;run<120;run++){
+  const qs=makeQuestions('locate');
+  for(const block of [qs.slice(0,5),qs.slice(5,10),qs.slice(10)]){
+   assert.equal(block.filter(q=>q.mode==='pick').length,3);
+   assert.equal(block.filter(q=>q.mode==='read').length,2);
+   block.forEach(q=>assert.ok(!q.labels.includes(q.a)||q.mode==='pick'));
+  }
+  assert.ok(qs.slice(0,5).every(q=>q.step===1&&q.labels.length>3));
+  assert.deepEqual(qs.slice(5,10).map(q=>q.step).sort((a,b)=>a-b),[1,1,1,2,2]);
+  assert.ok(qs.slice(5,10).every(q=>q.labels.length===3));
+  assert.deepEqual(qs.slice(10).map(q=>q.step).sort((a,b)=>a-b),[0.5,0.5,1,1,2]);
+  assert.ok(qs.slice(10).every(q=>q.labels.length===2));
  }
 });
 

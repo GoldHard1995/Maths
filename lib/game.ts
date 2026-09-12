@@ -1,9 +1,10 @@
 export type GameId = 'locate'|'compare'|'move'|'brackets'|'multiply'|'divide'|'mixed';
 export type LegacyQuestion={kind:'legacy';a:number;b:number;op:'+'|'-';third?:{op:'+'|'-';value:number}};
+export type LocateQuestion={kind:'locate';a:number;step:0.5|1|2;mode:'pick'|'read';labels:number[]};
 export type SignedQuestion={kind:'signed';operation:'multiply'|'divide';values:number[];display:'inline'|'fraction'};
 export type MixedStep={display:string;target:string;choices:string[];result:number};
 export type MixedQuestion={kind:'mixed';level:number;steps:MixedStep[];answer:number};
-export type Question=LegacyQuestion|SignedQuestion|MixedQuestion;
+export type Question=LegacyQuestion|LocateQuestion|SignedQuestion|MixedQuestion;
 export type Session={game:GameId;questions:Question[];index:number;stage:number;errors:number;stageErrors:number;firstTry:number;questionErrors:number;skipped:number;currentFirstTryStreak:number;longestFirstTryStreak:number;solved:boolean;finished:boolean;feedback:string;startedAt:number;completedAt:number|null};
 export const gameIds:GameId[]=['locate','compare','move','brackets','multiply','divide','mixed'];
 export const signed=(n:number)=>n<0?`−${Math.abs(n)}`:n>0?`+${n}`:'0';
@@ -21,9 +22,34 @@ export const simplified=(q:Question)=>withSigns(legacy(q),bracketAnswer(legacy(q
 export const simplificationChoices=(q:Question)=>(legacy(q).third?['+,+','+,-','-,+','-,-']:['+','-']).map(value=>({value,label:withSigns(legacy(q),value)}));
 const choose=<T,>(xs:T[])=>xs[Math.floor(Math.random()*xs.length)];
 const shuffle=<T,>(items:T[])=>{const xs=[...items];for(let i=xs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[xs[i],xs[j]]=[xs[j],xs[i]]}return xs};
-export const questionKey=(q:Question)=>JSON.stringify(q);
+export const questionKey=(q:Question)=>q.kind==='locate'?JSON.stringify({kind:q.kind,a:q.a,step:q.step,mode:q.mode}):JSON.stringify(q);
 const legacyQ=(a:number,b=0,op:'+'|'-'='+',third?:LegacyQuestion['third']):LegacyQuestion=>({kind:'legacy',a,b,op,third});
 function draw(pool:Question[],count:number,used:Set<string>){const available=pool.filter(q=>!used.has(questionKey(q)));const picked:Question[]=[];for(let i=0;i<count;i++){const j=Math.floor(Math.random()*available.length);const q=available.splice(j,1)[0];if(!q)throw new Error('Not enough distinct questions.');used.add(questionKey(q));picked.push(q)}return picked}
+function makeLocate(previous:Question[]):LocateQuestion[]{
+ const used=new Set(previous.map(questionKey)),out:LocateQuestion[]=[];
+ const blocks:Array<{steps:Array<0.5|1|2>;labelCount:'all'|3|2}>=[
+  {steps:[1,1,1,1,1],labelCount:'all'},
+  {steps:shuffle([1,1,1,2,2]),labelCount:3},
+  {steps:shuffle([0.5,0.5,1,1,2]),labelCount:2},
+ ];
+ for(const block of blocks){
+  const modes=shuffle(['pick','pick','pick','read','read'] as const);
+  block.steps.forEach((step,index)=>{
+   let q:LocateQuestion;
+   do{
+    const targetIndex=choose(Array.from({length:19},(_,i)=>i-9));
+    const a=targetIndex*step;
+    const candidates=shuffle(Array.from({length:21},(_,i)=>i-10).filter(i=>i!==targetIndex));
+    const labels=block.labelCount==='all'
+      ? Array.from({length:21},(_,i)=>(i-10)*step).filter(value=>modes[index]==='pick'||value!==a)
+      : candidates.slice(0,block.labelCount).map(i=>i*step).sort((x,y)=>x-y);
+    q={kind:'locate',a,step,mode:modes[index],labels};
+   }while(used.has(questionKey(q))||out.some(item=>questionKey(item)===questionKey(q)));
+   used.add(questionKey(q));out.push(q);
+  });
+ }
+ return out;
+}
 function makeSigned(game:'multiply'|'divide',used:Set<string>):Question[]{
   const questions:SignedQuestion[]=[];
   const add=(q:SignedQuestion)=>{if(!used.has(questionKey(q))&&!questions.some(x=>questionKey(x)===questionKey(q))){questions.push(q);used.add(questionKey(q))}};
@@ -59,11 +85,7 @@ export function makeQuestions(game:GameId,previous:Question[]=[]):Question[]{
  const used=new Set(previous.map(questionKey));
  if(game==='multiply'||game==='divide')return makeSigned(game,used);
  if(game==='mixed'){const out:Question[]=[];for(let level=0;level<3;level++)while(out.length<(level+1)*5){const q=mixedQuestion(level,out.length%2===1,out.length%4>=2);if(!used.has(questionKey(q))&&!out.some(x=>questionKey(x)===questionKey(q)))out.push(q)}return out}
- if(game==='locate'){
-  const values=Array.from({length:21},(_,i)=>i-10).filter(n=>n!==0);
-  const zeroIndex=choose(Array.from({length:15},(_,i)=>i).filter(i=>(previous[i] as LegacyQuestion|undefined)?.a!==0));
-  return Array.from({length:15},(_,i)=>{const old=(previous[i] as LegacyQuestion|undefined)?.a;const a=i===zeroIndex?0:choose(values.filter(n=>n!==old));if(a!==0)values.splice(values.indexOf(a),1);return legacyQ(a)});
- }
+ if(game==='locate')return makeLocate(previous);
  if(game==='compare'){
   const pool:Question[]=[];for(let a=-10;a<=10;a++)for(let b=-10;b<=10;b++)pool.push(legacyQ(a,b));
   return [...shuffle([...draw(pool.filter(q=>legacy(q).a>=0&&legacy(q).b>=0&&legacy(q).a!==legacy(q).b),4,used),...draw(pool.filter(q=>legacy(q).a===legacy(q).b&&legacy(q).a>=0),1,used)]),...shuffle(draw(pool.filter(q=>legacy(q).a*legacy(q).b<=0&&legacy(q).a!==legacy(q).b&&(legacy(q).a<0||legacy(q).b<0)),5,used)),...shuffle([...draw(pool.filter(q=>legacy(q).a<0&&legacy(q).b<0&&legacy(q).a!==legacy(q).b),4,used),...draw(pool.filter(q=>legacy(q).a===legacy(q).b&&legacy(q).a<0),1,used)])];
@@ -72,10 +94,10 @@ export function makeQuestions(game:GameId,previous:Question[]=[]):Question[]{
  return [0,1,2].flatMap(level=>shuffle([...([0,1,2,3] as number[]),choose([0,1,2,3])].flatMap(category=>{const op=category%2===0?'+':'-';const pool:Question[]=[];for(let a=level===0?1:-20;a<=(level===0?10:level===1?-1:20);a++)for(let m=level===0?1:6;m<=(level===0?9:15);m++){const b=m*(category>=2?-1:1),q=legacyQ(a,b,op);if(Math.abs(result(q))>20)continue;if(level<2)pool.push(q);else for(let n=1;n<=12;n++){const candidate=legacyQ(a,b,op,{op:category<2?'+':'-',value:n*(category%2===0?-1:1)});if(Math.abs(result(candidate))<=20&&result(candidate)!==a)pool.push(candidate)}}return draw(pool,1,used)})));
 }
 export function startSession(game:GameId,questions=makeQuestions(game),now=Date.now()):Session{return {game,questions,index:0,stage:0,errors:0,stageErrors:0,firstTry:0,questionErrors:0,skipped:0,currentFirstTryStreak:0,longestFirstTryStreak:0,solved:false,finished:false,feedback:'',startedAt:now,completedAt:null}}
-export function expected(s:Session):string{const q=s.questions[s.index];if(s.game==='locate')return String(legacy(q).a);if(s.game==='compare')return relation(q);if(s.game==='move')return s.stage===0?(delta(q)<0?'left':'right'):s.stage===1?String(Math.abs(legacy(q).b)):String(result(q));if(s.game==='brackets')return s.stage===0?bracketAnswer(legacy(q)):String(result(q));if(s.game==='multiply'||s.game==='divide')return s.stage===0?(result(q)<0?'negative':'positive'):String(result(q));const m=q as MixedQuestion,step=m.steps[Math.floor(s.stage/2)];return s.stage%2===0?step.target:String(step.result)}
+export function expected(s:Session):string{const q=s.questions[s.index];if(s.game==='locate')return String((q as LocateQuestion|LegacyQuestion).a);if(s.game==='compare')return relation(q);if(s.game==='move')return s.stage===0?(delta(q)<0?'left':'right'):s.stage===1?String(Math.abs(legacy(q).b)):String(result(q));if(s.game==='brackets')return s.stage===0?bracketAnswer(legacy(q)):String(result(q));if(s.game==='multiply'||s.game==='divide')return s.stage===0?(result(q)<0?'negative':'positive'):String(result(q));const m=q as MixedQuestion,step=m.steps[Math.floor(s.stage/2)];return s.stage%2===0?step.target:String(step.result)}
 function ruleHint(q:SignedQuestion){if(q.values.length===3)return '三個數要逐個判斷符號；每次套用兩數的正負號規則。';const [a,b]=q.values;return a>0&&b>0?'正正得正。':a>0?'正負得負。':b>0?'負正得負。':'負負得正。'}
 function lastStage(s:Session){if(s.game==='move')return 2;if(s.game==='brackets'||s.game==='multiply'||s.game==='divide')return 1;if(s.game==='mixed')return (s.questions[s.index] as MixedQuestion).steps.length*2-1;return 0}
-export function submit(s:Session,answer:string,now=Date.now()):Session{if(s.finished||s.solved)return s;const q=s.questions[s.index];if(answer!==expected(s)){let hint='';if(s.game==='locate')hint=legacy(q).a===0?'零是正負數的分界，找找數線中央。':`從零開始，向${legacy(q).a<0?'左':'右'}找 ${Math.abs(legacy(q).a)} 格。`;else if(s.game==='compare')hint='看一看數線：越右的數越大。';else if(s.game==='move')hint='留意加減號和括號內數字的正負號。';else if(s.game==='brackets')hint=s.stage===0?'括號前是減號時，括號內的數要取相反數。':'由左至右逐步計算。';else if(s.game==='multiply'||s.game==='divide')hint=ruleHint(q as SignedQuestion)+((q as SignedQuestion).values.length===3&&s.game==='divide'?' 連除要由左至右計算。':'');else {const m=q as MixedQuestion;hint=m.level===0?'先乘除，後加減。':s.stage<2?'先計算最內層括號。':'同級運算要由左至右計算。'}return {...s,errors:s.errors+1,questionErrors:s.questionErrors+1,stageErrors:s.stageErrors+1,currentFirstTryStreak:0,feedback:`再試一次。${hint}`}}if(s.stage<lastStage(s))return {...s,stage:s.stage+1,stageErrors:0,feedback:s.game==='multiply'||s.game==='divide'?'符號正確！接着輸入完整答案。':s.game==='mixed'?(s.stage%2===0?'選擇正確！輸入這部分的結果。':'計算正確！繼續選擇下一步。'):s.game==='move'?'這一步正確，繼續下一步。':'拆括號正確！接着計算答案。'};const finished=s.index===s.questions.length-1,first=s.questionErrors===0,streak=first?s.currentFirstTryStreak+1:0;return {...s,solved:true,finished,completedAt:finished?now:null,firstTry:s.firstTry+(first?1:0),currentFirstTryStreak:streak,longestFirstTryStreak:Math.max(s.longestFirstTryStreak,streak),feedback:`答對了！這題獲得 ${first?10:5} 分。`}}
+export function submit(s:Session,answer:string,now=Date.now()):Session{if(s.finished||s.solved)return s;const q=s.questions[s.index];if(answer!==expected(s)){let hint='';if(s.game==='locate'){const locate=q as LocateQuestion|LegacyQuestion;hint=locate.kind==='locate'?`先比較兩個已知刻度，算出每格代表 ${locate.step}，再逐格數到目標位置。`:locate.a===0?'零是正負數的分界，找找數線中央。':`從零開始，向${locate.a<0?'左':'右'}找 ${Math.abs(locate.a)} 格。`;}else if(s.game==='compare')hint='看一看數線：越右的數越大。';else if(s.game==='move')hint='留意加減號和括號內數字的正負號。';else if(s.game==='brackets')hint=s.stage===0?'括號前是減號時，括號內的數要取相反數。':'由左至右逐步計算。';else if(s.game==='multiply'||s.game==='divide')hint=ruleHint(q as SignedQuestion)+((q as SignedQuestion).values.length===3&&s.game==='divide'?' 連除要由左至右計算。':'');else {const m=q as MixedQuestion;hint=m.level===0?'先乘除，後加減。':s.stage<2?'先計算最內層括號。':'同級運算要由左至右計算。'}return {...s,errors:s.errors+1,questionErrors:s.questionErrors+1,stageErrors:s.stageErrors+1,currentFirstTryStreak:0,feedback:`再試一次。${hint}`}}if(s.stage<lastStage(s))return {...s,stage:s.stage+1,stageErrors:0,feedback:s.game==='multiply'||s.game==='divide'?'符號正確！接着輸入完整答案。':s.game==='mixed'?(s.stage%2===0?'選擇正確！輸入這部分的結果。':'計算正確！繼續選擇下一步。'):s.game==='move'?'這一步正確，繼續下一步。':'拆括號正確！接着計算答案。'};const finished=s.index===s.questions.length-1,first=s.questionErrors===0,streak=first?s.currentFirstTryStreak+1:0;return {...s,solved:true,finished,completedAt:finished?now:null,firstTry:s.firstTry+(first?1:0),currentFirstTryStreak:streak,longestFirstTryStreak:Math.max(s.longestFirstTryStreak,streak),feedback:`答對了！這題獲得 ${first?10:5} 分。`}}
 export function skipQuestion(s:Session,now=Date.now()):Session{if(s.finished||s.solved||s.index<10)return s;const finished=s.index===s.questions.length-1;return {...s,stage:lastStage(s),skipped:s.skipped+1,solved:true,finished,completedAt:finished?now:null,currentFirstTryStreak:0,feedback:'已放棄本題，這題不計分。'}}
 export const score=(s:Session)=>{const completed=s.index+(s.solved?1:0);return s.firstTry*10+Math.max(0,completed-s.firstTry-s.skipped)*5};
 export const elapsedSeconds=(s:Session,now:number)=>Math.max(0,Math.floor(((s.completedAt??now)-s.startedAt)/1000));

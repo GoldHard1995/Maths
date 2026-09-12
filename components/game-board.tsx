@@ -3,28 +3,33 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Check, Lightbulb, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NumberLine from '@/components/number-line';
-import { type Session, type LegacyQuestion, type SignedQuestion, type MixedQuestion, delta, result, expression, simplified, signed, plain, relation, simplificationChoices } from '@/lib/game';
+import { type Session, type LegacyQuestion, type LocateQuestion, type SignedQuestion, type MixedQuestion, delta, result, expression, simplified, signed, plain, relation, simplificationChoices } from '@/lib/game';
 
-function NumericAnswer({onAnswer,disabled,max=100}:{onAnswer:(s:string)=>void;disabled:boolean;max?:number}) {
+function NumericAnswer({onAnswer,disabled,max=100,allowHalf=false}:{onAnswer:(s:string)=>void;disabled:boolean;max?:number;allowHalf?:boolean}) {
   const [value,setValue]=useState('');
-  const add=(key:string)=>{setValue(v=>key==='clear'?'':key==='back'?v.slice(0,-1):key==='sign'?(v.startsWith('-')?v.slice(1):'-'+v):v.replace('-','').length<3?v+key:v);};
-  const valid=/^-?\d{1,3}$/.test(value)&&Math.abs(Number(value))<=max;
+  const add=(key:string)=>{setValue(v=>key==='clear'?'':key==='back'?v.slice(0,-1):key==='sign'?(v.startsWith('-')?v.slice(1):'-'+v):key==='.'?(allowHalf&&!v.includes('.')?(v===''||v==='-'?v+'0.':v+'.'):v):v.replace(/[-.]/g,'').length<3?v+key:v);};
+  const pattern=allowHalf?/^-?\d{1,3}(?:\.5)?$/:/^-?\d{1,3}$/;
+  const valid=pattern.test(value)&&Math.abs(Number(value))<=max;
   return <form className="numeric-answer" onSubmit={e=>{e.preventDefault();if(valid&&!disabled)onAnswer(String(Number(value)));}}>
     <label htmlFor="answer-input">你的答案</label><input id="answer-input" value={value} inputMode="text" autoComplete="off" placeholder="輸入答案" disabled={disabled} onChange={e=>{if(/^-?\d{0,3}$/.test(e.target.value))setValue(e.target.value);}} />
-    <div className="keypad">{['1','2','3','4','5','6','7','8','9','sign','0','back'].map(k=><Button className="key" key={k} type="button" variant="secondary" disabled={disabled} aria-label={k==='sign'?'切換正負號':k==='back'?'刪除一位':k} onClick={()=>add(k)}>{k==='sign'?'±':k==='back'?'⌫':k}</Button>)}</div>
+    <div className="keypad">{['1','2','3','4','5','6','7','8','9','sign','0',...(allowHalf?['.']:[]),'back'].map(k=><Button className="key" key={k} type="button" variant="secondary" disabled={disabled} aria-label={k==='sign'?'切換正負號':k==='back'?'刪除一位':k==='.'?'小數點':k} onClick={()=>add(k)}>{k==='sign'?'±':k==='back'?'⌫':k}</Button>)}</div>
     <Button className="block-btn" type="submit" disabled={!valid||disabled}>檢查答案 <Check/></Button>
   </form>;
 }
 function Locate({s,answer}:{s:Session;answer:(a:string)=>void}) {
-  const q=s.questions[s.index] as LegacyQuestion;const [demo,setDemo]=useState<number|undefined>();const [playing,setPlaying]=useState(false);const [replay,setReplay]=useState(0);
+  const raw=s.questions[s.index] as LocateQuestion|LegacyQuestion;
+  const q:LocateQuestion=raw.kind==='locate'?raw:{kind:'locate',a:raw.a,step:1,mode:'pick',labels:Array.from({length:21},(_,i)=>i-10)};
+  const [demo,setDemo]=useState<number|undefined>();const [playing,setPlaying]=useState(false);const [replay,setReplay]=useState(0);
   useEffect(()=>{
     if(s.stageErrors<2||s.solved){setPlaying(false);return;}
-    setDemo(0);setPlaying(q.a!==0);if(q.a===0)return;
-    let pos=0;const timer=setInterval(()=>{pos+=Math.sign(q.a);setDemo(pos);if(pos===q.a){clearInterval(timer);setPlaying(false);}},420);
+    const start=q.labels.reduce((nearest,value)=>Math.abs(value-q.a)<Math.abs(nearest-q.a)?value:nearest,q.labels[0]);
+    setDemo(start);setPlaying(start!==q.a);if(start===q.a)return;
+    let pos=start;const timer=setInterval(()=>{pos+=Math.sign(q.a-start)*q.step;setDemo(pos);if(pos===q.a){clearInterval(timer);setPlaying(false);}},420);
     return ()=>clearInterval(timer);
-  },[s.stageErrors,s.solved,q.a,replay]);
-  const instruction=s.index<5?'看看數字，找出它的位置。':s.index<11?'部分數字藏起來了，從零開始數。':'正數、負數和零，你都能找到嗎？';
-  return <><span className="task-label">{instruction}</span><h2 className="task-title">在數線上找出 <strong>{signed(q.a)}</strong></h2><p className="task-instruction">點選對應的刻度。</p><NumberLine onPick={n=>answer(String(n))} labels={s.index<5?'all':'some'} cursor={s.solved?q.a:s.stageErrors>=2?demo:undefined} disabled={s.solved||playing}/>{s.stageErrors>=2&&!s.solved&&<div className="demo-note"><span>{playing?`示範：現在到達 ${plain(demo??0)}`:'示範完成，輪到你試試。'}</span><Button variant="secondary" className="block-btn secondary" disabled={playing} onClick={()=>setReplay(v=>v+1)}><RotateCcw/>重看示範</Button></div>}</>;
+  },[s.stageErrors,s.solved,q.a,q.step,q.labels,replay]);
+  const instruction=s.index<5?'基礎：每格代表 1':s.index<10?'核心：根據已知刻度推算':'綜合：留意每格代表的數值';
+  const numberLine=<NumberLine step={q.step} labelValues={q.labels} showScale={s.index<5} marks={q.mode==='read'?[q.a]:[]} onPick={q.mode==='pick'?n=>answer(String(n)):undefined} cursor={s.solved?q.a:s.stageErrors>=2?demo:undefined} disabled={s.solved||playing}/>;
+  return <><span className="task-label">{instruction}</span>{q.mode==='pick'?<><h2 className="task-title">根據數線上的資料，找出 <strong>{signed(q.a)}</strong></h2><p className="task-instruction">點選對應的刻度。</p>{numberLine}</>:<><h2 className="task-title">標記所在位置代表哪一個數？</h2><p className="task-instruction">先觀察已知刻度，再輸入答案。</p>{numberLine}{!s.solved&&<NumericAnswer key={s.index} onAnswer={answer} disabled={s.solved} max={20} allowHalf/>}</>}{s.stageErrors>=2&&!s.solved&&<div className="demo-note"><span>{playing?`示範：現在到達 ${signed(demo??0)}`:'示範完成，輪到你試試。'}</span><Button variant="secondary" className="block-btn secondary" disabled={playing} onClick={()=>setReplay(v=>v+1)}><RotateCcw/>重看示範</Button></div>}</>;
 }
 function Compare({s,answer}:{s:Session;answer:(a:string)=>void}) {
   const q=s.questions[s.index] as LegacyQuestion;return <><span className="task-label">選擇正確的大小符號</span><h2 className="compare-equation"><span>{signed(q.a)}</span><span className="missing">{s.solved?relation(q):'?'}</span><span>{signed(q.b)}</span></h2><div className="answer-options">{['>','<','='].map(a=><Button className="block-btn choice symbol" key={a} disabled={s.solved} onClick={()=>answer(a)} aria-label={a==='>'?'大於':a==='<'?'小於':'等於'}>{a}</Button>)}</div>{s.stageErrors>0&&<div className="support-line"><p>越右的數越大；同一位置的數相等。</p><NumberLine marks={[q.a,q.b]}/></div>}</>;
