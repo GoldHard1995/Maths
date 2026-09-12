@@ -78,7 +78,12 @@ function fractionParts(raw: string) {
   };
 }
 export function MathText({ children }: { children: string }): React.ReactNode {
-  const normalized = children.replace(/-(?=\d|[xy])/g, '−');
+  const normalized = children
+    .replaceAll('-', '−')
+    .replace(
+      /([＋−])\s*−((?:\d+(?:[xy])?|[xy])(?:\([^()]*\))?)(?=\s|$|[＋−×÷=＝)])/g,
+      '$1 (−$2)',
+    );
   const p = fractionParts(normalized);
   return p ? (
     <>
