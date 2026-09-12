@@ -78,7 +78,7 @@ function fractionParts(raw: string) {
   };
 }
 export function MathText({ children }: { children: string }): React.ReactNode {
-  const normalized = children.replace(/-(?=\d|x)/g, '−');
+  const normalized = children.replace(/-(?=\d|[xy])/g, '−');
   const p = fractionParts(normalized);
   return p ? (
     <>
@@ -165,9 +165,11 @@ function NumericAnswer({
   );
 }
 function EquationKeyboard({
+  variable,
   onAnswer,
   disabled,
 }: {
+  variable: 'x' | 'y';
   onAnswer: (v: string) => void;
   disabled: boolean;
 }) {
@@ -183,7 +185,7 @@ function EquationKeyboard({
       '8',
       '9',
       '0',
-      'x',
+      variable,
       '＋',
       '−',
       '×',
@@ -219,7 +221,7 @@ function EquationKeyboard({
         placeholder="使用下方鍵盤輸入"
         disabled={disabled}
         onChange={(e) => {
-          if (/^[0-9x+＋\-−×*÷/()=＝ ]{0,60}$/.test(e.target.value))
+          if (/^[0-9xy+＋\-−×*÷/()=＝ ]{0,60}$/.test(e.target.value))
             setValue(e.target.value);
         }}
       />
@@ -253,7 +255,11 @@ function EquationAnswer({
   disabled: boolean;
 }) {
   return question.direct ? (
-    <EquationKeyboard onAnswer={onAnswer} disabled={disabled} />
+    <EquationKeyboard
+      variable={question.level === 2 ? 'y' : 'x'}
+      onAnswer={onAnswer}
+      disabled={disabled}
+    />
   ) : (
     <div className="answer-options algebra-options">
       {question.choices?.map((choice) => (
@@ -357,7 +363,15 @@ function ApplicationBoard({
           disabled={session.solved}
         />
       ) : session.stage === 1 ? (
-        <NumericAnswer onAnswer={answer} disabled={session.solved} />
+        <>
+          <div className="selected-equation">
+            <span>你已建立的方程</span>
+            <strong className="math">
+              <MathText>{session.selectedEquation}</MathText>
+            </strong>
+          </div>
+          <NumericAnswer onAnswer={answer} disabled={session.solved} />
+        </>
       ) : (
         <div className="answer-options">
           {question.unitChoices.map((unit) => (

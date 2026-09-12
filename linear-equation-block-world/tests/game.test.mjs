@@ -33,7 +33,13 @@ function equationHolds(raw, answer) {
   assert.equal(b.ok, true, raw);
   const value = (v) =>
     v.constant.n / v.constant.d +
-    (v.coefficients.x.n / v.coefficients.x.d) * (answer.n / answer.d);
+    ['x', 'y'].reduce(
+      (sum, variable) =>
+        sum +
+        (v.coefficients[variable].n / v.coefficients[variable].d) *
+          (answer.n / answer.d),
+      0,
+    );
   assert.ok(
     Math.abs(value(a.value) - value(b.value)) < 1e-8,
     `${raw} at ${answer.n}/${answer.d}`,
@@ -78,12 +84,18 @@ test('all games generate valid distinct 5-5-5 rounds', () => {
         .join('\n');
       assert.doesNotMatch(text, /\d+\.\d+/);
     assert.doesNotMatch(text, /(^|[^\d])1x/);
-    if (game === 'form-equation' || game === 'applications')
+      if (game === 'form-equation' || game === 'applications')
       for (let level = 0; level < 3; level++) {
         const structures = questions
           .slice(level * 5, level * 5 + 5)
           .map((q) => q.prompt.replace(/\d+/g, '#'));
         assert.equal(new Set(structures).size, 5, `${game} level ${level}`);
+        for (const q of questions.slice(level * 5, level * 5 + 5)) {
+          if (level === 2) {
+            assert.match(`${q.prompt} ${q.expected}`, /y/);
+            assert.doesNotMatch(`${q.prompt} ${q.expected}`, /\bx\b/);
+          } else assert.match(`${q.prompt} ${q.expected}`, /x/);
+        }
       }
   }
 });
@@ -126,6 +138,7 @@ test('application preserves completed steps after later errors', () => {
   let s = startSession('applications', [q], 0);
   s = submit(s, 'x=4');
   assert.equal(s.stage, 1);
+  assert.equal(s.selectedEquation, 'x=4');
   s = submit(s, '5');
   assert.equal(s.stage, 1);
   s = submit(s, '4');
@@ -135,6 +148,36 @@ test('application preserves completed steps after later errors', () => {
   s = submit(s, '本');
   assert.equal(s.finished, true);
   assert.equal(score(s), 5);
+});
+
+test('application wording, units, and age periods stay logical', () => {
+  for (let run = 0; run < 100; run++) {
+    const questions = makeQuestions('applications');
+    for (const q of questions) {
+      assert.doesNotMatch(q.prompt, /設有 [xy] 盆/);
+      if (q.prompt.includes('大盆栽')) assert.equal(q.unit, '盆');
+      if (q.prompt.includes('哥哥比弟弟')) assert.ok(q.answer <= 12, q.prompt);
+      const years = q.prompt.match(/([-−]?\d+) 年後/);
+      if (years) assert.ok(Number(years[1]) > 0, q.prompt);
+    }
+  }
+});
+
+test('application stores the exact accepted equation for the solving step', () => {
+  const q = {
+    kind: 'application',
+    level: 2,
+    variant: 0,
+    prompt: '設未知數為 y。',
+    expected: '2y=8',
+    direct: true,
+    answer: 4,
+    unit: '',
+    unitChoices: ['沒有單位'],
+  };
+  const s = submit(startSession('applications', [q], 0), 'y+y=8');
+  assert.equal(s.stage, 1);
+  assert.equal(s.selectedEquation, 'y+y=8');
 });
 
 test('comprehensive questions can be skipped without errors or points', () => {

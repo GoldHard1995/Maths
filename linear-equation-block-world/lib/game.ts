@@ -62,6 +62,7 @@ export type Session = {
   solved: boolean;
   finished: boolean;
   feedback: string;
+  selectedEquation: string;
   startedAt: number;
   completedAt: number | null;
 };
@@ -365,11 +366,12 @@ function formEquation(level: number, v: number): EquationQuestion {
   } else if (v % 2) {
     const m = rand(2, 4),
       years = rand(3, 10),
-      sum = (m + 1) * b + 2 * years;
+      childAge = rand(8, 15),
+      sum = (m + 1) * childAge + 2 * years;
     prompt = v % 4 === 1
-      ? `父親的年齡是兒子的 ${m} 倍。${years} 年後二人共 ${sum} 歲。設兒子現年 x 歲。`
-      : `母親的年齡是女兒的 ${m} 倍。${years} 年後二人共 ${sum} 歲。設女兒現年 x 歲。`;
-    expected = `(x+${years})+(${m}x+${years})=${sum}`;
+      ? `父親的年齡是兒子的 ${m} 倍。${years} 年後二人共 ${sum} 歲。設兒子現年 y 歲。`
+      : `母親的年齡是女兒的 ${m} 倍。${years} 年後二人共 ${sum} 歲。設女兒現年 y 歲。`;
+    expected = `(y+${years})+(${m}y+${years})=${sum}`;
   } else {
     const cheap = a,
       expensive = a + rand(3, 8),
@@ -377,11 +379,11 @@ function formEquation(level: number, v: number): EquationQuestion {
       expCount = b,
       totalCost = expensive * expCount + cheap * (count - expCount);
     prompt = [
-      `成人票每張 $${expensive}，學生票每張 $${cheap}，共售出 ${count} 張，收入 $${totalCost}。設成人票有 x 張。`,
-      `精裝簿每本 $${expensive}，普通簿每本 $${cheap}，共買 ${count} 本，總值 $${totalCost}。設精裝簿有 x 本。`,
-      `大杯飲品每杯 $${expensive}，小杯每杯 $${cheap}，共售出 ${count} 杯，收入 $${totalCost}。設大杯有 x 杯。`,
+      `成人票每張 $${expensive}，學生票每張 $${cheap}，共售出 ${count} 張，收入 $${totalCost}。設成人票有 y 張。`,
+      `精裝簿每本 $${expensive}，普通簿每本 $${cheap}，共買 ${count} 本，總值 $${totalCost}。設精裝簿有 y 本。`,
+      `大杯飲品每杯 $${expensive}，小杯每杯 $${cheap}，共售出 ${count} 杯，收入 $${totalCost}。設大杯有 y 杯。`,
     ][Math.floor(v / 2) % 3];
-    expected = `${expensive}x+${cheap}(${count}-x)=${totalCost}`;
+    expected = `${expensive}y+${cheap}(${count}-y)=${totalCost}`;
   }
   return {
     kind: 'equation',
@@ -460,9 +462,9 @@ function application(level: number, v: number): ApplicationQuestion {
       const total = expensive * answer + cheap * (count - answer);
       prompt = v % 4 === 1
         ? `甲款紀念品每件 $${expensive}，乙款每件 $${cheap}，共買 ${count} 件，總值 $${total}。甲款有多少件？設甲款有 x 件。`
-        : `大盆栽每盆 $${expensive}，小盆栽每盆 $${cheap}，共買 ${count} 盆，總值 $${total}。大盆栽有多少盆？設有 x 盆。`;
+        : `大盆栽每盆 $${expensive}，小盆栽每盆 $${cheap}，共買 ${count} 盆，總值 $${total}。大盆栽有多少盆？設大盆栽有 x 盆。`;
       expected = `${expensive}x+${cheap}(${count}-x)=${total}`;
-      unit = '件';
+      unit = v % 4 === 1 ? '件' : '盆';
       wrong = [
         `${expensive}x+${cheap}x=${total}`,
         `${expensive}(${count}-x)+${cheap}x=${total}`,
@@ -470,32 +472,33 @@ function application(level: number, v: number): ApplicationQuestion {
       ];
     }
   } else if (v % 3 === 0) {
-    answer = rand(8, 20);
-    const gap = rand(18, 30),
-      years = gap - answer;
-    prompt = v < 3
-      ? `哥哥比弟弟大 ${gap} 歲。${years} 年後哥哥是弟弟的 2 倍。弟弟現年多少歲？設弟弟現年 x 歲。`
-      : `母親比女兒大 ${gap} 歲。${years} 年後母親是女兒的 2 倍。女兒現年多少歲？設女兒現年 x 歲。`;
-    expected = `x+${gap}+${years}=2(x+${years})`;
+    const sibling = v < 3;
+    answer = sibling ? rand(8, 12) : rand(8, 20);
+    const years = sibling ? rand(3, 6) : rand(3, 10),
+      gap = answer + years;
+    prompt = sibling
+      ? `哥哥比弟弟大 ${gap} 歲。${years} 年後哥哥是弟弟的 2 倍。弟弟現年多少歲？設弟弟現年 y 歲。`
+      : `母親比女兒大 ${gap} 歲。${years} 年後母親是女兒的 2 倍。女兒現年多少歲？設女兒現年 y 歲。`;
+    expected = `y+${gap}+${years}=2(y+${years})`;
     unit = '歲';
   } else if (v % 3 === 1) {
     const slow = rand(30, 55),
       fast = slow + rand(10, 25);
     answer = rand(2, 4);
     prompt = v < 4
-      ? `兩車由相距 ${(slow + fast) * answer} km 的兩地同時相向而行，速率為 ${slow} km/h 及 ${fast} km/h。多少小時後相遇？設時間為 x 小時。`
-      : `兩艘船從相距 ${(slow + fast) * answer} km 的港口同時相向航行，速率為 ${slow} km/h 及 ${fast} km/h。多少小時後相遇？設時間為 x 小時。`;
-    expected = `${slow}x+${fast}x=${(slow + fast) * answer}`;
+      ? `兩車由相距 ${(slow + fast) * answer} km 的兩地同時相向而行，速率為 ${slow} km/h 及 ${fast} km/h。多少小時後相遇？設時間為 y 小時。`
+      : `兩艘船從相距 ${(slow + fast) * answer} km 的港口同時相向航行，速率為 ${slow} km/h 及 ${fast} km/h。多少小時後相遇？設時間為 y 小時。`;
+    expected = `${slow}y+${fast}y=${(slow + fast) * answer}`;
     unit = '小時';
   } else {
     const tens = rand(1, 8),
       ones = tens + 1;
     answer = tens;
-    prompt = `一個兩位數的個位數字比十位數字大 1，兩數字之和為 ${tens + ones}。求十位數字。設十位數字為 x。`;
-    expected = `x+(x+1)=${tens + ones}`;
+    prompt = `一個兩位數的個位數字比十位數字大 1，兩數字之和為 ${tens + ones}。求十位數字。設十位數字為 y。`;
+    expected = `y+(y+1)=${tens + ones}`;
     unit = '';
   }
-  const all = ['張', '枝', 'cm', '件', '歲', '小時', '沒有單位'],
+  const all = ['張', '枝', 'cm', '件', '盆', '歲', '小時', '沒有單位'],
     correct = unit || '沒有單位';
   return {
     kind: 'application',
@@ -567,6 +570,7 @@ export function startSession(
     solved: false,
     finished: false,
     feedback: '',
+    selectedEquation: '',
     startedAt: now,
     completedAt: null,
   };
@@ -578,7 +582,7 @@ export function expected(s: Session) {
   if (s.stage === 1) return String(q.answer);
   return q.unit || '沒有單位';
 }
-function correct(s: Session, now: number) {
+function correct(s: Session, now: number, answer: string) {
   const q = s.questions[s.index],
     last = q.kind === 'application' ? 2 : 0;
   if (s.stage < last)
@@ -590,6 +594,10 @@ function correct(s: Session, now: number) {
         s.stage === 0
           ? '方程正確！現在解方程並輸入答案。'
           : '數值正確！最後選擇答案單位。',
+      selectedEquation:
+        q.kind === 'application' && s.stage === 0
+          ? answer
+          : s.selectedEquation,
     };
   const finished = s.index === s.questions.length - 1,
     first = s.questionErrors === 0,
@@ -616,18 +624,18 @@ export function submit(s: Session, answer: string, now = Date.now()): Session {
     ok = equationEquivalent(answer, q.expected);
   else if (s.stage === 1) ok = Number(answer) === q.answer;
   else ok = answer === (q.unit || '沒有單位');
-  if (ok) return correct(s, now);
+  if (ok) return correct(s, now, answer);
   const hints: Record<GameId, string> = {
     simple: '在等號兩邊進行相同運算，逐步把 x 留在一邊。',
     'like-terms': '先合併未知數項和常數項，再移項。',
     brackets: '按分配律由內至外拆括號，留意負號。',
     fractions: '找分母的最小公倍數，或使用交叉相乘。',
-    'form-equation': '確認 x 代表甚麼，再找出等號兩邊的相等關係。',
+    'form-equation': `確認 ${q.level === 2 ? 'y' : 'x'} 代表甚麼，再找出等號兩邊的相等關係。`,
     applications:
       s.stage === 0
         ? '整理已知量與未知量，找出相等關係。'
         : s.stage === 1
-          ? '解出已建立方程中的 x。'
+          ? `解出已建立方程中的 ${q.level === 2 ? 'y' : 'x'}。`
           : '數值不變，只需重新選擇正確單位。',
   };
   return {
@@ -655,7 +663,8 @@ export function nextQuestion(s: Session): Session {
         questionErrors: 0,
         solved: false,
         feedback: '',
-  };
+        selectedEquation: '',
+      };
 }
 export function skipQuestion(s: Session, now = Date.now()): Session {
   if (s.finished || s.solved || s.index < 10) return s;
@@ -680,6 +689,7 @@ export function skipQuestion(s: Session, now = Date.now()): Session {
         skipped: s.skipped + 1,
         currentFirstTryStreak: 0,
         feedback: '',
+        selectedEquation: '',
       };
 }
 export type Action =
