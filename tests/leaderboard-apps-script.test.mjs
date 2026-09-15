@@ -103,3 +103,16 @@ test('linear-equation world is isolated and awards six stage badges plus its mas
   context.currentSchoolYear_ = () => '2026-27';
   assert.doesNotThrow(() => context.validateSubmission_({submissionId:'equation-submit-1',schoolYear:'2026-27',worldId:'linear-equation',className:'1A',studentNo:1,gameId:'applications',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
 });
+
+test('polynomial world is isolated and awards seven stage badges plus its master badge', () => {
+  const stages = ['indices','identify','order','evaluate','like-terms','add-subtract','multiply'];
+  const records = stages.map((gameId,index) => ({submissionId:`polynomial-${index}`,worldId:'polynomial',gameId,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4}));
+  const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'polynomial').completed, 7);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'algebra').completed, 0);
+  assert.equal(profile.badges.find(item => item.id === 'polynomial-master').earned, true);
+  stages.forEach(gameId => assert.equal(profile.badges.find(item => item.id === `stage-polynomial-${gameId}`).earned, true));
+  context.currentSchoolYear_ = () => '2026-27';
+  assert.doesNotThrow(() => context.validateSubmission_({submissionId:'polynomial-submit-1',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'multiply',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
+  assert.throws(() => context.validateSubmission_({submissionId:'polynomial-submit-2',schoolYear:'2026-27',worldId:'algebra',className:'1A',studentNo:1,gameId:'indices',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
+});

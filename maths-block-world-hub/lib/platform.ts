@@ -16,6 +16,9 @@ export const algebraUrl =
 export const equationUrl =
   process.env.NEXT_PUBLIC_EQUATION_URL?.trim() ||
   'https://goldhard1995.github.io/Maths/linear-equation/';
+export const polynomialUrl =
+  process.env.NEXT_PUBLIC_POLYNOMIAL_URL?.trim() ||
+  'https://goldhard1995.github.io/Maths/polynomial/';
 export const storageKey = 'maths-platform-student-v1';
 
 export function validIdentity(config: Config, className: string, studentNo: number) {
