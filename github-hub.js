@@ -32,7 +32,7 @@ function jsonp(parameters, prefix) {
   return new Promise((resolve, reject) => {
     const callback = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const script = document.createElement('script');
-    const timer = setTimeout(() => finish(new Error('讀取逾時，請稍後再試。')), 15000);
+    const timer = setTimeout(() => finish(new Error('讀取逾時，請稍後再試。')), 30000);
     function finish(error, value) {
       clearTimeout(timer);
       script.remove();
@@ -177,8 +177,8 @@ document.querySelector('#badge-filters').addEventListener('click', event => {
   renderBadges();
 });
 
-Promise.all([jsonp({ action: 'config' }, '__mathsConfig'), jsonp({ action: 'catalog' }, '__mathsCatalog')])
-  .then(([nextConfig]) => {
+jsonp({ action: 'config' }, '__mathsConfig')
+  .then(nextConfig => {
     if (!nextConfig.ok) throw new Error(nextConfig.message || '未能讀取平台設定。');
     populateConfig(nextConfig);
     identityMessage.textContent = '';

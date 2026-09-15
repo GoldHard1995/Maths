@@ -44,7 +44,7 @@ export function jsonp<T>(parameters: Record<string, string>, prefix: string): Pr
       delete (window as unknown as Record<string, unknown>)[callback];
       if (error) reject(error); else resolve(value as T);
     };
-    const timer = setTimeout(() => finish(new Error('讀取逾時，請稍後再試。')), 15000);
+    const timer = setTimeout(() => finish(new Error('讀取逾時，請稍後再試。')), 30000);
     (window as unknown as Record<string, unknown>)[callback] = (value: T) => finish(undefined, value);
     script.src = `${platformUrl}?${new URLSearchParams({ ...parameters, callback })}`;
     script.onerror = () => finish(new Error('未能連接收藏系統。'));

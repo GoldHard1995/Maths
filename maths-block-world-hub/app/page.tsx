@@ -1,13 +1,13 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
 import {BookOpen,Braces,Calculator,ChevronRight,Equal,RefreshCcw,Shield,UserRound} from 'lucide-react';
-import {algebraUrl,directedUrl,equationUrl,polynomialUrl,fetchCatalog,fetchConfig,fetchProfile,gameUrl,platformUrl,storageKey,validIdentity,type Badge,type Config,type Identity,type Profile} from '@/lib/platform';
+import {algebraUrl,directedUrl,equationUrl,polynomialUrl,fetchConfig,fetchProfile,gameUrl,platformUrl,storageKey,validIdentity,type Badge,type Config,type Identity,type Profile} from '@/lib/platform';
 
 const fallbackConfig:Config={ok:true,schoolYear:'',classes:['1A','1B','1C','1D'],studentNoMin:1,studentNoMax:33};
 const filters=[['all','全部'],['stage','單一關卡'],['skill','技術'],['cumulative','累積'],['exploration','探索']] as const;
 export default function Home(){
  const [config,setConfig]=useState<Config>(fallbackConfig),[identity,setIdentity]=useState<Identity|null>(()=>{if(typeof window==='undefined')return null;const saved=sessionStorage.getItem(storageKey);if(!saved)return null;try{return JSON.parse(saved) as Identity}catch{return null}}),[profile,setProfile]=useState<Profile|null>(null),[className,setClassName]=useState(''),[studentNo,setStudentNo]=useState(''),[filter,setFilter]=useState<(typeof filters)[number][0]>('all'),[loading,setLoading]=useState(true),[message,setMessage]=useState('');
- useEffect(()=>{Promise.all([fetchConfig(),fetchCatalog()]).then(([c])=>setConfig(c)).catch(()=>setMessage(platformUrl?'暫時未能連接收藏系統，請稍後重新整理。':'收藏系統尚未連接；部署後才會顯示學生進度。')).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{fetchConfig().then(setConfig).catch(()=>setMessage(platformUrl?'暫時未能連接收藏系統，請稍後重新整理。':'收藏系統尚未連接；部署後才會顯示學生進度。')).finally(()=>setLoading(false))},[]);
  useEffect(()=>{if(!identity)return;fetchProfile(identity).then(setProfile).catch(e=>setMessage(e instanceof Error?e.message:'未能讀取收藏。')).finally(()=>setLoading(false))},[identity]);
  const choose=()=>{const no=Number(studentNo);if(!config.schoolYear||!validIdentity(config,className,no))return;const next={schoolYear:config.schoolYear,className,studentNo:no};sessionStorage.setItem(storageKey,JSON.stringify(next));setIdentity(next);setMessage('')};
  const switchStudent=()=>{sessionStorage.removeItem(storageKey);setIdentity(null);setProfile(null);setClassName('');setStudentNo('')};
