@@ -58,8 +58,9 @@ function fractionParts(raw:string){
 export function MathText({children}:{children:string}):React.ReactNode{
  const parts=fractionParts(children);
  if(!parts){
-  const segments=children.split(/\^([−-]?[0-9]+)/g);
-  return <>{segments.map((segment,index)=>index%2?<sup key={index}>{segment}</sup>:segment)}</>;
+  const superscripts:Record<string,string>={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','ⁿ':'n','⁺':'+','⁻':'−'};
+  const segments=children.split(/(\^[−-]?(?:[0-9]+|n(?:[+-][0-9]+)?)|[⁰¹²³⁴⁵⁶ⁿ⁺⁻]+)/g);
+  return <>{segments.map((segment,index)=>segment.startsWith('^')?<sup key={index}>{segment.slice(1).replace('-', '−')}</sup>:/^[⁰¹²³⁴⁵⁶ⁿ⁺⁻]+$/.test(segment)?<sup key={index}>{segment.split('').map(character=>superscripts[character]).join('')}</sup>:segment)}</>;
  }
  return <><MathText>{parts.prefix}</MathText><span className="fraction algebra-fraction"><span><MathText>{parts.numerator}</MathText></span><span><MathText>{parts.denominator}</MathText></span></span><MathText>{parts.suffix}</MathText></>;
 }
