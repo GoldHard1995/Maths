@@ -58,7 +58,7 @@ function fractionParts(raw:string){
 export function MathText({children}:{children:string}):React.ReactNode{
  const parts=fractionParts(children);
  if(!parts){
-  const segments=children.split(/\^([1-6])/g);
+  const segments=children.split(/\^([−-]?[0-9]+)/g);
   return <>{segments.map((segment,index)=>index%2?<sup key={index}>{segment}</sup>:segment)}</>;
  }
  return <><MathText>{parts.prefix}</MathText><span className="fraction algebra-fraction"><span><MathText>{parts.numerator}</MathText></span><span><MathText>{parts.denominator}</MathText></span></span><MathText>{parts.suffix}</MathText></>;

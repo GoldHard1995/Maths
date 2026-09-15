@@ -15,7 +15,7 @@ class Parser{private i=0;private tokens:Token[];constructor(tokens:Token[]){this
 export type ParseResult={ok:true;value:Polynomial}|{ok:false;kind:'incomplete'|'unsupported';message:string};
 export function parseExpression(raw:string):ParseResult{try{return{ok:true,value:new Parser(tokenize(raw)).parse()}}catch(error){if(error instanceof ParseFailure)return{ok:false,kind:error.kind,message:error.message};throw error}}
 export function equivalent(left:string,right:string){const a=parseExpression(left),b=parseExpression(right);if(!a.ok||!b.ok)return false;const keys=new Set([...a.value.keys(),...b.value.keys()]);return[...keys].every(k=>(a.value.get(k)||0)===(b.value.get(k)||0))}
-const compact=(raw:string)=>raw.replaceAll('＋','+').replaceAll('−','-').replaceAll('×','*').replace(/\s+/g,'');
+const compact=(raw:string)=>raw.replaceAll('＋','+').replaceAll('−','-').replaceAll('×','*').replace(/[²³⁴⁵⁶]/g,value=>`^${'²³⁴⁵⁶'.indexOf(value)+2}`).replace(/\s+/g,'');
 export type FormRule={expanded?:boolean;order?:'ascending'|'descending'};
 export function followsForm(raw:string,rule?:FormRule){if(!rule)return true;const source=compact(raw);if(rule.expanded&&/[()*]/.test(source))return false;if(rule.order){const chunks=source.replace(/^-/, '').split(/[+-]/).filter(Boolean),degrees=chunks.map(term=>variables.reduce((sum,v)=>{const match=term.match(new RegExp(`${v}(?:\\^(\\d))?`));return sum+(match?Number(match[1]||1):0)},0)),sorted=[...degrees].sort((a,b)=>rule.order==='ascending'?a-b:b-a);if(degrees.some((d,i)=>d!==sorted[i]))return false}return true}
 export function normalizeDisplay(raw:string){return raw.replaceAll('-', '−').replaceAll('*','×').replace(/\^([1-6])/g,(_,n)=>'⁰¹²³⁴⁵⁶'[Number(n)])}
