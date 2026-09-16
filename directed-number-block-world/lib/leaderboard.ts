@@ -96,6 +96,7 @@ function jsonp<T>(parameters: Record<string, string>, prefix: string): Promise<T
       else resolve(value as T);
     };
     (window as unknown as Record<string, unknown>)[callback] = (value: T) => finish(undefined, value);
+    script.crossOrigin = 'anonymous';
     script.src = `${leaderboardUrl}?${new URLSearchParams({ ...parameters, callback })}`;
     script.onerror = () => finish(new Error('未能讀取資料，請檢查網絡。'));
     document.body.appendChild(script);
