@@ -32,7 +32,15 @@ import {
   type GameId,
   type Question,
 } from '@/lib/game';
-import { hubUrl, leaderboardUrl, type ClassName } from '@/lib/leaderboard';
+import {
+  fetchPersonalBests,
+  formatDuration,
+  hubUrl,
+  leaderboardUrl,
+  validStudent,
+  type ClassName,
+  type PersonalBest,
+} from '@/lib/leaderboard';
 
 const games = [
   {
@@ -93,7 +101,9 @@ export default function Home() {
     [lastStudent, setLastStudent] = useState<{
       className: ClassName;
       studentNo: number;
-    }>();
+    }>(),
+    [personalBests, setPersonalBests] = useState<Partial<Record<GameId, PersonalBest>>>({}),
+    [personalBestStatus, setPersonalBestStatus] = useState<'none' | 'loading' | 'ready' | 'error'>('none');
   const previous = useRef<Partial<Record<GameId, Question[]>>>({}),
     connected = Boolean(leaderboardUrl);
   const start = (game: GameId) => {
@@ -115,6 +125,21 @@ export default function Home() {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [session]);
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search),
+      schoolYear = query.get('schoolYear') || '',
+      className = query.get('className') || '',
+      studentNo = Number(query.get('studentNo'));
+    if (!schoolYear || !validStudent(className, studentNo)) return;
+    void Promise.resolve().then(() => setPersonalBestStatus('loading'));
+    void fetchPersonalBests({ schoolYear, className: className as ClassName, studentNo })
+      .then((response) => {
+        if (!response.ok) throw new Error(response.message || '讀取失敗');
+        setPersonalBests(Object.fromEntries(response.bests.map((best) => [best.gameId, best])));
+        setPersonalBestStatus('ready');
+      })
+      .catch(() => setPersonalBestStatus('error'));
+  }, []);
   useEffect(() => {
     type Tool = {
       name: string;
@@ -214,7 +239,9 @@ export default function Home() {
             </Button>
           </div>
           <div className="game-grid">
-            {games.map((game, index) => (
+            {games.map((game, index) => {
+              const best = personalBests[gameIds[index]];
+              return (
               <Button
                 key={game.title}
                 className={`game-card ${game.color}`}
@@ -230,6 +257,17 @@ export default function Home() {
                 <h2>{game.title}</h2>
                 <span className="card-copy">{game.text}</span>
                 <span className="sample">{game.sample}</span>
+                {personalBestStatus !== 'none' && (
+                  <span className={`personal-best-card ${personalBestStatus}`}>
+                    {personalBestStatus === 'loading'
+                      ? '讀取紀錄中……'
+                      : personalBestStatus === 'error'
+                        ? '紀錄暫未能讀取'
+                        : best
+                          ? `個人最佳 ${best.score} 分 · ${formatDuration(best.elapsedSeconds)}`
+                          : '尚未挑戰'}
+                  </span>
+                )}
                 <span className="card-bottom">
                   <span>
                     <Clock3 />約 10 分鐘
@@ -239,7 +277,8 @@ export default function Home() {
                   </span>
                 </span>
               </Button>
-            ))}
+              );
+            })}
           </div>
           <footer className="menu-footer">
             <span>自由選關 · 隨時重玩</span>
@@ -314,9 +353,13 @@ export default function Home() {
                 skippedQuestions={session.skipped}
                 longestFirstTryStreak={session.longestFirstTryStreak}
                 wrongAttempts={session.errors}
-                onUploaded={(identity) => {
+                onUploaded={(identity, best) => {
                   setUploaded(true);
                   setLastStudent(identity);
+                  if (best) {
+                    setPersonalBests((current) => ({ ...current, [session.game]: best }));
+                    setPersonalBestStatus('ready');
+                  }
                 }}
               />
               <div className="answer-options">

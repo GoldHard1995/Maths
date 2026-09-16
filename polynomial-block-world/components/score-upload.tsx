@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { GameId } from '@/lib/game';
 import {
   type ClassName,
+  type PersonalBest,
   type UploadResponse,
   fetchPlatformConfig,
   formatDuration,
@@ -13,6 +14,7 @@ import {
   leaderboardClasses,
   leaderboardUrl,
   makeSubmissionId,
+  personalBestMessage,
   uploadScore,
   validStudent,
 } from '@/lib/leaderboard';
@@ -38,7 +40,7 @@ export default function ScoreUpload({
   skippedQuestions: number;
   longestFirstTryStreak: number;
   wrongAttempts: number;
-  onUploaded: (identity: { className: ClassName; studentNo: number }) => void;
+  onUploaded: (identity: { className: ClassName; studentNo: number }, personalBest: PersonalBest | null) => void;
 }) {
   const query =
     typeof window === 'undefined'
@@ -85,7 +87,7 @@ export default function ScoreUpload({
       setResult(response);
       setStatus('success');
       setMessage(response.message);
-      onUploaded({ className: className as ClassName, studentNo: number });
+      onUploaded({ className: className as ClassName, studentNo: number }, response.personalBest);
     } catch (error) {
       setStatus('error');
       setMessage(
@@ -161,12 +163,18 @@ export default function ScoreUpload({
         <p className="upload-status error">暫未上傳本次成績。</p>
       )}
       {message && <p className={`upload-status ${status}`}>{message}</p>}
+      {result?.personalBest && (
+        <div className={`personal-best-result ${result.isNewPersonalBest ? 'new' : ''}`}>
+          <strong>{personalBestMessage(result)}</strong>
+          <span>{result.personalBest.score} 分 · {formatDuration(result.personalBest.elapsedSeconds)}</span>
+        </div>
+      )}
       {result?.best && (
         <div className="uploaded-ranks">
           <span>全級：第 {result.gradeRank} 名</span>
           <span>班內：第 {result.classRank} 名</span>
           <span>
-            最佳：{result.best.score} 分　
+            本輪最佳：{result.best.score} 分　
             {formatDuration(result.best.elapsedSeconds)}
           </span>
         </div>

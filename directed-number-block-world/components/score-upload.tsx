@@ -1,15 +1,18 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { GameId } from '@/lib/game';
 import {
   type ClassName,
+  type PersonalBest,
   type UploadResponse,
+  fetchPlatformConfig,
   formatDuration,
   leaderboardClasses,
   leaderboardUrl,
   makeSubmissionId,
+  personalBestMessage,
   uploadScore,
   validStudent,
 } from '@/lib/leaderboard';
@@ -19,22 +22,31 @@ export default function ScoreUpload({
   score,
   maxScore,
   elapsedSeconds,
+  firstTryCorrect,
+  wrongAttempts,
   onUploaded,
 }: {
   gameId: GameId;
   score: number;
   maxScore: number;
   elapsedSeconds: number;
-  onUploaded: (identity: { className: ClassName; studentNo: number }) => void;
+  firstTryCorrect: number;
+  wrongAttempts: number;
+  onUploaded: (identity: { className: ClassName; studentNo: number }, personalBest: PersonalBest | null) => void;
 }) {
-  const [className, setClassName] = useState('');
-  const [studentNo, setStudentNo] = useState('');
+  const query = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search);
+  const [className, setClassName] = useState(query?.get('className') || '');
+  const [studentNo, setStudentNo] = useState(query?.get('studentNo') || '');
+  const [schoolYear, setSchoolYear] = useState(query?.get('schoolYear') || '');
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [result, setResult] = useState<UploadResponse | null>(null);
   const submissionId = useRef(makeSubmissionId());
   const number = Number(studentNo);
   const valid = validStudent(className, number);
+  useEffect(() => {
+    void fetchPlatformConfig().then((config) => setSchoolYear(config.schoolYear)).catch(() => undefined);
+  }, []);
   const submit = async () => {
     if (!valid || status === 'uploading' || status === 'success') return;
     setStatus('uploading');
@@ -42,17 +54,25 @@ export default function ScoreUpload({
     try {
       const response = await uploadScore({
         submissionId: submissionId.current,
+        action: 'score',
+        schoolYear,
+        worldId: 'directed-number',
         className,
         studentNo: String(number),
         gameId,
         score: String(score),
         maxScore: String(maxScore),
         elapsedSeconds: String(elapsedSeconds),
+        questionCount: '15',
+        firstTryCorrect: String(firstTryCorrect),
+        skippedQuestions: '0',
+        longestFirstTryStreak: '0',
+        wrongAttempts: String(wrongAttempts),
       });
       setResult(response);
       setStatus('success');
       setMessage(response.message);
-      onUploaded({ className: className as ClassName, studentNo: number });
+      onUploaded({ className: className as ClassName, studentNo: number }, response.personalBest);
     } catch (error) {
       setStatus('error');
       setMessage(error instanceof Error ? error.message : '上傳失敗，請再試一次。');
@@ -68,6 +88,7 @@ export default function ScoreUpload({
     <Button className="block-btn upload-btn" disabled={!valid || status === 'uploading' || status === 'success' || !leaderboardUrl} onClick={submit}>{status === 'success' ? <><Check />已上傳</> : <><Upload />{status === 'error' ? '重新上傳' : status === 'uploading' ? '上傳中……' : '上傳成績'}</>}</Button>
     {!leaderboardUrl && <p className="upload-status error">排行榜尚未連接 Google Sheets。</p>}
     {message && <p className={`upload-status ${status}`}>{message}</p>}
-    {result?.best && <div className="uploaded-ranks"><span>全級：第 {result.gradeRank} 名</span><span>班內：第 {result.classRank} 名</span><span>最佳：{result.best.score} 分　{formatDuration(result.best.elapsedSeconds)}</span></div>}
+    {result?.personalBest && <div className={`personal-best-result ${result.isNewPersonalBest ? 'new' : ''}`}><strong>{personalBestMessage(result)}</strong><span>{result.personalBest.score} 分 · {formatDuration(result.personalBest.elapsedSeconds)}</span></div>}
+    {result?.best && <div className="uploaded-ranks"><span>全級：第 {result.gradeRank} 名</span><span>班內：第 {result.classRank} 名</span><span>本輪最佳：{result.best.score} 分　{formatDuration(result.best.elapsedSeconds)}</span></div>}
   </div>;
 }

@@ -116,3 +116,31 @@ test('polynomial world is isolated and awards seven stage badges plus its master
   assert.doesNotThrow(() => context.validateSubmission_({submissionId:'polynomial-submit-1',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'multiply',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
   assert.throws(() => context.validateSubmission_({submissionId:'polynomial-submit-2',schoolYear:'2026-27',worldId:'algebra',className:'1A',studentNo:1,gameId:'indices',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
 });
+
+test('personal bests span leaderboard rounds but stay inside one school year, student, world, and stage', () => {
+  context.currentSchoolYear_ = () => '2026-27';
+  const base = { schoolYear:'2026-27', className:'1A', studentNo:1, worldId:'algebra', gameId:'words', questionCount:15, maxScore:150 };
+  context.readRecords_ = () => [
+    {...base, submissionId:'pb-round-1', roundId:'R1', score:130, elapsedSeconds:200, submittedAt:1},
+    {...base, submissionId:'pb-round-2', roundId:'R2', score:140, elapsedSeconds:260, submittedAt:2},
+    {...base, submissionId:'pb-round-3', roundId:'R3', score:140, elapsedSeconds:220, submittedAt:3},
+    {...base, submissionId:'pb-old-year', schoolYear:'2025-26', score:150, elapsedSeconds:100, submittedAt:4},
+    {...base, submissionId:'pb-other-student', studentNo:2, score:150, elapsedSeconds:90, submittedAt:5},
+    {...base, submissionId:'pb-other-world', worldId:'directed-number', gameId:'locate', score:150, elapsedSeconds:80, submittedAt:6},
+    {...base, submissionId:'pb-incomplete', questionCount:14, score:150, elapsedSeconds:70, submittedAt:7},
+  ];
+  const result = context.personalBests_('2026-27', '1A', 1, 'algebra');
+  assert.deepEqual(structuredClone(result.bests), [{gameId:'words',score:140,maxScore:150,elapsedSeconds:220}]);
+  assert.throws(() => context.personalBests_('2025-26', '1A', 1, 'algebra'));
+  assert.throws(() => context.personalBests_('2026-27', '1E', 1, 'algebra'));
+});
+
+test('new-personal-best flag handles first, score, time, ties, and duplicate submissions', () => {
+  const attempt = { score:140, elapsedSeconds:220 };
+  assert.equal(context.isNewPersonalBest_(true, attempt, null), true);
+  assert.equal(context.isNewPersonalBest_(true, attempt, {score:130,elapsedSeconds:100}), true);
+  assert.equal(context.isNewPersonalBest_(true, attempt, {score:140,elapsedSeconds:238}), true);
+  assert.equal(context.isNewPersonalBest_(true, attempt, {score:140,elapsedSeconds:220}), false);
+  assert.equal(context.isNewPersonalBest_(true, attempt, {score:145,elapsedSeconds:1000}), false);
+  assert.equal(context.isNewPersonalBest_(false, attempt, null), false);
+});

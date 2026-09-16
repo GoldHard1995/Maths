@@ -7,6 +7,7 @@
 - `GET action=config`
 - `GET action=catalog`
 - `GET action=profile`
+- `GET action=personalBests`
 - `GET action=leaderboard`
 - `POST action=score`
 

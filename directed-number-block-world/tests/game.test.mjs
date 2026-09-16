@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeQuestions, startSession, submit, nextQuestion, expected, reducer, expression, simplified, result, simplificationChoices, questionKey, score, elapsedSeconds } from '../lib/game.ts';
-import { formatDuration, validStudent } from '../lib/leaderboard.ts';
+import { formatDuration, personalBestMessage, validStudent } from '../lib/leaderboard.ts';
 
 test('negative comparisons and equality use mathematical ordering',()=>{
  for(const [a,b,answer] of [[-7,-3,'<'],[-3,-7,'>'],[-4,-4,'='],[0,-8,'>'],[-2,6,'<']]) {
@@ -196,4 +196,11 @@ test('leaderboard student fields and durations use the agreed ranges',()=>{
  assert.equal(validStudent('1A',1.5),false);
  assert.equal(formatDuration(0),'0:00');
  assert.equal(formatDuration(629),'10:29');
+});
+test('personal-best messages cover first, score, time, and unchanged results',()=>{
+ const current={gameId:'locate',score:140,maxScore:150,elapsedSeconds:220},previous={...current,score:130,elapsedSeconds:250};
+ assert.equal(personalBestMessage({personalBest:current,previousPersonalBest:null,isNewPersonalBest:true}),'建立首個個人紀錄');
+ assert.equal(personalBestMessage({personalBest:current,previousPersonalBest:previous,isNewPersonalBest:true}),'刷新個人紀錄！比上次多 10 分');
+ assert.equal(personalBestMessage({personalBest:current,previousPersonalBest:{...current,elapsedSeconds:238},isNewPersonalBest:true}),'刷新個人紀錄！比上次快 18 秒');
+ assert.equal(personalBestMessage({personalBest:current,previousPersonalBest:current,isNewPersonalBest:false}),'個人最佳：140 分 · 3:40');
 });

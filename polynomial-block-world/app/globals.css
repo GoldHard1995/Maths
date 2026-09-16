@@ -55,3 +55,5 @@
 
 /* Keep numeric answer choices visually consistent across glyphs. */
 .choice[data-slot=button],.step-counts .choice[data-slot=button]{font-family:Arial,'Helvetica Neue',sans-serif;font-size:22px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+/* Personal best records */
+.personal-best-card{display:block;min-height:28px;margin:0 0 12px;padding:5px 8px;border:2px solid rgba(43,68,54,.28);background:rgba(244,248,239,.9);color:#294535;font-size:13px;font-weight:850;line-height:1.25;text-align:center}.personal-best-card.loading{opacity:.7}.personal-best-card.error{color:#7a4c31;background:#fff4e8}.personal-best-result{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:14px auto;padding:12px 16px;border:3px solid #536d59;background:#eef5e8;color:#294535}.personal-best-result.new{border-color:#a56a13;background:#fff4cc;color:#75490b}.personal-best-result strong,.personal-best-result span{font-size:15px;line-height:1.35}

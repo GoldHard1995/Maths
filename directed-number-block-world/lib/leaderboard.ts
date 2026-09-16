@@ -22,20 +22,45 @@ export type LeaderboardResponse = {
   self: RankingEntry | null;
   message?: string;
 };
+export type PlatformConfig = {
+  ok: boolean;
+  schoolYear: string;
+  classes: readonly string[];
+  studentNoMin: number;
+  studentNoMax: number;
+};
+export type PersonalBest = {
+  gameId: GameId;
+  score: number;
+  maxScore: number;
+  elapsedSeconds: number;
+};
+export type PersonalBestsResponse = {
+  ok: boolean;
+  schoolYear: string;
+  worldId: string;
+  bests: PersonalBest[];
+  message?: string;
+};
 
 export type UploadResponse = {
-  source: 'directed-number-leaderboard';
+  source: 'maths-platform' | 'directed-number-leaderboard';
   ok: boolean;
   submissionId: string;
   message: string;
   best: RankingEntry | null;
   gradeRank: number | null;
   classRank: number | null;
+  personalBest: PersonalBest | null;
+  previousPersonalBest: PersonalBest | null;
+  isNewPersonalBest: boolean;
+  newBadges: [];
 };
 
 export const leaderboardUrl =
-  process.env.NEXT_PUBLIC_LEADERBOARD_URL?.trim()
-  ?? 'https://script.google.com/macros/s/AKfycbynqbXj60zqXdD3gzZAfHrZ3Xp_lIb1paPbMs3sX2Ya7ZRifGAjma_mg8UW3oTWleIr/exec';
+  process.env.NEXT_PUBLIC_PLATFORM_URL?.trim()
+  ?? process.env.NEXT_PUBLIC_LEADERBOARD_URL?.trim()
+  ?? 'https://script.google.com/macros/s/AKfycbzJRblwkScQZuKpUQjiwkpZIMKyY0-h4vO8aFhqqVU2rgINbxYDPW0nH60YL8Pxpz0r/exec';
 
 export function validStudent(className: string, studentNo: number) {
   return leaderboardClasses.includes(className as ClassName)
@@ -57,6 +82,55 @@ export function makeSubmissionId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function jsonp<T>(parameters: Record<string, string>, prefix: string): Promise<T> {
+  if (!leaderboardUrl) return Promise.reject(new Error('排行榜尚未連接 Google Sheets。'));
+  return new Promise((resolve, reject) => {
+    const callback = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const timer = window.setTimeout(() => finish(new Error('讀取資料逾時，請稍後再試。')), 15000);
+    const finish = (error?: Error, value?: T) => {
+      window.clearTimeout(timer);
+      script.remove();
+      delete (window as unknown as Record<string, unknown>)[callback];
+      if (error) reject(error);
+      else resolve(value as T);
+    };
+    (window as unknown as Record<string, unknown>)[callback] = (value: T) => finish(undefined, value);
+    script.src = `${leaderboardUrl}?${new URLSearchParams({ ...parameters, callback })}`;
+    script.onerror = () => finish(new Error('未能讀取資料，請檢查網絡。'));
+    document.body.appendChild(script);
+  });
+}
+
+export function fetchPlatformConfig() {
+  return jsonp<PlatformConfig>({ action: 'config' }, '__mathsConfig');
+}
+
+export function fetchPersonalBests(identity: {
+  schoolYear: string;
+  className: ClassName;
+  studentNo: number;
+}) {
+  return jsonp<PersonalBestsResponse>({
+    action: 'personalBests',
+    worldId: 'directed-number',
+    schoolYear: identity.schoolYear,
+    className: identity.className,
+    studentNo: String(identity.studentNo),
+  }, '__numberPersonalBests');
+}
+
+export function personalBestMessage(result: Pick<UploadResponse, 'personalBest' | 'previousPersonalBest' | 'isNewPersonalBest'>) {
+  const { personalBest, previousPersonalBest, isNewPersonalBest } = result;
+  if (!personalBest) return '';
+  if (isNewPersonalBest && !previousPersonalBest) return '建立首個個人紀錄';
+  if (isNewPersonalBest && personalBest.score > previousPersonalBest!.score)
+    return `刷新個人紀錄！比上次多 ${personalBest.score - previousPersonalBest!.score} 分`;
+  if (isNewPersonalBest)
+    return `刷新個人紀錄！比上次快 ${previousPersonalBest!.elapsedSeconds - personalBest.elapsedSeconds} 秒`;
+  return `個人最佳：${personalBest.score} 分 · ${formatDuration(personalBest.elapsedSeconds)}`;
+}
+
 export function fetchLeaderboard(
   board: BoardId,
   classFilter: 'ALL' | ClassName,
@@ -71,10 +145,11 @@ export function fetchLeaderboard(
       window.clearTimeout(timer);
       script.remove();
       delete (window as unknown as Record<string, unknown>)[callback];
-      error ? reject(error) : resolve(value as LeaderboardResponse);
+      if (error) reject(error);
+      else resolve(value as LeaderboardResponse);
     };
     (window as unknown as Record<string, unknown>)[callback] = (value: LeaderboardResponse) => finish(undefined, value);
-    const query = new URLSearchParams({ action: 'leaderboard', board, classFilter, callback });
+    const query = new URLSearchParams({ action: 'leaderboard', worldId: 'directed-number', board, classFilter, callback });
     if (student) {
       query.set('className', student.className);
       query.set('studentNo', String(student.studentNo));
@@ -110,10 +185,11 @@ export function uploadScore(fields: Record<string, string>): Promise<UploadRespo
       iframe.remove();
     };
     const receive = (event: MessageEvent<UploadResponse>) => {
-      if (event.data?.source !== 'directed-number-leaderboard') return;
+      if (!['maths-platform', 'directed-number-leaderboard'].includes(event.data?.source)) return;
       if (event.data.submissionId !== fields.submissionId) return;
       cleanup();
-      event.data.ok ? resolve(event.data) : reject(new Error(event.data.message));
+      if (event.data.ok) resolve({ ...event.data, newBadges: event.data.newBadges ?? [] });
+      else reject(new Error(event.data.message));
     };
     const timer = window.setTimeout(() => {
       cleanup();

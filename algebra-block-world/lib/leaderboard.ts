@@ -35,6 +35,19 @@ export type PlatformConfig = {
   studentNoMin: number;
   studentNoMax: number;
 };
+export type PersonalBest = {
+  gameId: GameId;
+  score: number;
+  maxScore: number;
+  elapsedSeconds: number;
+};
+export type PersonalBestsResponse = {
+  ok: boolean;
+  schoolYear: string;
+  worldId: string;
+  bests: PersonalBest[];
+  message?: string;
+};
 export type UploadResponse = {
   source: 'maths-platform' | 'algebra-leaderboard';
   ok: boolean;
@@ -43,6 +56,9 @@ export type UploadResponse = {
   best: RankingEntry | null;
   gradeRank: number | null;
   classRank: number | null;
+  personalBest: PersonalBest | null;
+  previousPersonalBest: PersonalBest | null;
+  isNewPersonalBest: boolean;
   newBadges: BadgeAward[];
 };
 
@@ -118,6 +134,35 @@ export function fetchLeaderboard(
     query.studentNo = String(student.studentNo);
   }
   return jsonp<LeaderboardResponse>(query, '__algebraBoard');
+}
+export function fetchPersonalBests(identity: {
+  schoolYear: string;
+  className: ClassName;
+  studentNo: number;
+}) {
+  return jsonp<PersonalBestsResponse>(
+    {
+      action: 'personalBests',
+      worldId: 'algebra',
+      schoolYear: identity.schoolYear,
+      className: identity.className,
+      studentNo: String(identity.studentNo),
+    },
+    '__algebraPersonalBests',
+  );
+}
+export function personalBestMessage(result: Pick<
+  UploadResponse,
+  'personalBest' | 'previousPersonalBest' | 'isNewPersonalBest'
+>) {
+  const { personalBest, previousPersonalBest, isNewPersonalBest } = result;
+  if (!personalBest) return '';
+  if (isNewPersonalBest && !previousPersonalBest) return '建立首個個人紀錄';
+  if (isNewPersonalBest && personalBest.score > previousPersonalBest!.score)
+    return `刷新個人紀錄！比上次多 ${personalBest.score - previousPersonalBest!.score} 分`;
+  if (isNewPersonalBest)
+    return `刷新個人紀錄！比上次快 ${previousPersonalBest!.elapsedSeconds - personalBest.elapsedSeconds} 秒`;
+  return `個人最佳：${personalBest.score} 分 · ${formatDuration(personalBest.elapsedSeconds)}`;
 }
 export function uploadScore(
   fields: Record<string, string>,

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { equivalent, followsForm, parseExpression } from '../lib/algebra.ts';
 import { elapsedSeconds, expected, gameIds, makeQuestions, nextQuestion, questionKey, score, skipQuestion, startSession, submit } from '../lib/game.ts';
-import { leaderboardUrl, validStudent } from '../lib/leaderboard.ts';
+import { leaderboardUrl, personalBestMessage, validStudent } from '../lib/leaderboard.ts';
 
 test('parser accepts equivalent linear expressions with exact fractions',()=>{
  assert.equal(equivalent('5x＋3','3+5x'),true);
@@ -103,4 +103,11 @@ test('only comprehensive questions can be skipped and skipped questions earn no 
  assert.equal(session.index,10);assert.equal(session.firstTry,10);assert.equal(score(session),100);
  session=skipQuestion(session,12000);assert.equal(session.solved,true);assert.equal(session.skipped,1);assert.equal(session.errors,0);assert.equal(session.currentFirstTryStreak,0);assert.equal(score(session),100);
  session=nextQuestion(session);assert.equal(session.index,11);session=submit(session,'12');assert.equal(score(session),110);
+});
+test('personal-best messages cover first, score, time, and unchanged results',()=>{
+ const current={gameId:'words',score:140,maxScore:150,elapsedSeconds:220},previous={...current,score:130,elapsedSeconds:250};
+ assert.equal(personalBestMessage({personalBest:current,previousPersonalBest:null,isNewPersonalBest:true}),'建立首個個人紀錄');
+ assert.equal(personalBestMessage({personalBest:current,previousPersonalBest:previous,isNewPersonalBest:true}),'刷新個人紀錄！比上次多 10 分');
+ assert.equal(personalBestMessage({personalBest:current,previousPersonalBest:{...current,elapsedSeconds:238},isNewPersonalBest:true}),'刷新個人紀錄！比上次快 18 秒');
+ assert.equal(personalBestMessage({personalBest:current,previousPersonalBest:current,isNewPersonalBest:false}),'個人最佳：140 分 · 3:40');
 });

@@ -17,7 +17,7 @@ import {
   startSession,
   submit,
 } from '../lib/game.ts';
-import { leaderboardUrl, validStudent } from '../lib/leaderboard.ts';
+import { leaderboardUrl, personalBestMessage, validStudent } from '../lib/leaderboard.ts';
 
 const normalized = (s) =>
   s
@@ -232,4 +232,13 @@ test('platform identity rules remain unchanged', () => {
   assert.equal(validStudent('1A', 1), true);
   assert.equal(validStudent('1D', 33), true);
   assert.equal(validStudent('1E', 1), false);
+});
+
+test('personal-best messages cover first, score, time, and unchanged results', () => {
+  const current = { gameId: 'simple', score: 140, maxScore: 150, elapsedSeconds: 220 };
+  const previous = { ...current, score: 130, elapsedSeconds: 250 };
+  assert.equal(personalBestMessage({ personalBest: current, previousPersonalBest: null, isNewPersonalBest: true }), '建立首個個人紀錄');
+  assert.equal(personalBestMessage({ personalBest: current, previousPersonalBest: previous, isNewPersonalBest: true }), '刷新個人紀錄！比上次多 10 分');
+  assert.equal(personalBestMessage({ personalBest: current, previousPersonalBest: { ...current, elapsedSeconds: 238 }, isNewPersonalBest: true }), '刷新個人紀錄！比上次快 18 秒');
+  assert.equal(personalBestMessage({ personalBest: current, previousPersonalBest: current, isNewPersonalBest: false }), '個人最佳：140 分 · 3:40');
 });
