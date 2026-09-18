@@ -58,9 +58,9 @@ function fractionParts(raw:string){
 export function MathText({children}:{children:string}):React.ReactNode{
  const parts=fractionParts(children);
  if(!parts){
-  const superscripts:Record<string,string>={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','ⁿ':'n','⁺':'+','⁻':'−'};
-  const segments=children.split(/(\^[−-]?(?:[0-9]+|n(?:[+-][0-9]+)?)|[⁰¹²³⁴⁵⁶ⁿ⁺⁻]+)/g);
-  return <>{segments.map((segment,index)=>segment.startsWith('^')?<sup key={index}>{segment.slice(1).replace('-', '−')}</sup>:/^[⁰¹²³⁴⁵⁶ⁿ⁺⁻]+$/.test(segment)?<sup key={index}>{segment.split('').map(character=>superscripts[character]).join('')}</sup>:segment)}</>;
+  const superscripts:Record<string,string>={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','ⁿ':'n','⁺':'+','⁻':'−'};
+  const segments=children.split(/(\^[−-]?(?:[0-9]+|n(?:[+-][0-9]+)?)|[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)/g);
+  return <>{segments.map((segment,index)=>segment.startsWith('^')?<sup key={index}>{segment.slice(1).replace('-', '−')}</sup>:/^[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+$/.test(segment)?<sup key={index}>{segment.split('').map(character=>superscripts[character]).join('')}</sup>:segment)}</>;
  }
  return <><MathText>{parts.prefix}</MathText><span className="fraction algebra-fraction"><span><MathText>{parts.numerator}</MathText></span><span><MathText>{parts.denominator}</MathText></span></span><MathText>{parts.suffix}</MathText></>;
 }
@@ -78,13 +78,13 @@ function NumericAnswer({onAnswer,disabled}:{onAnswer:(value:string)=>void;disabl
 
 function AlgebraKeyboard({usedVariables,onAnswer,disabled}:{usedVariables:Variable[];onAnswer:(value:string)=>void;disabled:boolean}){
  const [value,setValue]=useState('');
- const keys=['1','2','3','4','5','6','7','8','9','0',...usedVariables,'²','³','⁴','⁵','⁶','＋','−','×','(',')','back'];
+ const keys=['1','2','3','4','5','6','7','8','9','0',...usedVariables,'²','³','⁴','⁵','⁶','⁷','⁸','⁹','＋','−','×','÷','(',')','back'];
  const add=(key:string)=>setValue(current=>key==='back'?current.slice(0,-1):current.length<42?current+key:current);
  const parsed=parseExpression(value),ready=parsed.ok;
  return <form className="algebra-answer" onSubmit={event=>{event.preventDefault();if(value&&!disabled)onAnswer(value)}}>
-  <label htmlFor="algebra-answer">你的代數式</label><input id="algebra-answer" className="math" value={value} inputMode="text" autoComplete="off" placeholder="使用下方鍵盤輸入" disabled={disabled} onChange={event=>{if(/^[0-9xyab²³⁴⁵⁶+＋\-−×*() ]{0,42}$/.test(event.target.value))setValue(event.target.value)}}/>
+  <label htmlFor="algebra-answer">你的代數式</label><input id="algebra-answer" className="math" value={value} inputMode="text" autoComplete="off" placeholder="使用下方鍵盤輸入" disabled={disabled} onChange={event=>{if(/^[0-9xyab²³⁴⁵⁶⁷⁸⁹+＋\-−×*÷/() ]{0,42}$/.test(event.target.value))setValue(event.target.value)}}/>
   <div className="algebra-keypad">{keys.map(key=><Button className="key" key={key} type="button" variant="secondary" disabled={disabled} aria-label={key==='back'?'刪除一位':key} onClick={()=>add(key)}>{key==='back'?'⌫':key}</Button>)}</div>
-  {!ready&&value&&<p className="input-help">{parsed.ok?'':parsed.message}</p>}
+  <p className="input-help" aria-live="polite">{!ready&&value&&!parsed.ok?parsed.message:'\u00a0'}</p>
   <Button className="block-btn" type="submit" disabled={!value||disabled}>檢查答案 <Check/></Button>
  </form>;
 }

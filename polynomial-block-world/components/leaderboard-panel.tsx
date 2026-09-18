@@ -17,11 +17,10 @@ const boards: { id: BoardId; label: string }[] = [
   { id: 'indices', label: '指數律' },
   { id: 'identify', label: '多項式辨識' },
   { id: 'order', label: '多項式排列' },
-  { id: 'evaluate', label: '多項式求值' },
   { id: 'like-terms', label: '同類項' },
   { id: 'add-subtract', label: '多項式加減' },
   { id: 'multiply', label: '多項式乘法' },
-  { id: 'overall', label: '七關總榜' },
+  { id: 'overall', label: '六關總榜' },
 ];
 
 export default function LeaderboardPanel({

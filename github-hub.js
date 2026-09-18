@@ -87,7 +87,7 @@ function setWorldProgress(id, completed, total = 7) {
 
 function renderProfile(profile) {
   document.querySelector('#earned-badges').textContent = `${profile.summary.earnedBadges}／${profile.summary.totalBadges}`;
-  document.querySelector('#completed-stages').textContent = `${profile.summary.completedStages}／27`;
+  document.querySelector('#completed-stages').textContent = `${profile.summary.completedStages}／26`;
   document.querySelector('#first-try-correct').textContent = profile.summary.firstTryCorrect;
   const directed = profile.worldProgress.find(item => item.worldId === 'directed-number');
   const algebra = profile.worldProgress.find(item => item.worldId === 'algebra');
@@ -96,7 +96,7 @@ function renderProfile(profile) {
   setWorldProgress('directed', directed?.completed || 0);
   setWorldProgress('algebra', algebra?.completed || 0);
   setWorldProgress('equation', equation?.completed || 0, 6);
-  setWorldProgress('polynomial', polynomial?.completed || 0);
+  setWorldProgress('polynomial', polynomial?.completed || 0, 6);
   badges = profile.badges || [];
   renderBadges();
 }
