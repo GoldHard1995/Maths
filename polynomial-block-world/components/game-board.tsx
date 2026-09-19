@@ -12,8 +12,15 @@ function toLatex(value:string){
  const normalized=value.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+/g,match=>`^{${[...match].map(character=>superscriptCharacters[character]).join('')}}`);
  return normalized.replace(/×/g,'\\times ').replace(/÷/g,'\\div ').replace(/＋/g,'+').replace(/−/g,'-').replace(/　/g,'\\quad ');
 }
+function mixedText(value:string){
+ const segments=value.split(/(\^[−-]?(?:[0-9]+|n(?:[+-][0-9]+)?)|[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)/g);
+ return segments.map((segment,index)=>segment.startsWith('^')||/^[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+$/.test(segment)
+  ? <sup className="latex-sup" key={index}>{segment.startsWith('^')?segment.slice(1).replace('-', '−'):[...segment].map(character=>superscriptCharacters[character]).join('')}</sup>
+  : segment);
+}
 
 export function MathText({children}:{children:string}):React.ReactNode{
+ if(/[\u3400-\u9fff]/.test(children))return <>{mixedText(children)}</>;
  const html=katex.renderToString(toLatex(children),{throwOnError:false,displayMode:false});
  return <span className="latex-expression" aria-label={children} dangerouslySetInnerHTML={{__html:html}}/>;
 }
