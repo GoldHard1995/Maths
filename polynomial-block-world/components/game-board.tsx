@@ -55,12 +55,17 @@ function fractionParts(raw:string){
  return{prefix:left.slice(0,start),numerator:stripOuterBrackets(left.slice(start)),denominator:stripOuterBrackets(right.slice(0,end).trim()),suffix:right.slice(end)};
 }
 
+/** Render the small LaTeX subset used by the question bank.
+ *  The source expressions use ^{n} semantics (for example x^11 and x^n+1);
+ *  keeping the exponent as one node prevents multi-digit powers from being
+ *  split or visually attached to the following term.
+ */
 export function MathText({children}:{children:string}):React.ReactNode{
  const parts=fractionParts(children);
  if(!parts){
   const superscripts:Record<string,string>={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','ⁿ':'n','⁺':'+','⁻':'−'};
   const segments=children.split(/(\^[−-]?(?:[0-9]+|n(?:[+-][0-9]+)?)|[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)/g);
-  return <>{segments.map((segment,index)=>segment.startsWith('^')?<sup key={index}>{segment.slice(1).replace('-', '−')}</sup>:/^[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+$/.test(segment)?<sup key={index}>{segment.split('').map(character=>superscripts[character]).join('')}</sup>:segment)}</>;
+  return <>{segments.map((segment,index)=>segment.startsWith('^')?<sup className="latex-sup" key={index}>{segment.slice(1).replace('-', '−')}</sup>:/^[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+$/.test(segment)?<sup className="latex-sup" key={index}>{segment.split('').map(character=>superscripts[character]).join('')}</sup>:segment)}</>;
  }
  return <><MathText>{parts.prefix}</MathText><span className="fraction algebra-fraction"><span><MathText>{parts.numerator}</MathText></span><span><MathText>{parts.denominator}</MathText></span></span><MathText>{parts.suffix}</MathText></>;
 }
