@@ -1,73 +1,21 @@
 'use client';
 import { useState } from 'react';
 import { Check, Lightbulb } from 'lucide-react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import { Button } from '@/components/ui/button';
 import { parseExpression, type Variable } from '@/lib/algebra';
 import type { AlgebraQuestion, NumericQuestion, Session } from '@/lib/game';
 
-function stripOuterBrackets(value:string){
- if(!value.startsWith('(')||!value.endsWith(')'))return value;
- let depth=0;
- for(let index=0;index<value.length;index++){
-  if(value[index]==='(')depth++;
-  if(value[index]===')')depth--;
-  if(depth===0&&index<value.length-1)return value;
- }
- return value.slice(1,-1);
+const superscriptCharacters:Record<string,string>={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','ⁿ':'n','⁺':'+','⁻':'-'};
+function toLatex(value:string){
+ const normalized=value.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+/g,match=>`^{${[...match].map(character=>superscriptCharacters[character]).join('')}}`);
+ return normalized.replace(/×/g,'\\times ').replace(/÷/g,'\\div ').replace(/＋/g,'+').replace(/−/g,'-').replace(/　/g,'\\quad ');
 }
 
-function binaryOperator(text:string,index:number){
- const value=text[index];
- if(!['+','＋','−','-','×','='].includes(value))return false;
- if(value!=='−'&&value!=='-')return true;
- let previous=index-1;
- while(previous>=0&&text[previous]===' ')previous--;
- return previous>=0&&!['+','＋','−','-','×','÷','=','('].includes(text[previous]);
-}
-
-function fractionParts(raw:string){
- const text=raw.replace(/\s*÷\s*/g,' ÷ '),at=text.indexOf(' ÷ ');
- if(at<0)return null;
- const left=text.slice(0,at).trimEnd(),right=text.slice(at+3).trimStart();
- let start=0;
- if(left.endsWith(')')){
-  let depth=0;
-  for(let index=left.length-1;index>=0;index--){
-   if(left[index]===')')depth++;
-   if(left[index]==='(')depth--;
-   if(depth===0){start=index;break;}
-  }
- }else{
-  for(let index=left.length-1;index>=0;index--)if(binaryOperator(left,index)){start=index+1;break;}
- }
- while(start<left.length&&left[start]===' ')start++;
- let end=right.length;
- if(right.startsWith('(')){
-  let depth=0;
-  for(let index=0;index<right.length;index++){
-   if(right[index]==='(')depth++;
-   if(right[index]===')')depth--;
-   if(depth===0){end=index+1;break;}
-  }
- }else{
-  for(let index=0;index<right.length;index++)if(binaryOperator(right,index)||right[index]==='÷'){end=index;break;}
- }
- return{prefix:left.slice(0,start),numerator:stripOuterBrackets(left.slice(start)),denominator:stripOuterBrackets(right.slice(0,end).trim()),suffix:right.slice(end)};
-}
-
-/** Render the small LaTeX subset used by the question bank.
- *  The source expressions use ^{n} semantics (for example x^11 and x^n+1);
- *  keeping the exponent as one node prevents multi-digit powers from being
- *  split or visually attached to the following term.
- */
 export function MathText({children}:{children:string}):React.ReactNode{
- const parts=fractionParts(children);
- if(!parts){
-  const superscripts:Record<string,string>={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','ⁿ':'n','⁺':'+','⁻':'−'};
-  const segments=children.split(/(\^[−-]?(?:[0-9]+|n(?:[+-][0-9]+)?)|[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)/g);
-  return <>{segments.map((segment,index)=>segment.startsWith('^')?<sup className="latex-sup" key={index}>{segment.slice(1).replace('-', '−')}</sup>:/^[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+$/.test(segment)?<sup className="latex-sup" key={index}>{segment.split('').map(character=>superscripts[character]).join('')}</sup>:segment)}</>;
- }
- return <><MathText>{parts.prefix}</MathText><span className="fraction algebra-fraction"><span><MathText>{parts.numerator}</MathText></span><span><MathText>{parts.denominator}</MathText></span></span><MathText>{parts.suffix}</MathText></>;
+ const html=katex.renderToString(toLatex(children),{throwOnError:false,displayMode:false});
+ return <span className="latex-expression" aria-label={children} dangerouslySetInnerHTML={{__html:html}}/>;
 }
 
 function NumericAnswer({onAnswer,disabled}:{onAnswer:(value:string)=>void;disabled:boolean}){
