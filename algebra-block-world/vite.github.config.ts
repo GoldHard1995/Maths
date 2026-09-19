@@ -4,7 +4,7 @@ import path from 'node:path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/Maths/algebra/',
+  base: process.env.SITE_BASE_PATH ?? '/Maths/algebra/',
   css: { postcss: { plugins: [tailwindcss()] } },
   plugins: [react()],
   resolve: {
@@ -16,7 +16,7 @@ export default defineConfig({
   define: {
     'process.env.NEXT_PUBLIC_PLATFORM_URL': JSON.stringify(''),
     'process.env.NEXT_PUBLIC_LEADERBOARD_URL': JSON.stringify(''),
-    'process.env.NEXT_PUBLIC_HUB_URL': JSON.stringify('https://goldhard1995.github.io/Maths/'),
+    'process.env.NEXT_PUBLIC_HUB_URL': JSON.stringify(process.env.SITE_HUB_URL ?? 'https://goldhard1995.github.io/Maths/'),
   },
   build: {
     outDir: 'dist-github',

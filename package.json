@@ -9,6 +9,9 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "build:github": "vite build --config vite.github.config.ts",
+    "build:cloudflare": "node scripts/build-cloudflare.mjs",
+    "deploy:cloudflare": "npm run build:cloudflare && wrangler deploy --config wrangler.jsonc",
+    "preview:cloudflare": "npm run build:cloudflare && wrangler versions upload --config wrangler.jsonc",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint --config .oxlintrc.json app/page.tsx components/leaderboard-panel.tsx components/score-upload.tsx lib/game.ts lib/leaderboard.ts tests/game.test.mjs tests/leaderboard-apps-script.test.mjs",
     "format": "oxfmt"

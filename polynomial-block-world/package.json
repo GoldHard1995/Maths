@@ -9,6 +9,7 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "build:github": "vite build --config vite.github.config.ts",
+    "build:cloudflare": "SITE_BASE_PATH=/polynomial/ SITE_HUB_URL=/ npm run build:github",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",
