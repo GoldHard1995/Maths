@@ -15,7 +15,7 @@ export type BadgeAward = {
   id: string;
   name: string;
   description: string;
-  category: 'stage' | 'skill' | 'cumulative' | 'exploration';
+  category: 'stage' | 'skill' | 'cumulative' | 'exploration' | 'perfect';
   hidden: boolean;
   asset: string;
 };

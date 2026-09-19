@@ -10,6 +10,9 @@ for (let y = 0; y < info.height; y++) {
   const ratio = y / info.height;
   const band = outline.find(([, , ,], index) => ratio < outline[index][0]) || outline[outline.length - 1];
   const min = Math.floor(band[1] * info.width), max = Math.ceil(band[2] * info.width);
-  for (let x = 0; x < info.width; x++) if (x < min || x > max) data[(y * info.width + x) * 4 + 3] = 0;
+  for (let x = 0; x < info.width; x++) {
+    const alpha = (y * info.width + x) * 4 + 3;
+    data[alpha] = x < min || x > max || data[alpha] < 128 ? 0 : 255;
+  }
 }
 await sharp(data, { raw: info }).png({ palette: true, colours: 128 }).toFile(destination);

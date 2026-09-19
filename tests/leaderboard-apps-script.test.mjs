@@ -56,13 +56,46 @@ test('badge profile covers stages, streaks, masters, cumulative goals, and dupli
   assert.equal(profile.summary.completedStages, 14);
   assert.equal(profile.summary.completedWorlds, 2);
   assert.equal(profile.summary.firstTryCorrect, 145);
-  for (const id of ['ten-streak','perfectionist','directed-master','algebra-master','maths-explorer','mystery-100']) {
+  for (const id of ['ten-streak','directed-master','algebra-master','maths-explorer','mystery-100']) {
     assert.equal(profile.badges.find(badge => badge.id === id).earned, true, id);
   }
+  assert.equal(profile.badges.find(badge => badge.id === 'directed-perfect-master').earned, false);
+  assert.equal(profile.badges.find(badge => badge.id === 'ultimate-perfectionist').earned, false);
   assert.equal(profile.badges.find(badge => badge.id === 'all-rounder').earned, false);
   const mystery500 = profile.badges.find(badge => badge.id === 'mystery-500');
   assert.equal(mystery500.name, '？？？');
   assert.equal(mystery500.progress, null);
+});
+
+test('perfect-master badges require every registered stage to have a strict full-score record', () => {
+  const stages = ['locate','compare','move','brackets','multiply','divide','mixed'];
+  const perfect = (gameId, index) => ({submissionId:`perfect-${index}`,roundId:index%2?'R2':'R1',worldId:'directed-number',gameId,questionCount:15,maxScore:150,score:150,firstTryCorrect:15,skippedQuestions:0,longestFirstTryStreak:15});
+  const records = stages.slice(0, 6).map(perfect);
+  records.push({submissionId:'retry-final',worldId:'directed-number',gameId:'mixed',questionCount:15,maxScore:150,score:145,firstTryCorrect:14,skippedQuestions:0,longestFirstTryStreak:10});
+  records.push({submissionId:'skip-final',worldId:'directed-number',gameId:'mixed',questionCount:15,maxScore:150,score:150,firstTryCorrect:15,skippedQuestions:1,longestFirstTryStreak:15});
+  records.push({submissionId:'wrong-final',worldId:'directed-number',gameId:'mixed',questionCount:15,maxScore:150,score:150,firstTryCorrect:15,skippedQuestions:0,wrongAttempts:1,longestFirstTryStreak:15});
+  records.push({submissionId:'old-stage',worldId:'polynomial',gameId:'evaluate',questionCount:15,maxScore:150,score:150,firstTryCorrect:15,skippedQuestions:0,longestFirstTryStreak:15});
+  const incomplete = context.profileFromRecords_('2026-27','1A',1,records,[]);
+  const badge = incomplete.badges.find(item => item.id === 'directed-perfect-master');
+  assert.equal(badge.earned, false);
+  assert.equal(badge.progress, 6);
+  assert.equal(badge.target, 7);
+
+  const complete = context.profileFromRecords_('2026-27','1A',1,[...records,perfect('mixed', 7)],[]);
+  assert.equal(complete.badges.find(item => item.id === 'directed-perfect-master').earned, true);
+  assert.equal(complete.badges.find(item => item.id === 'ultimate-perfectionist').earned, false);
+});
+
+test('all four perfect masters and ultimate perfectionist require all 26 stages', () => {
+  let index = 0;
+  const records = run('CATALOG').flatMap(world => world.stages.map(stage => ({submissionId:`all-perfect-${index++}`,roundId:index%3===0?'OLD':'CURRENT',worldId:world.id,gameId:stage[0],questionCount:world.questionCount,maxScore:world.maxScore,score:world.maxScore,firstTryCorrect:world.questionCount,skippedQuestions:0,longestFirstTryStreak:world.questionCount})));
+  records.push({...records[0]});
+  const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
+  assert.equal(profile.summary.totalBadges, 41);
+  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','ultimate-perfectionist']) {
+    assert.equal(profile.badges.find(item => item.id === id).earned, true, id);
+  }
+  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 26);
 });
 
 test('replays can reach the hidden 500 goal without duplicating a submission', () => {

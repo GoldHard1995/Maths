@@ -1,6 +1,6 @@
 export type Identity = { schoolYear: string; className: string; studentNo: number };
 export type Config = { ok: boolean; schoolYear: string; classes: string[]; studentNoMin: number; studentNoMax: number };
-export type Badge = { id: string; name: string; description: string; category: 'stage' | 'skill' | 'cumulative' | 'exploration'; hidden: boolean; asset: string; earned: boolean; earnedAt: string | null; progress: number | null; target: number | null };
+export type Badge = { id: string; name: string; description: string; category: 'stage' | 'skill' | 'cumulative' | 'exploration' | 'perfect'; hidden: boolean; asset: string; earned: boolean; earnedAt: string | null; progress: number | null; target: number | null };
 export type Profile = { ok: boolean; schoolYear: string; className: string; studentNo: number; summary: { earnedBadges: number; totalBadges: number; completedStages: number; firstTryCorrect: number; maxFirstTryStreak: number; completedWorlds: number }; worldProgress: { worldId: string; completed: number; total: number }[]; badges: Badge[]; message?: string };
 export type Catalog = { ok: boolean; worlds: { id: string; name: string; order: number; questionCount: number; maxScore: number; stages: { id: string; name: string; order: number }[] }[]; badges: Omit<Badge, 'earned' | 'earnedAt' | 'progress' | 'target'>[] };
 
