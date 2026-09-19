@@ -1,6 +1,7 @@
 import test from'node:test';import assert from'node:assert/strict';
 import{equivalent,followsForm,parseExpression}from'../lib/algebra.ts';
-import{elapsedSeconds,expected,gameIds,makeQuestions,nextQuestion,questionKey,score,skipQuestion,startSession,submit}from'../lib/game.ts';
+import{elapsedSeconds,expected,expireSession,GAME_TIME_LIMIT_SECONDS,gameIds,makeQuestions,nextQuestion,questionKey,score,skipQuestion,startSession,submit}from'../lib/game.ts';
+test('sessions expire after the one-hour time limit',()=>{const session=startSession('indices',[],1000),expired=expireSession(session,1000+GAME_TIME_LIMIT_SECONDS*1000);assert.equal(expired.finished,true);assert.equal(expired.expired,true);assert.equal(expired.completedAt,1000+GAME_TIME_LIMIT_SECONDS*1000);assert.match(expired.feedback,/1 小時/)})
 import{leaderboardUrl,personalBestMessage,validStudent}from'../lib/leaderboard.ts';
 test('parser accepts powers, implicit products, brackets and equivalent order',()=>{assert.equal(equivalent('x^2+5x+6','(x+2)(x+3)'),true);assert.equal(equivalent('3xy+2x^2','2x²+3yx'),true);assert.equal(equivalent('x^2-y^2','(x-y)(x+y)'),true)});
 test('parser accepts displayed superscript powers without a caret',()=>{assert.equal(equivalent('3x⁶ − 2x² ＋ 1','1 + 3x^6 - 2x^2'),true);assert.equal(equivalent('x¹² ÷ x³','x⁹'),true)});
