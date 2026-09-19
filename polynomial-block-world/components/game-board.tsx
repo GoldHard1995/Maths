@@ -8,9 +8,25 @@ import { parseExpression, type Variable } from '@/lib/algebra';
 import type { AlgebraQuestion, NumericQuestion, Session } from '@/lib/game';
 
 const superscriptCharacters:Record<string,string>={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','ⁿ':'n','⁺':'+','⁻':'-'};
+function stripOuterBrackets(value:string){
+ if(!value.startsWith('(')||!value.endsWith(')'))return value;
+ let depth=0;
+ for(let index=0;index<value.length;index++){
+  if(value[index]==='(')depth++;
+  if(value[index]===')')depth--;
+  if(depth===0&&index<value.length-1)return value;
+ }
+ return value.slice(1,-1);
+}
 function toLatex(value:string){
+ const division=value.indexOf('÷');
+ if(division>=0){
+  const numerator=stripOuterBrackets(value.slice(0,division).trim());
+  const denominator=stripOuterBrackets(value.slice(division+1).trim());
+  return `\\frac{${toLatex(numerator)}}{${toLatex(denominator)}}`;
+ }
  const normalized=value.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+/g,match=>`^{${[...match].map(character=>superscriptCharacters[character]).join('')}}`);
- return normalized.replace(/×/g,'\\times ').replace(/÷/g,'\\div ').replace(/＋/g,'+').replace(/−/g,'-').replace(/　/g,'\\quad ');
+ return normalized.replace(/×/g,'\\times ').replace(/＋/g,'+').replace(/−/g,'-').replace(/　/g,'\\quad ');
 }
 function mixedText(value:string){
  const segments=value.split(/(\^[−-]?(?:[0-9]+|n(?:[+-][0-9]+)?)|[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)/g);
