@@ -104,7 +104,7 @@ function renderProfile(profile) {
 function renderBadges() {
   const grid = document.querySelector('#badge-grid');
   grid.replaceChildren();
-  badges.filter(badge => currentFilter === 'all' || badge.category === currentFilter).forEach(badge => {
+  badges.filter(badge => currentFilter === 'all' || currentFilter === 'earned' && badge.earned || currentFilter === 'unearned' && !badge.earned || badge.category === currentFilter).forEach(badge => {
     const hidden = badge.hidden && !badge.earned;
     const card = document.createElement('article');
     card.className = `badge-card ${badge.earned ? 'earned' : 'locked'} ${hidden ? 'secret' : ''}`;
