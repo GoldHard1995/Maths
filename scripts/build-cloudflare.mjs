@@ -16,7 +16,7 @@ await rm(new URL('../_site', import.meta.url), { recursive: true, force: true })
 await mkdir(new URL('../_site', import.meta.url), { recursive: true });
 
 run('npm', ['run', 'build:github'], rootPath, {
-  SITE_BASE_PATH: '/',
+  SITE_BASE_PATH: '/directed-number/',
   SITE_HUB_URL: '/',
 });
 
