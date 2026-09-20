@@ -18,20 +18,20 @@ function stripOuterBrackets(value:string){
  }
  return value.slice(1,-1);
 }
-function toLatex(value:string):string{
+function toLatex(value:string){
  const division=value.indexOf('÷');
  if(division>=0){
   const numerator=stripOuterBrackets(value.slice(0,division).trim());
   const denominator=stripOuterBrackets(value.slice(division+1).trim());
   return `\\frac{${toLatex(numerator)}}{${toLatex(denominator)}}`;
  }
- const normalized=value.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+/g,match=>`^{${Array.from(match).map(character=>superscriptCharacters[character]).join('')}}`);
+ const normalized=value.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+/g,match=>`^{${[...match].map(character=>superscriptCharacters[character]).join('')}}`);
  return normalized.replace(/×/g,'\\times ').replace(/＋/g,'+').replace(/−/g,'-').replace(/　/g,'\\quad ');
 }
 function mixedText(value:string){
  const segments=value.split(/(\^[−-]?(?:[0-9]+|n(?:[+-][0-9]+)?)|[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)/g);
  return segments.map((segment,index)=>segment.startsWith('^')||/^[⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+$/.test(segment)
-  ? <sup className="latex-sup" key={index}>{segment.startsWith('^')?segment.slice(1).replace('-', '−'):Array.from(segment).map(character=>superscriptCharacters[character]).join('')}</sup>
+  ? <sup className="latex-sup" key={index}>{segment.startsWith('^')?segment.slice(1).replace('-', '−'):[...segment].map(character=>superscriptCharacters[character]).join('')}</sup>
   : segment);
 }
 

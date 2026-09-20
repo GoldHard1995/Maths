@@ -5,8 +5,7 @@ const CATALOG=[
  {id:'directed-number',name:'有向數方塊世界',order:1,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['locate','數線定位','定位先鋒'],['compare','比較大小','大小判官'],['move','數線移動','數線旅人'],['brackets','拆括號與計算','符號破解者'],['multiply','有向數乘法','乘法戰士'],['divide','有向數除法','除法術士'],['mixed','有向數四則運算','四則統領']]},
  {id:'algebra',name:'代數方塊世界',order:2,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['words','文字變代數','語言鍊金師'],['add-subtract','代數式加減','同類項整理師'],['multiply-divide','代數式乘除','係數工匠'],['expand','拆括號','括號破壁者'],['mixed-expand','括號四則化簡','化簡策士'],['substitute','公式代入','公式代入師'],['sequence','數列代入','數列追蹤者']]},
  {id:'linear-equation',name:'方程方塊世界',order:3,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['simple','簡易方程','平衡解題者'],['like-terms','含同類項的方程','同類項統整師'],['brackets','含括號的方程','括號解鎖師'],['fractions','含分數的方程','分母清除師'],['form-equation','建立方程','方程建構師'],['applications','方程應用','應用解難師']]},
- {id:'polynomial',name:'多項式方塊世界',order:4,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['indices','指數律','指數鍛造師'],['identify','多項式辨識','多項式鑑定師'],['order','多項式排列','次序整理師'],['like-terms','同類項','同類項配對師'],['add-subtract','多項式加減','加減統整師'],['multiply','多項式乘法','展開建築師']]},
- {id:'area-volume',name:'面積與體積方塊世界',order:5,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['area-composite','面積、分割與填補','天空測量師'],['uniform-cross-section','均勻截面','雲端截面師'],['prism-volume','角柱體體積','浮城建築師'],['total-surface-area','總表面面積','外牆工程師']]}
+ {id:'polynomial',name:'多項式方塊世界',order:4,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['indices','指數律','指數鍛造師'],['identify','多項式辨識','多項式鑑定師'],['order','多項式排列','次序整理師'],['like-terms','同類項','同類項配對師'],['add-subtract','多項式加減','加減統整師'],['multiply','多項式乘法','展開建築師']]}
 ];
 const BADGES=buildBadges_();
 function buildBadges_(){const a=[];CATALOG.forEach(w=>w.stages.forEach(s=>a.push({id:`stage-${w.id}-${s[0]}`,name:s[2],description:`完成「${s[1]}」全部 ${w.questionCount} 題。`,category:'stage',hidden:false,asset:`stage-${w.id}-${s[0]}`,rule:'stage',worldId:w.id,gameId:s[0],target:1})));return a.concat([
@@ -16,13 +15,11 @@ function buildBadges_(){const a=[];CATALOG.forEach(w=>w.stages.forEach(s=>a.push
  {id:'algebra-perfect-master',name:'代數完美大師',description:'代數全部 7 關均曾取得滿分。',category:'perfect',hidden:false,asset:'algebra-perfect-master',rule:'worldPerfect',worldId:'algebra',target:7},
  {id:'linear-equation-perfect-master',name:'方程完美大師',description:'方程全部 6 關均曾取得滿分。',category:'perfect',hidden:false,asset:'linear-equation-perfect-master',rule:'worldPerfect',worldId:'linear-equation',target:6},
  {id:'polynomial-perfect-master',name:'多項式完美大師',description:'多項式全部 6 關均曾取得滿分。',category:'perfect',hidden:false,asset:'polynomial-perfect-master',rule:'worldPerfect',worldId:'polynomial',target:6},
- {id:'area-volume-perfect-builder',name:'天空城完美建築師',description:'面積與體積全部 4 關均曾取得滿分。',category:'perfect',hidden:false,asset:'area-volume-perfect-builder',rule:'worldPerfect',worldId:'area-volume',target:4},
- {id:'ultimate-perfectionist',name:'完美主義者',description:'全部 30 個關卡均曾取得滿分。',category:'perfect',hidden:false,asset:'ultimate-perfectionist',rule:'allPerfect',target:30},
+ {id:'ultimate-perfectionist',name:'完美主義者',description:'全部 26 個關卡均曾取得滿分。',category:'perfect',hidden:false,asset:'ultimate-perfectionist',rule:'allPerfect',target:26},
  {id:'directed-master',name:'有向數大師',description:'完成有向數全部 7 關。',category:'exploration',hidden:false,asset:'directed-master',rule:'world',worldId:'directed-number',target:7},
  {id:'algebra-master',name:'代數大師',description:'完成代數全部 7 關。',category:'exploration',hidden:false,asset:'algebra-master',rule:'world',worldId:'algebra',target:7},
  {id:'linear-equation-master',name:'方程大師',description:'完成一元一次方程全部 6 關。',category:'exploration',hidden:false,asset:'linear-equation-master',rule:'world',worldId:'linear-equation',target:6},
  {id:'polynomial-master',name:'多項式大師',description:'完成多項式全部 6 關。',category:'exploration',hidden:false,asset:'polynomial-master',rule:'world',worldId:'polynomial',target:6},
- {id:'area-volume-master',name:'天空之城大師',description:'完成面積與體積全部 4 關。',category:'exploration',hidden:false,asset:'area-volume-master',rule:'world',worldId:'area-volume',target:4},
  {id:'maths-explorer',name:'數學探索家',description:'完成 5 個不同關卡。',category:'exploration',hidden:false,asset:'maths-explorer',rule:'distinctStages',target:5},
  {id:'all-rounder',name:'全能數學家',description:'完成 5 個不同課題世界的全部指定關卡。',category:'exploration',hidden:false,asset:'all-rounder',rule:'worlds',target:5},
  {id:'mystery-100',name:'神秘數字 100',description:'所有有效紀錄累積首次答對 100 題。',category:'cumulative',hidden:true,asset:'mystery-100',rule:'firstTry',target:100},

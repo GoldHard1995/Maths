@@ -19,9 +19,6 @@ export const equationUrl =
 export const polynomialUrl =
   process.env.NEXT_PUBLIC_POLYNOMIAL_URL?.trim() ||
   'https://goldhard1995.github.io/Maths/polynomial/';
-export const areaVolumeUrl =
-  process.env.NEXT_PUBLIC_AREA_VOLUME_URL?.trim() ||
-  'https://goldhard1995.github.io/Maths/area-volume/';
 export const storageKey = 'maths-platform-student-v1';
 
 export function validIdentity(config: Config, className: string, studentNo: number) {
