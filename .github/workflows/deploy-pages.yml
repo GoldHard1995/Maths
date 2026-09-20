@@ -28,6 +28,7 @@ jobs:
             algebra-block-world/package-lock.json
             linear-equation-block-world/package-lock.json
             polynomial-block-world/package-lock.json
+            area-volume-block-world/package-lock.json
       - run: npm ci
       - run: npm ci
         working-directory: algebra-block-world
@@ -35,6 +36,8 @@ jobs:
         working-directory: linear-equation-block-world
       - run: npm ci
         working-directory: polynomial-block-world
+      - run: npm ci
+        working-directory: area-volume-block-world
       - name: Build directed-number game
         run: npm run build:github
       - name: Build algebra game
@@ -46,9 +49,12 @@ jobs:
       - name: Build polynomial game
         run: npm run build:github
         working-directory: polynomial-block-world
+      - name: Build area and volume game
+        run: npm run build:github
+        working-directory: area-volume-block-world
       - name: Assemble GitHub Pages site
         run: |
-          mkdir -p _site/directed-number _site/algebra _site/linear-equation _site/polynomial _site/maths-block-world-hub/app _site/maths-block-world-hub/public
+          mkdir -p _site/directed-number _site/algebra _site/linear-equation _site/polynomial _site/area-volume _site/maths-block-world-hub/app _site/maths-block-world-hub/public
           cp index.html github-hub.js _site/
           cp maths-block-world-hub/app/globals.css _site/maths-block-world-hub/app/
           cp -R maths-block-world-hub/public/. _site/maths-block-world-hub/public/
@@ -60,6 +66,8 @@ jobs:
           mv _site/linear-equation/github-game.html _site/linear-equation/index.html
           cp -R polynomial-block-world/dist-github/. _site/polynomial/
           mv _site/polynomial/github-game.html _site/polynomial/index.html
+          cp -R area-volume-block-world/dist-github/. _site/area-volume/
+          mv _site/area-volume/github-game.html _site/area-volume/index.html
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

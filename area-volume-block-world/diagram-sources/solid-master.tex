@@ -1,0 +1,16 @@
+\documentclass[tikz,border=8pt]{standalone}
+\definecolor{outline}{HTML}{263F33}
+\definecolor{surface}{HTML}{DFEECF}
+\definecolor{base}{HTML}{E8BF58}
+\definecolor{guide}{HTML}{BB4D75}
+\begin{document}
+\begin{tikzpicture}[x=0.72cm,y=0.72cm,line cap=round,line join=round]
+  \coordinate (A) at (0,0); \coordinate (B) at (0,4); \coordinate (C) at (4,4); \coordinate (D) at (4,0);
+  \coordinate (E) at (3,1.8); \coordinate (F) at (3,5.8); \coordinate (G) at (7,5.8); \coordinate (H) at (7,1.8);
+  \filldraw[fill=base,draw=outline,line width=1.4pt] (A)--(B)--(C)--(D)--cycle;
+  \filldraw[fill=surface,draw=outline,line width=1.4pt] (E)--(F)--(G)--(H)--cycle;
+  \draw[outline,line width=1.4pt] (A)--(E) (B)--(F) (C)--(G) (D)--(H);
+  \draw[guide,dashed,line width=1pt] (1.5,0.9)--(5.5,2.7);
+  \node[text=outline] at (3.5,-.8) {prism / section master};
+\end{tikzpicture}
+\end{document}

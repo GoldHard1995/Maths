@@ -86,16 +86,16 @@ test('perfect-master badges require every registered stage to have a strict full
   assert.equal(complete.badges.find(item => item.id === 'ultimate-perfectionist').earned, false);
 });
 
-test('all four perfect masters and ultimate perfectionist require all 26 stages', () => {
+test('all five perfect masters and ultimate perfectionist require all 30 stages', () => {
   let index = 0;
   const records = run('CATALOG').flatMap(world => world.stages.map(stage => ({submissionId:`all-perfect-${index++}`,roundId:index%3===0?'OLD':'CURRENT',worldId:world.id,gameId:stage[0],questionCount:world.questionCount,maxScore:world.maxScore,score:world.maxScore,firstTryCorrect:world.questionCount,skippedQuestions:0,longestFirstTryStreak:world.questionCount})));
   records.push({...records[0]});
   const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
-  assert.equal(profile.summary.totalBadges, 41);
-  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','ultimate-perfectionist']) {
+  assert.equal(profile.summary.totalBadges, 47);
+  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','area-volume-perfect-builder','ultimate-perfectionist']) {
     assert.equal(profile.badges.find(item => item.id === id).earned, true, id);
   }
-  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 26);
+  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 30);
 });
 
 test('replays can reach the hidden 500 goal without duplicating a submission', () => {
@@ -149,6 +149,19 @@ test('polynomial world is isolated and awards six stage badges plus its master b
   assert.doesNotThrow(() => context.validateSubmission_({submissionId:'polynomial-submit-1',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'multiply',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
   assert.throws(() => context.validateSubmission_({submissionId:'polynomial-submit-0',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'evaluate',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
   assert.throws(() => context.validateSubmission_({submissionId:'polynomial-submit-2',schoolYear:'2026-27',worldId:'algebra',className:'1A',studentNo:1,gameId:'indices',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
+});
+
+test('area-volume world is isolated and perfect-builder accumulates across rounds', () => {
+  const stages = run('CATALOG').find(world => world.id === 'area-volume').stages.map(stage => stage[0]);
+  const records = stages.map((gameId, index) => ({ submissionId:`area-volume-${index}`, roundId:index % 2 ? 'R2' : 'R1', worldId:'area-volume', gameId, questionCount:15, maxScore:150, score:150, firstTryCorrect:15, skippedQuestions:0, wrongAttempts:0, longestFirstTryStreak:15 }));
+  const profile = context.profileFromRecords_('2026-27', '1A', 1, records, []);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'area-volume').completed, 4);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'polynomial').completed, 0);
+  assert.equal(profile.badges.find(item => item.id === 'area-volume-master').earned, true);
+  assert.equal(profile.badges.find(item => item.id === 'area-volume-perfect-builder').earned, true);
+  stages.forEach(gameId => assert.equal(profile.badges.find(item => item.id === `stage-area-volume-${gameId}`).earned, true));
+  context.currentSchoolYear_ = () => '2026-27';
+  assert.doesNotThrow(() => context.validateSubmission_({ submissionId:'area-volume-submit-1', schoolYear:'2026-27', worldId:'area-volume', className:'1A', studentNo:1, gameId:'total-surface-area', score:125, maxScore:150, elapsedSeconds:90, questionCount:15, firstTryCorrect:10, skippedQuestions:0, longestFirstTryStreak:4, wrongAttempts:2 }));
 });
 
 test('personal bests span leaderboard rounds but stay inside one school year, student, world, and stage', () => {
