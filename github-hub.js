@@ -1,8 +1,10 @@
-const PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbzJRblwkScQZuKpUQjiwkpZIMKyY0-h4vO8aFhqqVU2rgINbxYDPW0nH60YL8Pxpz0r/exec';
+const GOOGLE_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbzJRblwkScQZuKpUQjiwkpZIMKyY0-h4vO8aFhqqVU2rgINbxYDPW0nH60YL8Pxpz0r/exec';
+const PLATFORM_URL = window.location.hostname.endsWith('.workers.dev') ? '/api/platform' : GOOGLE_PLATFORM_URL;
 const DIRECTED_URL = 'directed-number/';
 const ALGEBRA_URL = 'algebra/';
 const EQUATION_URL = 'linear-equation/';
 const POLYNOMIAL_URL = 'polynomial/';
+const NUMERICAL_ESTIMATION_URL = 'numerical-estimation/';
 const STORAGE_KEY = 'maths-platform-student-v1';
 const BADGE_ASSET_ROOT = 'maths-block-world-hub/public/badges/';
 
