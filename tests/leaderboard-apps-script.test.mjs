@@ -86,16 +86,16 @@ test('perfect-master badges require every registered stage to have a strict full
   assert.equal(complete.badges.find(item => item.id === 'ultimate-perfectionist').earned, false);
 });
 
-test('all four perfect masters and ultimate perfectionist require all 26 stages', () => {
+test('all five perfect masters and ultimate perfectionist require all 31 stages', () => {
   let index = 0;
   const records = run('CATALOG').flatMap(world => world.stages.map(stage => ({submissionId:`all-perfect-${index++}`,roundId:index%3===0?'OLD':'CURRENT',worldId:world.id,gameId:stage[0],questionCount:world.questionCount,maxScore:world.maxScore,score:world.maxScore,firstTryCorrect:world.questionCount,skippedQuestions:0,longestFirstTryStreak:world.questionCount})));
   records.push({...records[0]});
   const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
-  assert.equal(profile.summary.totalBadges, 41);
-  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','ultimate-perfectionist']) {
+  assert.equal(profile.summary.totalBadges, 48);
+  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','numerical-estimation-perfect-master','ultimate-perfectionist']) {
     assert.equal(profile.badges.find(item => item.id === id).earned, true, id);
   }
-  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 26);
+  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 31);
 });
 
 test('replays can reach the hidden 500 goal without duplicating a submission', () => {
@@ -149,6 +149,19 @@ test('polynomial world is isolated and awards six stage badges plus its master b
   assert.doesNotThrow(() => context.validateSubmission_({submissionId:'polynomial-submit-1',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'multiply',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
   assert.throws(() => context.validateSubmission_({submissionId:'polynomial-submit-0',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'evaluate',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
   assert.throws(() => context.validateSubmission_({submissionId:'polynomial-submit-2',schoolYear:'2026-27',worldId:'algebra',className:'1A',studentNo:1,gameId:'indices',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
+});
+
+test('numerical-estimation world is isolated and awards five stage badges plus its master badge', () => {
+  const stages = ['place-value','rounding','significant-figures','significant-rounding','calculation-estimation'];
+  const records = stages.map((gameId,index) => ({submissionId:`numerical-estimation-${index}`,worldId:'numerical-estimation',gameId,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4}));
+  const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'numerical-estimation').completed, 5);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'polynomial').completed, 0);
+  assert.equal(profile.badges.find(item => item.id === 'numerical-estimation-master').earned, true);
+  stages.forEach(gameId => assert.equal(profile.badges.find(item => item.id === `stage-numerical-estimation-${gameId}`).earned, true));
+  context.currentSchoolYear_ = () => '2026-27';
+  assert.throws(() => context.validateSubmission_({submissionId:'numerical-estimation-submit-1',schoolYear:'2026-27',worldId:'numerical-estimation',className:'1A',studentNo:1,gameId:'desert-expedition',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
+  assert.throws(() => context.validateSubmission_({submissionId:'numerical-estimation-submit-2',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'desert-expedition',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
 });
 
 test('personal bests span leaderboard rounds but stay inside one school year, student, world, and stage', () => {
