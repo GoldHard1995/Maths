@@ -25,6 +25,7 @@ for (const [project, basePath] of [
   ['linear-equation-block-world', '/linear-equation/'],
   ['polynomial-block-world', '/polynomial/'],
   ['numerical-estimation-block-world', '/numerical-estimation/'],
+  ['coordinate-block-world', '/coordinate/'],
 ]) {
   run('npm', ['run', 'build:github'], `${rootPath}${project}`, {
     SITE_BASE_PATH: basePath,
@@ -46,6 +47,7 @@ const games = [
   ['linear-equation-block-world/dist-github', 'linear-equation'],
   ['polynomial-block-world/dist-github', 'polynomial'],
   ['numerical-estimation-block-world/dist-github', 'numerical-estimation'],
+  ['coordinate-block-world/dist-github', 'coordinate'],
 ];
 
 for (const [source, target] of games) {

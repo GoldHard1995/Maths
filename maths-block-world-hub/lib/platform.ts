@@ -22,6 +22,9 @@ export const polynomialUrl =
 export const numericalEstimationUrl =
   process.env.NEXT_PUBLIC_NUMERICAL_ESTIMATION_URL?.trim() ||
   'https://goldhard1995.github.io/Maths/numerical-estimation/';
+export const coordinateUrl =
+  process.env.NEXT_PUBLIC_COORDINATE_URL?.trim() ||
+  'https://goldhard1995.github.io/Maths/coordinate/';
 export const storageKey = 'maths-platform-student-v1';
 
 export function validIdentity(config: Config, className: string, studentNo: number) {
