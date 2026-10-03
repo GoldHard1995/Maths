@@ -13,7 +13,7 @@
 /* One bundled font covers digits and operators, including the true minus U+2212. */
 @font-face {
   font-family: 'Number Math';
-  src: url('/fonts/noto-sans-math.ttf') format('truetype');
+  src: url('../public/fonts/noto-sans-math.ttf') format('truetype');
   font-style: normal;
   font-weight: 400;
   font-display: swap;
