@@ -16,19 +16,19 @@ const shuffle=<T,>(items:T[])=>{const out=[...items];for(let i=out.length-1;i;i-
 const point=(min=-8,max=8,allowZero=true):Point=>{let x=rand(min,max),y=rand(min,max);if(!allowZero){while(x===0)x=rand(min,max);while(y===0)y=rand(min,max)}return{x,y}};
 const fmt=({x,y}:Point)=>`(${x}, ${y})`;
 const signed=(n:number)=>n<0?`−${Math.abs(n)}`:String(n);
-const axisName=(p:Point)=>p.x===0&&p.y===0?'原點':p.x===0?'y 軸':p.y===0?'x 軸':p.x>0&&p.y>0?'第一象限':p.x<0&&p.y>0?'第二象限':p.x<0&&p.y<0?'第三象限':'第四象限';
+const axisName=(p:Point)=>p.x===0&&p.y===0?'原點':p.x===0?'y 軸':p.y===0?'x 軸':p.x>0&&p.y>0?'象限 I':p.x<0&&p.y>0?'象限 II':p.x<0&&p.y<0?'象限 III':'象限 IV';
 const coordinate=(level:number,variant:number,prompt:string,instruction:string,answer:Point,input:'text'|'plot',extra:Partial<BaseQuestion>={}):CoordinateQuestion=>({kind:'coordinate',level,variant,prompt,instruction,answer,input,hints:['先找 x 坐標，再找 y 坐標。','沿 x 軸和 y 軸畫輔助線，再確認正負號。'],...extra});
-const choice=(level:number,variant:number,prompt:string,instruction:string,answer:string,choices:string[],extra:Partial<BaseQuestion>={}):ChoiceQuestion=>({kind:'choice',level,variant,prompt,instruction,answer,choices:shuffle(choices),hints:['比較兩個坐標的正負號或相同部分。','在坐標圖上畫水平及鉛垂輔助線。'],...extra});
+const choice=(level:number,variant:number,prompt:string,instruction:string,answer:string,choices:string[],extra:Partial<BaseQuestion>={}):ChoiceQuestion=>({kind:'choice',level,variant,prompt,instruction,answer,choices:[...choices],hints:['比較兩個坐標的正負號或相同部分。','在坐標圖上畫水平及鉛垂輔助線。'],...extra});
 const numeric=(level:number,variant:number,prompt:string,instruction:string,answer:number,suffix:string,extra:Partial<BaseQuestion>={}):NumericQuestion=>({kind:'numeric',level,variant,prompt,instruction,answer,suffix,hints:['先從坐標找出所需的長度。','寫出中間算式，再計算答案。'],...extra});
 
 function comprehensivePoint(variant:number){if(variant===0)return{x:0,y:0};if(variant===1)return{x:rand(-8,8)||4,y:0};if(variant===2)return{x:0,y:rand(-8,8)||-3};return point(-8,8,false)}
 function readCoordinates(level:number,variant:number){const p=level===0?point(1,6,false):level===1?point(-6,6,false):comprehensivePoint(variant),label=pick(['A','B','P','Q','R']);return coordinate(level,variant,`寫出圖中 ${label} 點的坐標。`,'必須輸入括號、逗號及兩個坐標。',p,'text',{points:[{...p,label}]})}
 function plotPoints(level:number,variant:number){const p=level===0?point(1,6,false):level===1?point(-6,6,false):comprehensivePoint(variant),label=pick(['A','B','P','Q','R']);return coordinate(level,variant,`在坐標平面上標示 ${label}${fmt(p)}。`,'點選格點，再按「檢查答案」。',p,'plot')}
 function quadrants(level:number,variant:number){
- const options=['第一象限','第二象限','第三象限','第四象限','x 軸','y 軸','原點'];
+ const options=['象限 I','象限 II','象限 III','象限 IV','x 軸','y 軸','原點'];
  if(level===0){const p=point(-8,8,false);return choice(level,variant,'圖中的 A 點在哪一個象限？','選出正確答案。',axisName(p),options.slice(0,4),{points:[{...p,label:'A'}]})}
- if(level===1){const p=variant<2?point(-8,8,false):variant===2?{x:0,y:rand(-8,8)||3}:variant===3?{x:rand(-8,8)||-4,y:0}:{x:0,y:0},label=pick(['A','B','P','Q','R']);return choice(level,variant,`點 ${label}${fmt(p)} 位於哪裏？`,'坐標軸上的點不屬於任何象限。',axisName(p),options)}
- const quadrant=pick(['第一象限','第二象限','第三象限','第四象限']);let p=point(-8,8,false);while(axisName(p)!==quadrant)p=point(-8,8,false);const others:Point[]=[];while(others.length<3){const candidate=point(-8,8,false);if(axisName(candidate)!==quadrant&&!others.some(item=>item.x===candidate.x&&item.y===candidate.y))others.push(candidate)}const labels=[p,...shuffle(others)].map((v,i)=>({...v,label:String.fromCharCode(65+i)}));return choice(level,variant,`哪一點位於${quadrant}？`,'根據各點坐標的正負號判斷。','A',labels.map(p=>p.label||''),{points:labels})
+ if(level===1){const quadrant=pick(options.slice(0,4));let p=point(-8,8,false);while(axisName(p)!==quadrant)p=point(-8,8,false);const others:Point[]=[];while(others.length<3){const candidate=point(-8,8,false);if(axisName(candidate)!==quadrant&&!others.some(item=>item.x===candidate.x&&item.y===candidate.y))others.push(candidate)}const labels=shuffle([p,...others]).map((v,i)=>({...v,label:String.fromCharCode(65+i)})),answer=labels.find(item=>item.x===p.x&&item.y===p.y)?.label||'A';return choice(level,variant,`哪一點位於${quadrant}？`,'根據各點坐標的正負號判斷。',answer,['A','B','C','D'],{points:labels})}
+ const p=variant<2?point(-8,8,false):variant===2?{x:0,y:rand(-8,8)||3}:variant===3?{x:rand(-8,8)||-4,y:0}:{x:0,y:0},label=pick(['A','B','P','Q','R']);return choice(level,variant,`點 ${label}${fmt(p)} 位於哪裏？`,'坐標軸上的點不屬於任何象限。',axisName(p),options)
 }
 function horizontalVertical(level:number,variant:number){
  if(level===0){const horizontal=variant%2===0,a=point(-6,6,true),b=horizontal?{x:rand(-8,8),y:a.y}:{x:a.x,y:rand(-8,8)};return choice(level,variant,'線段 AB 是水平線還是鉛垂線？','觀察哪一個坐標保持不變。',horizontal?'水平線':'鉛垂線',['水平線','鉛垂線'],{points:[{...a,label:'A'},{...b,label:'B'}],segments:[{a,b}]})}

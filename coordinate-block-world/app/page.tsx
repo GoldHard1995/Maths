@@ -13,7 +13,7 @@ import { fetchPersonalBests, formatDuration, hubUrl, leaderboardUrl, validStuden
 const games=[
  {title:'讀寫坐標',label:'先橫後直',text:'從坐標圖讀出點的位置，寫成完整坐標。',sample:'A → (−3, 4)',icon:MapPin,color:'green'},
  {title:'標示位置',label:'精準落點',text:'根據給定坐標，在坐標平面上標點。',sample:'P(2, −5)',icon:Crosshair,color:'blue'},
- {title:'認識象限',label:'四區導航',text:'分辨四個象限、坐標軸及原點。',sample:'(−2, 3) → 第二象限',icon:Grid3X3,color:'amber'},
+ {title:'認識象限',label:'四區導航',text:'分辨四個象限、坐標軸及原點。',sample:'(−2, 3) → 象限 II',icon:Grid3X3,color:'amber'},
  {title:'水平線與鉛垂線',label:'橫直規律',text:'辨認水平與鉛垂線上不變的坐標。',sample:'同一水平線 → y 相同',icon:ScanLine,color:'red'},
  {title:'兩點距離',label:'量度格點',text:'計算水平或鉛垂線上兩點的距離。',sample:'|5 − (−2)| = 7',icon:Ruler,color:'cyan'},
  {title:'面積建築師',label:'分割與補形',text:'利用頂點坐標計算多邊形面積。',sample:'面積＝底 × 高 ÷ 2',icon:Pentagon,color:'orange'},
