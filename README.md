@@ -6,6 +6,7 @@
 
 - 根目錄：`有向數方塊世界`，包括數線定位、比較大小、數線移動、拆括號與計算、有向數乘法、有向數除法及四則運算。
 - `algebra-block-world`：`代數方塊世界`，包括文字變代數、代數式加減、乘除、拆括號、四則化簡、公式代入及數列代入。
+- `identity-block-world`：`恆等式方塊世界`，六關峽谷主題練習；Cloudflare `/identity/`、GitHub Pages `/Maths/identity/`。詳見該子專案的 `README.md`。
 - `maths-block-world-hub`：學生入口網站、遊戲選擇及跨遊戲襟章收藏冊。
 - `google-apps-script`：兩個遊戲共用的排行榜、學生進度及襟章後端。
 

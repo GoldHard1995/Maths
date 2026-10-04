@@ -86,16 +86,16 @@ test('perfect-master badges require every registered stage to have a strict full
   assert.equal(complete.badges.find(item => item.id === 'ultimate-perfectionist').earned, false);
 });
 
-test('all five perfect masters and ultimate perfectionist require all 31 stages', () => {
+test('all six perfect masters and ultimate perfectionist require all 37 stages', () => {
   let index = 0;
   const records = run('CATALOG').flatMap(world => world.stages.map(stage => ({submissionId:`all-perfect-${index++}`,roundId:index%3===0?'OLD':'CURRENT',worldId:world.id,gameId:stage[0],questionCount:world.questionCount,maxScore:world.maxScore,score:world.maxScore,firstTryCorrect:world.questionCount,skippedQuestions:0,longestFirstTryStreak:world.questionCount})));
   records.push({...records[0]});
   const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
-  assert.equal(profile.summary.totalBadges, 48);
-  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','numerical-estimation-perfect-master','ultimate-perfectionist']) {
+  assert.equal(profile.summary.totalBadges, 56);
+  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','numerical-estimation-perfect-master','identity-perfect-master','ultimate-perfectionist']) {
     assert.equal(profile.badges.find(item => item.id === id).earned, true, id);
   }
-  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 31);
+  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 37);
 });
 
 test('replays can reach the hidden 500 goal without duplicating a submission', () => {
