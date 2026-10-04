@@ -18,3 +18,12 @@
 - 檢查過程封鎖 POST，未提交任何正式學生成績。
 - 本機線上驗證截圖：`/tmp/identity-live-qa/`。
 - 隔離工作分支：`codex/identity-canyon-preview`。
+
+## 完整來源整合修正
+
+其他坐標更新曾把共用 Preview 覆蓋成只含 6 個世界。現已保留最新坐標來源 d58bea4，合併百分法及恆等式，將完整來源推送至 GitHub new-update（943d3a7）。後續分支建置包含 8 個世界、52 關及 75 枚襟章，不再僅依靠手動組合的未提交資產。原工作目錄的其他未提交修改維持不變。
+
+- 恢復 Preview 版本：37dd93b2-b6f4-419b-ae35-6adb1df9c28d。
+- 共用系統 44 項測試、百分法 11 項測試、Hub 身份測試及 lint 通過；完整 Cloudflare 建置通過。
+- 原有遊戲程式及 Cloudflare 根目錄設定未變更。新增子專案的 Tailwind 掃描會產生新的共用 utility CSS 資產雜湊。
+- 正式 Apps Script 仍未更新。
