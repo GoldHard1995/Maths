@@ -30,6 +30,7 @@ jobs:
             polynomial-block-world/package-lock.json
             numerical-estimation-block-world/package-lock.json
             coordinate-block-world/package-lock.json
+            percentage-block-world/package-lock.json
             identity-block-world/package-lock.json
       - run: npm ci
       - run: npm ci
@@ -42,6 +43,8 @@ jobs:
         working-directory: numerical-estimation-block-world
       - run: npm ci
         working-directory: coordinate-block-world
+      - run: npm ci
+        working-directory: percentage-block-world
       - name: Build directed-number game
         run: npm run build:github
       - name: Build algebra game
@@ -59,6 +62,9 @@ jobs:
       - name: Build coordinate game
         run: npm run build:github
         working-directory: coordinate-block-world
+      - name: Build percentage game
+        run: npm run build:github
+        working-directory: percentage-block-world
       - run: npm ci
         working-directory: identity-block-world
       - name: Build identity game
@@ -66,7 +72,7 @@ jobs:
         working-directory: identity-block-world
       - name: Assemble GitHub Pages site
         run: |
-          mkdir -p _site/identity _site/directed-number _site/algebra _site/linear-equation _site/polynomial _site/numerical-estimation _site/coordinate _site/maths-block-world-hub/app _site/maths-block-world-hub/public
+          mkdir -p _site/identity _site/directed-number _site/algebra _site/linear-equation _site/polynomial _site/numerical-estimation _site/coordinate _site/percentage _site/maths-block-world-hub/app _site/maths-block-world-hub/public
           cp index.html github-hub.js _site/
           cp maths-block-world-hub/app/globals.css _site/maths-block-world-hub/app/
           cp -R maths-block-world-hub/public/. _site/maths-block-world-hub/public/
@@ -82,6 +88,8 @@ jobs:
           mv _site/numerical-estimation/github-game.html _site/numerical-estimation/index.html
           cp -R coordinate-block-world/dist-github/. _site/coordinate/
           mv _site/coordinate/github-game.html _site/coordinate/index.html
+          cp -R percentage-block-world/dist-github/. _site/percentage/
+          mv _site/percentage/github-game.html _site/percentage/index.html
           cp -R identity-block-world/dist-github/. _site/identity/
           mv _site/identity/github-game.html _site/identity/index.html
           touch _site/.nojekyll

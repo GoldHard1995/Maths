@@ -25,6 +25,9 @@ export const numericalEstimationUrl =
 export const coordinateUrl =
   process.env.NEXT_PUBLIC_COORDINATE_URL?.trim() ||
   'https://goldhard1995.github.io/Maths/coordinate/';
+export const percentageUrl =
+  process.env.NEXT_PUBLIC_PERCENTAGE_URL?.trim() ||
+  'https://goldhard1995.github.io/Maths/percentage/';
 export const identityUrl = process.env.NEXT_PUBLIC_IDENTITY_URL?.trim() || 'https://goldhard1995.github.io/Maths/identity/';
 export const storageKey = 'maths-platform-student-v1';
 

@@ -1,0 +1,43 @@
+{
+  "method": "Built-in image_gen",
+  "reference": "Existing stage-polynomial-identify-128.png, square stone frame style reference",
+  "badgePrompt": "One square transparent Minecraft pixel-art achievement badge. Complete carved gray stone border, blocky corner rivets, dark deep green recessed center, crisp pixel grid, central flower subject readable at 48 pixels. No words, UI, circular silhouette or additional badges. Perfect-master frame is gold.",
+  "assets": [
+    {
+      "name": "world-flower-blocks",
+      "prompt": "Use case: stylized-concept. Asset: landscape background for a Hong Kong Form 1 maths Minecraft-inspired block world game. Generate a wide landscape 3D voxel scene, a sea of colorful square block flowers on stepped grass blocks, a few blocky trees and gentle distant hills, blue sky with block clouds, soft daylight, restrained greens and warm flower accents. All geometry is cubes/pixel-like Minecraft aesthetics, with polished natural lighting matching a voxel videogame. No people, text, UI, logos, icons, labels or watermarks. Broad composition suitable for cover-sized landscape iPad background behind cream colored opaque panels; interesting flowers at lower edges, gentle detail behind center."
+    },
+    {
+      "name": "stage-percentage-conversion",
+      "prompt": "pink pixel flower beside a small percent symbol made of stone pixels"
+    },
+    {
+      "name": "stage-percentage-applications",
+      "prompt": "a miniature square flower bed with three countable blossoms and small stacked counting cubes"
+    },
+    {
+      "name": "stage-percentage-increase",
+      "prompt": "a blooming green stalk growing upward with three flowers and a small upward arrow"
+    },
+    {
+      "name": "stage-percentage-decrease",
+      "prompt": "a single violet flower with two falling petals and a small downward arrow"
+    },
+    {
+      "name": "stage-percentage-profit-loss",
+      "prompt": "a small colorful bouquet beside two gold pixel coins"
+    },
+    {
+      "name": "stage-percentage-discount",
+      "prompt": "a white and orange flower beside a small blank square price tag"
+    },
+    {
+      "name": "percentage-master",
+      "prompt": "a miniature field of different colorful square flowers, a botanical crest"
+    },
+    {
+      "name": "percentage-perfect-master",
+      "prompt": "a brilliant symmetrical golden flower crown around a white blossom"
+    }
+  ]
+}

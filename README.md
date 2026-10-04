@@ -5,6 +5,7 @@
 ## 專案
 
 - 根目錄：`有向數方塊世界`，包括數線定位、比較大小、數線移動、拆括號與計算、有向數乘法、有向數除法及四則運算。
+- `public/signed-number-line-game`：有向數世界的「數線探險」互動練習，三關共十五題；不計入原有七關的成績、襟章或完成關卡數。
 - `algebra-block-world`：`代數方塊世界`，包括文字變代數、代數式加減、乘除、拆括號、四則化簡、公式代入及數列代入。
 - `coordinate-block-world`：`坐標方塊世界`，包括讀寫與標示坐標、象限、水平線與鉛垂線、距離、面積、平移、反射及旋轉。
 - `identity-block-world`：`恆等式方塊世界`，六關峽谷主題練習；Cloudflare `/identity/`、GitHub Pages `/Maths/identity/`。詳見該子專案的 `README.md`。
@@ -54,3 +55,7 @@ node --test tests/*.test.mjs
 ```
 
 入口網站及代數遊戲亦可在各自資料夾執行 `npm test`。背景及襟章均為本專案的原創方塊風格素材，不包含 Minecraft 官方角色、標誌、紋理或介面素材。
+
+## 百分法方塊世界
+
+新增獨立子專案 `percentage-block-world`，包含百分數互化、百分數應用、百分增加、百分減少、盈利與虧蝕及折扣六關。Cloudflare 路徑為 `/percentage/`，GitHub Pages 路徑為 `/Maths/percentage/`。題目採合理生活情境，詳細數值及驗證方式見 [子專案說明](percentage-block-world/README.md)。新增後全平台共 46 關、67 枚襟章；既有已頒發襟章保留。Apps Script 原始碼已加入新世界，線上使用前仍需另行部署更新。

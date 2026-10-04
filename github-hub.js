@@ -6,6 +6,7 @@ const EQUATION_URL = 'linear-equation/';
 const POLYNOMIAL_URL = 'polynomial/';
 const NUMERICAL_ESTIMATION_URL = 'numerical-estimation/';
 const COORDINATE_URL = 'coordinate/';
+const PERCENTAGE_URL = 'percentage/';
 const IDENTITY_URL = 'identity/';
 const STORAGE_KEY = 'maths-platform-student-v1';
 const BADGE_ASSET_ROOT = 'maths-block-world-hub/public/badges/';
@@ -14,6 +15,7 @@ let config = { schoolYear: '', classes: ['1A', '1B', '1C', '1D'], studentNoMin: 
 let identity = readIdentity();
 let currentFilter = 'all';
 let badges = [];
+let profileRequestId = 0;
 
 const identityView = document.querySelector('#identity-view');
 const dashboardView = document.querySelector('#dashboard-view');
@@ -83,6 +85,7 @@ function showDashboard() {
   document.querySelector('#polynomial-game').href = gameUrl(POLYNOMIAL_URL);
   document.querySelector('#numerical-estimation-game').href = gameUrl(NUMERICAL_ESTIMATION_URL);
   document.querySelector('#coordinate-game').href = gameUrl(COORDINATE_URL);
+  document.querySelector('#percentage-game').href = gameUrl(PERCENTAGE_URL);
   document.querySelector('#identity-game').href = gameUrl(IDENTITY_URL);
   loadProfile();
 }
@@ -94,7 +97,7 @@ function setWorldProgress(id, completed, total = 7) {
 
 function renderProfile(profile) {
   document.querySelector('#earned-badges').textContent = `${profile.summary.earnedBadges}／${profile.summary.totalBadges}`;
-  document.querySelector('#completed-stages').textContent = `${profile.summary.completedStages}／46`;
+  document.querySelector('#completed-stages').textContent = `${profile.summary.completedStages}／52`;
   document.querySelector('#first-try-correct').textContent = profile.summary.firstTryCorrect;
   const directed = profile.worldProgress.find(item => item.worldId === 'directed-number');
   const algebra = profile.worldProgress.find(item => item.worldId === 'algebra');
@@ -102,12 +105,14 @@ function renderProfile(profile) {
   const polynomial = profile.worldProgress.find(item => item.worldId === 'polynomial');
   const numericalEstimation = profile.worldProgress.find(item => item.worldId === 'numerical-estimation');
   const coordinate = profile.worldProgress.find(item => item.worldId === 'coordinate');
+  const percentage = profile.worldProgress.find(item => item.worldId === 'percentage');
   setWorldProgress('directed', directed?.completed || 0);
   setWorldProgress('algebra', algebra?.completed || 0);
   setWorldProgress('equation', equation?.completed || 0, 6);
   setWorldProgress('polynomial', polynomial?.completed || 0, 6);
   setWorldProgress('numerical-estimation', numericalEstimation?.completed || 0, 5);
   setWorldProgress('coordinate', coordinate?.completed || 0, 9);
+  setWorldProgress('percentage', percentage?.completed || 0, 6);
   setWorldProgress('identity', profile.worldProgress.find(item => item.worldId === 'identity')?.completed || 0, 6);
   badges = profile.badges || [];
   renderBadges();
@@ -155,13 +160,17 @@ function renderBadges() {
 }
 
 async function loadProfile() {
+  const requestId = ++profileRequestId;
+  const student = identity;
   dashboardMessage.textContent = '正在更新收藏……';
   try {
-    const profile = await jsonp({ action: 'profile', schoolYear: identity.schoolYear, className: identity.className, studentNo: String(identity.studentNo) }, '__mathsProfile');
+    const profile = await jsonp({ action: 'profile', schoolYear: student.schoolYear, className: student.className, studentNo: String(student.studentNo) }, '__mathsProfile');
+    if (requestId !== profileRequestId) return;
     if (!profile.ok) throw new Error(profile.message || '未能讀取收藏。');
     renderProfile(profile);
     dashboardMessage.textContent = '';
   } catch (error) {
+    if (requestId !== profileRequestId) return;
     dashboardMessage.textContent = error.message || '未能讀取收藏。';
   }
 }
@@ -194,6 +203,10 @@ jsonp({ action: 'config' }, '__mathsConfig')
     if (!nextConfig.ok) throw new Error(nextConfig.message || '未能讀取平台設定。');
     populateConfig(nextConfig);
     identityMessage.textContent = '';
+    if (identity && (identity.schoolYear !== config.schoolYear || !config.classes.includes(identity.className) || !Number.isInteger(identity.studentNo) || identity.studentNo < config.studentNoMin || identity.studentNo > config.studentNoMax)) {
+      identity = null;
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
     if (identity) showDashboard();
   })
   .catch(error => {
