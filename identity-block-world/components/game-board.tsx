@@ -24,32 +24,16 @@ function NumericAnswer({ onAnswer, disabled }: { onAnswer: (value: string) => vo
   </form>;
 }
 
-type AnswerToken = string | { numerator: string; denominator: string };
-const serialize = (tokens: AnswerToken[]) => tokens.map(token => typeof token === 'string' ? token : `frac{${token.numerator}}{${token.denominator}}`).join('');
 function AlgebraKeyboard({ usedVariables, onAnswer, disabled }: { usedVariables: Variable[]; onAnswer: (value: string) => void; disabled: boolean }) {
-  const [tokens, setTokens] = useState<AnswerToken[]>([]), [fraction, setFraction] = useState<{ numerator: string; denominator: string } | null>(null), [part, setPart] = useState<'numerator' | 'denominator'>('numerator');
-  const value = serialize(tokens), parsed = parseExpression(value);
-  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ...usedVariables, '²', '＋', '−', '×', 'fraction', '(', ')', 'back'];
-  const add = (key: string) => {
-    if (key === 'fraction') { setFraction({ numerator: '', denominator: '' }); setPart('numerator'); return; }
-    if (fraction) {
-      if (part === 'denominator' && !/^\d$/.test(key) && key !== 'back') return;
-      setFraction(current => current ? { ...current, [part]: key === 'back' ? current[part].slice(0, -1) : current[part].length < 24 ? current[part] + key : current[part] } : current); return;
-    }
-    setTokens(current => key === 'back' ? current.slice(0, -1) : serialize(current).length < 120 ? [...current, key] : current);
-  };
-  const fractionReady = fraction && parseExpression(fraction.numerator).ok && /^\d{1,3}$/.test(fraction.denominator) && Number(fraction.denominator) > 0;
-  return <form className="algebra-answer" onSubmit={event => { event.preventDefault(); if (value && !fraction && !disabled) onAnswer(value); }}>
+  const [tokens, setTokens] = useState<string[]>([]), value = tokens.join(''), parsed = parseExpression(value);
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ...usedVariables, '²', '＋', '−', '×', '(', ')', 'back'];
+  const add = (key: string) => setTokens(current => key === 'back' ? current.slice(0, -1) : value.length < 120 ? [...current, key] : current);
+  return <form className="algebra-answer" onSubmit={event => { event.preventDefault(); if (value && !disabled) onAnswer(value); }}>
     <div id="algebra-answer-label" className="answer-label">你的代數式</div>
     <div className="answer-preview math" aria-labelledby="algebra-answer-label" aria-live="polite">{value ? <MathText>{value}</MathText> : <span className="answer-placeholder">使用下方鍵盤輸入</span>}</div>
-    {fraction && <div className="fraction-editor">
-      <span className="fraction-caption">建立分數</span>
-      <div className="fraction-fields"><button className={part === 'numerator' ? 'active' : ''} aria-label="選擇分子" type="button" onClick={() => setPart('numerator')}>{fraction.numerator ? <MathText>{fraction.numerator}</MathText> : '分子'}</button><button className={part === 'denominator' ? 'active' : ''} aria-label="選擇分母" type="button" onClick={() => setPart('denominator')}>{fraction.denominator || '分母'}</button></div>
-      <div className="fraction-actions"><Button className="block-btn secondary" variant="secondary" type="button" disabled={!fractionReady || disabled} onClick={() => { if (fraction) setTokens(current => [...current, fraction]); setFraction(null); }}>加入分數</Button><Button className="block-btn secondary" variant="secondary" type="button" onClick={() => setFraction(null)}>取消</Button></div>
-    </div>}
-    <div className="algebra-keypad">{keys.map(key => <Button className="key" key={key} type="button" variant="secondary" disabled={disabled || Boolean(fraction && (key === 'fraction' || part === 'denominator' && !/^\d$/.test(key) && key !== 'back'))} aria-label={key === 'back' ? '刪除上一個符號或分數' : key === 'fraction' ? '建立分數' : key} onClick={() => add(key)}>{key === 'back' ? '⌫' : key === 'fraction' ? <span className="fraction-key"><span>分子</span><span>分母</span></span> : key}</Button>)}</div>
-    <p className="input-help" aria-live="polite">{fraction ? part === 'numerator' ? '正在輸入分子，完成後點選分母。' : '正在輸入分母，須為非零整數。' : value && !parsed.ok ? parsed.message : '\u00a0'}</p>
-    <Button className="block-btn" type="submit" disabled={!value || Boolean(fraction) || disabled}>檢查答案 <Check /></Button>
+    <div className="algebra-keypad">{keys.map(key => <Button className="key" key={key} type="button" variant="secondary" disabled={disabled} aria-label={key === 'back' ? '刪除上一個符號' : key} onClick={() => add(key)}>{key === 'back' ? '⌫' : key}</Button>)}</div>
+    <p className="input-help" aria-live="polite">{value && !parsed.ok ? parsed.message : '\u00a0'}</p>
+    <Button className="block-btn" type="submit" disabled={!value || disabled}>檢查答案 <Check /></Button>
   </form>;
 }
 

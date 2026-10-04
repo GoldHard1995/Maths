@@ -14,9 +14,8 @@ const rand = (a: number, b: number) => Math.floor(Math.random() * (b - a + 1)) +
 const pick = <T,>(xs: readonly T[]) => xs[rand(0, xs.length - 1)];
 const nz = (a: number, b: number): number => { let n = 0; while (!n) n = rand(a, b); return n; };
 function shuffle<T>(xs: T[]) { const out = [...xs]; for (let i = out.length - 1; i; i--) { const j = rand(0, i); [out[i], out[j]] = [out[j], out[i]]; } return out; }
-const signed = (n: number) => n < 0 ? `−${-n}` : String(n);
+const monomial = (coefficient: number, term: string) => coefficient === 1 ? term : coefficient === -1 ? `−${term}` : `${coefficient}${term}`;
 const linear = (v: string, c: number, n: number) => canonical(`${c}${v}+${n}`);
-const frac = (n: string, d: number) => `frac{${n}}{${d}}`;
 const base = (level: number, variant: number, expression: string, prompt: string, instruction: string, hint: string, usedVariables: Variable[]): BaseQuestion => ({ level, variant, expression: expression.replace(/ ＋ [−-]/g, ' − '), prompt, instruction, hint, usedVariables });
 function expressionChoices(answer: string, wrong: string[] = []): Choice[] {
   const candidates = [answer, ...wrong, canonical(`${answer}+1`), canonical(`${answer}-1`), canonical(`-(${answer})`), canonical(`${answer}+2`)], unique: string[] = [];
@@ -35,13 +34,13 @@ function constants(level: number, variant: number): NumericQuestion {
     const values = [a, variant === 0 ? 0 : b, c]; target = ['A', 'B', 'C'][variant % 3]; answer = values[variant % 3];
     expression = `A${x}² ＋ B${x} ＋ C ≡ ${canonical(`${values[0]}${x}²+${values[1]}${x}+${values[2]}`)}`;
   } else if (level === 1) {
-    const source = `${a}${x}(${linear(x, 1, b)}) ＋ ${linear(x, d, c)}`;
+    const source = `${monomial(a, x)}(${linear(x, 1, b)}) ＋ ${linear(x, d, c)}`;
     target = ['A', 'B', 'C'][variant % 3]; answer = [a, a * b + d, c][variant % 3];
     expression = `A${x}² ＋ B${x} ＋ C ≡ ${source}`;
   } else if (variant < 3) {
     target = ['A', 'B', 'C'][variant]; answer = [a, a * d + b, c][variant];
     // B denotes the expanded linear coefficient on the other side.
-    expression = `(A${x} ${b < 0 ? '−' : '＋'} ${Math.abs(b)})(${linear(x, 1, d)}) ＋ C ≡ ${signed(a)}${x}² ＋ B${x} ${b * d + c < 0 ? '−' : '＋'} ${Math.abs(b * d + c)}`;
+    expression = `(A${x} ${b < 0 ? '−' : '＋'} ${Math.abs(b)})(${linear(x, 1, d)}) ＋ C ≡ ${monomial(a, `${x}²`)} ＋ B${x} ${b * d + c < 0 ? '−' : '＋'} ${Math.abs(b * d + c)}`;
   } else {
     const outer = nz(-6, 6), inner = nz(-5, 5), offset = rand(-9, 9), addition = rand(-12, 12);
     target = variant === 3 ? 'A' : 'B'; answer = variant === 3 ? outer : inner;
@@ -52,15 +51,13 @@ function constants(level: number, variant: number): NumericQuestion {
   return { ...base(level, variant, expression.trim(), '求恆等式中的未知常數', `${['A', 'B', 'C'].filter(letter => expression.includes(letter)).join('、')} 為常數，只須輸入 ${target} 的值。`, '先展開及合併同類項，再比較相同次方的係數；缺少的項，其係數是 0。', [x]), kind: 'numeric', answer };
 }
 function identityExpansion(game: 'difference-squares' | 'square-sum' | 'square-difference', level: number, variant: number): AlgebraQuestion {
-  const x = pick(variables), y = pick(variables.filter(v => v !== x)), coefficient = level === 0 ? 1 : rand(1, level === 1 ? 6 : 9), n = rand(1, level === 0 ? 9 : 12);
-  let first = coefficient === 1 ? x : `${coefficient}${x}`, second = String(n), used: Variable[] = [x];
-  if (level === 1 && variant >= 3 || level === 2 && variant % 2 === 0) { second = `${rand(1, level === 1 ? 6 : 9)}${y}`; used = [x, y]; }
-  if (level === 2 && (variant === 1 || variant === 3)) { first = frac(x, pick([2, 3, 4])); second = variant === 3 ? frac(`${rand(1, 3)}${y}`, pick([2, 3, 4])) : String(rand(1, 5)); if (variant === 3) used = [x, y]; }
+  const contentLevel = level === 2 ? 1 : level;
+  const x = pick(variables), y = pick(variables.filter(v => v !== x)), coefficient = contentLevel === 0 ? 1 : rand(1, 6), n = rand(1, contentLevel === 0 ? 9 : 12);
+  const first = monomial(coefficient, x); let second = String(n), used: Variable[] = [x];
+  if (contentLevel === 1 && variant >= 3) { second = monomial(rand(1, 6), y); used = [x, y]; }
   const sum = `${first} ＋ ${second}`, difference = `${first} − ${second}`;
   let expression = game === 'difference-squares' ? `(${sum})(${difference})` : `(${game === 'square-sum' ? sum : difference})²`;
-  if (level === 1 && variant === 2) expression = game === 'difference-squares' ? `(${difference})(${sum})` : game === 'square-difference' ? `(${second} − ${first})²` : `(${second} ＋ ${first})²`;
-  if (level === 2 && variant === 2) expression = `−(${expression}) ＋ ${rand(1, 9)}${x}²`;
-  if (level === 2 && variant === 4) expression += ` − ${rand(1, 9)}${x}² ＋ ${linear(x, nz(-9, 9), rand(-12, 12))}`;
+  if (contentLevel === 1 && variant === 2) expression = game === 'difference-squares' ? `(${difference})(${sum})` : game === 'square-difference' ? `(${second} − ${first})²` : `(${second} ＋ ${first})²`;
   const firstSquare = `(${first})²`, secondSquare = `(${second})²`, cross = `2(${first})(${second})`;
   const wrong = game === 'difference-squares'
     ? [canonical(`${firstSquare}+${secondSquare}`), canonical(`${firstSquare}-${cross}+${secondSquare}`), canonical(`${secondSquare}-${firstSquare}`)]
