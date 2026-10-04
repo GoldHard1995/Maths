@@ -13,12 +13,12 @@ for(const world of ['directed-number','algebra','linear-equation','polynomial','
  page.on('request',r=>{if(r.method()==='POST' && (new URLSearchParams(r.postData() || '').has('submissionId')))posts.push(r.url())});
  await page.clock.install();
  const url=`${origin}/${world}/?schoolYear=2026-27&className=1A&studentNo=1`;
- await page.goto(url);
+ await page.goto(url,{waitUntil:'domcontentloaded'});
  await page.locator('.game-card').first().click();
  await page.locator('.game-panel').waitFor();
  const first=await page.evaluate(()=>Object.entries(sessionStorage).filter(([k])=>k.includes('previous')));
  assert.equal(first.length,1,world+' saved round');
- await page.reload();await page.locator('.game-card').first().click();
+ await page.reload({waitUntil:'domcontentloaded'});await page.locator('.game-card').first().click();
  const second=await page.evaluate(()=>Object.entries(sessionStorage).filter(([k])=>k.includes('previous')));
  assert.equal(second.length,1);assert.equal(first[0][0],second[0][0]);assert.notEqual(first[0][1],second[0][1]);
  if(world==='numerical-estimation')assert.match(await page.locator('.round-top').innerText(),/8 基礎 · 7 核心 · 不可放棄/);
