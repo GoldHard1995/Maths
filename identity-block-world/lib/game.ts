@@ -1,8 +1,8 @@
 import { canonical, equivalent, isExpanded, parseExpression, variables, type Variable } from './algebra.ts';
-export type GameId = 'recognize' | 'constants' | 'difference-squares' | 'square-sum' | 'square-difference' | 'applications';
-export const gameIds: GameId[] = ['recognize', 'constants', 'difference-squares', 'square-sum', 'square-difference', 'applications'];
+export type GameId = 'constants' | 'difference-squares' | 'square-sum' | 'square-difference' | 'applications';
+export const gameIds: GameId[] = ['constants', 'difference-squares', 'square-sum', 'square-difference', 'applications'];
 export const GAME_TIME_LIMIT_SECONDS = 3600;
-export const stageNames = ['恆等式辨識', '未知常數', '平方差', '和的完全平方', '差的完全平方', '恆等式綜合應用'];
+export const stageNames = ['未知常數', '平方差', '和的完全平方', '差的完全平方', '恆等式綜合應用'];
 export type Choice = { value: string; label: string; math?: boolean };
 type BaseQuestion = { level: number; variant: number; prompt: string; expression: string; instruction: string; hint: string; usedVariables: Variable[] };
 export type AlgebraQuestion = BaseQuestion & { kind: 'algebra'; expected: string; choices?: Choice[]; direct: boolean };
@@ -27,35 +27,6 @@ function expressionChoices(answer: string, wrong: string[] = []): Choice[] {
 function expansion(level: number, variant: number, expression: string, used: Variable[], prompt: string, hint: string, wrong: string[] = []): AlgebraQuestion {
   const expected = canonical(expression);
   return { ...base(level, variant, expression, prompt, '展開並合併同類項。', hint, used), kind: 'algebra', expected, direct: level === 2, choices: level === 2 ? undefined : expressionChoices(expected, wrong) };
-}
-function recognize(level: number, variant: number): ChoiceQuestion {
-  const x = pick(variables), limit = level === 0 ? 9 : 12, c = rand(1, level === 0 ? 9 : 6), a = nz(-limit, limit), b = nz(-limit, limit), truth = Math.random() < .5;
-  let left = '', right = '';
-  if (level === 0) left = variant % 2 ? `${c}(${linear(x, 1, a)})` : `${linear(x, c, a)} ＋ ${linear(x, 1, b)}`;
-  else if (level === 1) left = variant % 2 ? `(${linear(x, c, a)})(${linear(x, 1, b)})` : `${c}(${linear(x, 1, a)}) − (${linear(x, 1, b)})`;
-  else left = variant % 2 ? frac(`${c}(${linear(x, 1, a)})`, pick([2, 3, 4])) : `(${linear(x, 1, a)})(${linear(x, 1, b)}) ＋ ${rand(-9, 9)}${x}`;
-  right = canonical(left);
-  if (!truth) right = canonical(`${right}+${nz(-5, 5)}`);
-  if (level === 1) right = `${right} ＋ ${x} − ${x}`;
-  const choices: Choice[] = [{ value: 'yes', label: '是恆等式' }, { value: 'no', label: '不是恆等式' }];
-  let expected = truth ? 'yes' : 'no', prompt = '判別是否恆等式', instruction = '化簡左右兩方，再判斷是否對所有變數值成立。';
-  let hint = '恆等式須對變數的所有值成立；比較兩方化簡後的係數及常數項。';
-  if (level === 2 && variant === 2) {
-    // The equality holds at one chosen value, but its linear difference is nonzero.
-    const k = rand(-4, 4); right = canonical(`${left}+${c}(${linear(x, 1, -k)})`);
-    expected = 'counterexample'; prompt = '辨別錯誤推論'; instruction = `代入 ${x}＝${signed(k)} 時兩方相等。哪個結論正確？`;
-    choices.splice(0, choices.length, { value: 'identity', label: '一次代入相等，已證明是恆等式' }, { value: 'counterexample', label: '一次相等不足以證明；其他值可能不相等' }, { value: 'never', label: '這個等式沒有任何解' }, { value: 'zero', label: '只要代入 0 相等，便是恆等式' });
-    hint = '一次代入成立只表示該值是解；比較兩方或找出不成立的另一個值。';
-  } else if (level === 2 && variant === 3) {
-    const k = rand(-4, 4); right = canonical(`${left}+${c}(${linear(x, 1, -k)})`);
-    prompt = '選出有效反例'; instruction = '哪個代入值能證明這不是恆等式？'; expected = 'witness';
-    choices.splice(0, choices.length, { value: 'root', label: `${x}＝${signed(k)}`, math: true }, { value: 'witness', label: `${x}＝${signed(k + 1)}`, math: true }, { value: 'identity', label: '兩方必定對所有值相等' }, { value: 'enough', label: '有一個解，所以是恆等式' });
-    hint = '有效反例要使左方與右方不相等。';
-  } else if (level === 2 && variant === 4) {
-    right = canonical(left); expected = 'simplify'; prompt = '選擇有效證明'; instruction = '以下哪個方法足以證明這是恆等式？';
-    choices.splice(0, choices.length, { value: 'simplify', label: '化簡兩方，確認每項係數及常數項完全相同' }, { value: 'once', label: '代入一個值，兩方相等' }, { value: 'three', label: '任意試三個值，兩方相等' }, { value: 'looks', label: '兩方外觀相似' });
-  }
-  return { ...base(level, variant, `${left} ＝ ${right}`, prompt, instruction, hint, [x]), kind: 'choice', expected, choices: level < 2 ? choices : shuffle(choices) };
 }
 function constants(level: number, variant: number): NumericQuestion {
   const x = pick(variables), a = nz(-6, 6), b = rand(-6, 6), c = rand(-12, 12), d = nz(-6, 6);
@@ -118,7 +89,6 @@ function applications(level: number, variant: number): Question {
   return expansion(level, variant, expressions[variant], variant % 2 ? [x] : [x, y], '綜合運用恆等式', '先分別使用合適公式，再留意減括號的符號，最後合併同類項。');
 }
 function generate(game: GameId, level: number, variant: number): Question {
-  if (game === 'recognize') return recognize(level, variant);
   if (game === 'constants') return constants(level, variant);
   if (game === 'applications') return applications(level, variant);
   return identityExpansion(game, level, variant);

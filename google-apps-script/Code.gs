@@ -9,7 +9,7 @@ const CATALOG=[
  {id:'numerical-estimation',name:'數值估算方塊世界',order:5,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['place-value','位值探索','位值勘探員'],['rounding','近似值工坊','近似值工匠'],['significant-figures','有效數字偵察','有效數字鑑定師'],['significant-rounding','有效數字鍛造','精度鍛造師'],['calculation-estimation','估算補給站','估算補給官']]},
  {id:'coordinate',name:'坐標方塊世界',order:6,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['read-coordinates','讀寫坐標','坐標記錄員'],['plot-points','標示位置','格點定位師'],['quadrants','認識象限','象限導航員'],['horizontal-vertical','水平線與鉛垂線','橫直觀察家'],['distance','兩點距離','距離測量師'],['area','面積建築師','面積建築師'],['translation','平移','平移領航員'],['reflection','反射','鏡像探索家'],['rotation','旋轉','旋轉掌舵手']]},
  {id:'percentage',name:'百分法方塊世界',order:7,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['conversion','百分數互化','百分花語師'],['applications','百分數應用','應用園藝師'],['increase','百分增加','繁花培育師'],['decrease','百分減少','花瓣觀察家'],['profit-loss','盈利與虧蝕','花市掌櫃'],['discount','折扣','花店精算師']]},
- {id:'identity',name:'恆等式方塊世界',order:8,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['recognize','恆等式辨識','峽谷辨真者'],['constants','未知常數','岩紋解碼師'],['difference-squares','平方差','裂谷開拓者'],['square-sum','和的完全平方','方岩建築師'],['square-difference','差的完全平方','岩壁雕刻師'],['applications','恆等式綜合應用','峽谷探險家']]}
+ {id:'identity',name:'恆等式方塊世界',order:8,questionCount:15,maxScore:150,firstTryPoints:10,retryPoints:5,stages:[['constants','未知常數','岩紋解碼師'],['difference-squares','平方差','裂谷開拓者'],['square-sum','和的完全平方','方岩建築師'],['square-difference','差的完全平方','岩壁雕刻師'],['applications','恆等式綜合應用','峽谷探險家']]}
 ];
 const BADGES=buildBadges_();
 function buildBadges_(){const a=[];CATALOG.forEach(w=>w.stages.forEach(s=>a.push({id:`stage-${w.id}-${s[0]}`,name:s[2],description:`完成「${s[1]}」全部 ${w.questionCount} 題。`,category:'stage',hidden:false,asset:`stage-${w.id}-${s[0]}`,rule:'stage',worldId:w.id,gameId:s[0],target:1})));return a.concat([
@@ -22,8 +22,8 @@ function buildBadges_(){const a=[];CATALOG.forEach(w=>w.stages.forEach(s=>a.push
  {id:'numerical-estimation-perfect-master',name:'數值估算完美大師',description:'數值估算全部 5 關均曾取得滿分。',category:'perfect',hidden:false,asset:'numerical-estimation-perfect-master',rule:'worldPerfect',worldId:'numerical-estimation',target:5},
  {id:'coordinate-perfect-master',name:'坐標完美大師',description:'坐標全部 9 關均曾取得滿分。',category:'perfect',hidden:false,asset:'coordinate-perfect-master',rule:'worldPerfect',worldId:'coordinate',target:9},
  {id:'percentage-perfect-master',name:'百分法完美大師',description:'百分法全部 6 關均曾取得滿分。',category:'perfect',hidden:false,asset:'percentage-perfect-master',rule:'worldPerfect',worldId:'percentage',target:6},
- {id:'identity-perfect-master',name:'恆等式完美大師',description:'恆等式全部 6 關均曾取得滿分。',category:'perfect',hidden:false,asset:'identity-perfect-master',rule:'worldPerfect',worldId:'identity',target:6},
- {id:'ultimate-perfectionist',name:'完美主義者',description:'全部 52 個關卡均曾取得滿分。',category:'perfect',hidden:false,asset:'ultimate-perfectionist',rule:'allPerfect',target:52},
+ {id:'identity-perfect-master',name:'恆等式完美大師',description:'恆等式全部 5 關均曾取得滿分。',category:'perfect',hidden:false,asset:'identity-perfect-master',rule:'worldPerfect',worldId:'identity',target:5},
+ {id:'ultimate-perfectionist',name:'完美主義者',description:'全部 51 個關卡均曾取得滿分。',category:'perfect',hidden:false,asset:'ultimate-perfectionist',rule:'allPerfect',target:51},
  {id:'directed-master',name:'有向數大師',description:'完成有向數全部 7 關。',category:'exploration',hidden:false,asset:'directed-master',rule:'world',worldId:'directed-number',target:7},
  {id:'algebra-master',name:'代數大師',description:'完成代數全部 7 關。',category:'exploration',hidden:false,asset:'algebra-master',rule:'world',worldId:'algebra',target:7},
  {id:'linear-equation-master',name:'方程大師',description:'完成一元一次方程全部 6 關。',category:'exploration',hidden:false,asset:'linear-equation-master',rule:'world',worldId:'linear-equation',target:6},
@@ -31,7 +31,7 @@ function buildBadges_(){const a=[];CATALOG.forEach(w=>w.stages.forEach(s=>a.push
  {id:'numerical-estimation-master',name:'數值估算大師',description:'完成數值估算全部 5 關。',category:'exploration',hidden:false,asset:'numerical-estimation-master',rule:'world',worldId:'numerical-estimation',target:5},
  {id:'coordinate-master',name:'坐標大師',description:'完成坐標全部 9 關。',category:'exploration',hidden:false,asset:'coordinate-master',rule:'world',worldId:'coordinate',target:9},
  {id:'percentage-master',name:'百分法大師',description:'完成百分法全部 6 關。',category:'exploration',hidden:false,asset:'percentage-master',rule:'world',worldId:'percentage',target:6},
- {id:'identity-master',name:'恆等式大師',description:'完成恆等式全部 6 關。',category:'exploration',hidden:false,asset:'identity-master',rule:'world',worldId:'identity',target:6},
+ {id:'identity-master',name:'恆等式大師',description:'完成恆等式全部 5 關。',category:'exploration',hidden:false,asset:'identity-master',rule:'world',worldId:'identity',target:5},
  {id:'maths-explorer',name:'數學探索家',description:'完成 5 個不同關卡。',category:'exploration',hidden:false,asset:'maths-explorer',rule:'distinctStages',target:5},
  {id:'all-rounder',name:'全能數學家',description:'完成 5 個不同課題世界的全部指定關卡。',category:'exploration',hidden:false,asset:'all-rounder',rule:'worlds',target:5},
  {id:'mystery-100',name:'神秘數字 100',description:'所有有效紀錄累積首次答對 100 題。',category:'cumulative',hidden:true,asset:'mystery-100',rule:'firstTry',target:100},

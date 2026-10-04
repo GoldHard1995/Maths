@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canonical, expandFractions, equivalent, isExpanded, parseExpression } from '../lib/algebra.ts';
+import { canonical, equivalent, isExpanded, parseExpression } from '../lib/algebra.ts';
 import { gameIds, makeQuestions, questionKey, startSession, submit, expected, nextQuestion, score, skipQuestion, expireSession, elapsedSeconds } from '../lib/game.ts';
 import { replayKey, replayQuestions } from '../lib/replay.ts';
 import { toLatex } from '../lib/math.ts';
@@ -16,7 +16,7 @@ test('answers must be expanded and like terms combined', () => {
   for (const raw of ['x²＋3x＋2', '2＋3x＋x²', 'frac{x²}{4}＋3x＋9', '−frac{3xy}{2}＋2']) assert.equal(isExpanded(raw), true, raw);
   for (const raw of ['(x＋1)(x＋2)', 'x＋x＋2', 'frac{x＋1}{2}', 'x*(x+1)']) assert.equal(isExpanded(raw), false, raw);
 });
-test('six stages generate unique 5-5-5 rounds, with bounded answers and valid choices', () => {
+test('five stages generate unique 5-5-5 rounds, with bounded answers and valid choices', () => {
   for (const game of gameIds) {
     let previous = [];
     for (let run = 0; run < 100; run++) {
@@ -41,19 +41,6 @@ test('six stages generate unique 5-5-5 rounds, with bounded answers and valid ch
 });
 test('all generated expected answers complete a full-score session', () => {
   for (const game of gameIds) { let s = startSession(game); while (!s.finished) { s = submit(s, expected(s)); assert.equal(s.solved, true, `${game}: ${s.feedback}`); if (!s.finished) s = nextQuestion(s); } assert.equal(score(s), 150); assert.equal(s.firstTry, 15); }
-});
-test('recognition is mathematically sound, including roots and counterexamples', () => {
-  for (let run = 0; run < 100; run++) for (const q of makeQuestions('recognize')) {
-    const [left, right] = q.expression.split(' ＝ ');
-    if (q.expected === 'yes' || q.expected === 'no') assert.equal(equivalent(left, right), q.expected === 'yes');
-    if (q.expected === 'simplify') assert.equal(equivalent(left, right), true);
-    if (q.expected === 'counterexample' || q.expected === 'witness') assert.equal(equivalent(left, right), false);
-    if (q.expected === 'witness') for (const choice of q.choices.filter(c => c.math)) {
-      const [variable, value] = choice.label.split('＝'), n = Number(value.replace('−', '-'));
-      const subst = raw => expandFractions(raw).replaceAll(variable, `(${n})`);
-      assert.equal(equivalent(subst(left), subst(right)), choice.value === 'root');
-    }
-  }
 });
 test('unknown constants have the intended uniquely determined answer', () => {
   for (let run = 0; run < 12; run++) for (const q of makeQuestions('constants')) {

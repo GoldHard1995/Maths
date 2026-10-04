@@ -14,4 +14,9 @@
 
 本機模擬伺服器亦已完成整局上傳及返回 Hub 驗證，確認未連接正式 Apps Script。
 
-已完成 Cloudflare Preview 發佈，詳見 PREVIEW.md。正式 Apps Script 已於 2026-10-04 更新至版本 15；隔離試算表已驗證六關成績上傳、個人最佳、900 分總榜及 8 枚襟章。正式 Web App、Preview 代理及 Chrome 已驗證目錄、排行榜、個人最佳及襟章讀取，未提交任何正式測試成績。詳見 [後端更新紀錄](../google-apps-script/DEPLOYMENT-2026-10-04.md)。
+2026-10-04 的原六關版本曾以 Apps Script 版本 15 發佈及完成隔離驗證；歷史測試紀錄見 [原部署紀錄](../google-apps-script/DEPLOYMENT-2026-10-04.md)。目前五關版本的調整紀錄見 [關卡移除紀錄](../google-apps-script/DEPLOYMENT-2026-10-04-stage-removal.md)。
+
+
+## 關卡調整（2026-10-04）
+
+依使用者要求移除「恆等式辨識」關卡。現有恆等式方塊世界保留五關；舊關卡成績及襟章紀錄未刪除，但舊關卡不再出現在現行目錄、排行榜及進度計算。更新內容詳見 [後端更新紀錄](../google-apps-script/DEPLOYMENT-2026-10-04-stage-removal.md)。

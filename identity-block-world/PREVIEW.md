@@ -1,6 +1,6 @@
 # Cloudflare Preview 發佈
 
-目前完整來源已整合至 GitHub new-update（53aadad），Preview 保留全部 8 個世界、52 關及 75 枚襟章。Apps Script 已更新至正式版本 15，沿用原有網址，恆等式後端已啟用。詳見 [後端更新紀錄](../google-apps-script/DEPLOYMENT-2026-10-04.md)。以下為發佈過程紀錄。
+目前來源已整合至 GitHub new-update；恆等式世界移除「恆等式辨識」後，平台包含 8 個世界、51 關及 74 枚可取得襟章。Apps Script 正式版本 16 已同步移除關卡，更新前成績及襟章原始紀錄保留。以下歷史發佈紀錄保留當時的版本資訊。
 
 - 日期：2026-10-04。
 - Preview：https://new-update-maths-static-site.kenk950503.workers.dev/。
