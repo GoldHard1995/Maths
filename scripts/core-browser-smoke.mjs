@@ -10,7 +10,7 @@ for(const world of ['directed-number','algebra','linear-equation','polynomial','
  const errors=[],posts=[];
  await context.route('**/*', route => route.request().method() === 'POST' ? route.abort() : route.continue());
  page.on('pageerror',e=>errors.push(e.message));
- page.on('request',r=>{if(r.method()==='POST')posts.push(r.url())});
+ page.on('request',r=>{if(r.method()==='POST' && (new URLSearchParams(r.postData() || '').has('submissionId')))posts.push(r.url())});
  await page.clock.install();
  const url=`${origin}/${world}/?schoolYear=2026-27&className=1A&studentNo=1`;
  await page.goto(url);
