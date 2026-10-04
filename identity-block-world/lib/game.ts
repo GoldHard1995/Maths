@@ -1,8 +1,8 @@
 import { canonical, equivalent, isExpanded, parseExpression, variables, type Variable } from './algebra.ts';
-export type GameId = 'constants' | 'difference-squares' | 'square-sum' | 'square-difference' | 'applications';
-export const gameIds: GameId[] = ['constants', 'difference-squares', 'square-sum', 'square-difference', 'applications'];
+export type GameId = 'constants' | 'difference-squares' | 'square-sum' | 'square-difference';
+export const gameIds: GameId[] = ['constants', 'difference-squares', 'square-sum', 'square-difference'];
 export const GAME_TIME_LIMIT_SECONDS = 3600;
-export const stageNames = ['未知常數', '平方差', '和的完全平方', '差的完全平方', '恆等式綜合應用'];
+export const stageNames = ['未知常數', '平方差', '和的完全平方', '差的完全平方'];
 export type Choice = { value: string; label: string; math?: boolean };
 type BaseQuestion = { level: number; variant: number; prompt: string; expression: string; instruction: string; hint: string; usedVariables: Variable[] };
 export type AlgebraQuestion = BaseQuestion & { kind: 'algebra'; expected: string; choices?: Choice[]; direct: boolean };
@@ -68,29 +68,8 @@ function identityExpansion(game: 'difference-squares' | 'square-sum' | 'square-d
   const hint = game === 'difference-squares' ? '兩因式的兩項相同，正負號相反；平方差沒有中間項。' : game === 'square-sum' ? '首項平方、兩項乘積的兩倍、末項平方；三項之間是加號。' : '首項平方，減去兩項乘積的兩倍，再加末項平方；末項仍是正號。';
   return expansion(level, variant, expression, used, `運用${stageNames[gameIds.indexOf(game)]}`, hint, wrong);
 }
-function applications(level: number, variant: number): Question {
-  const x = pick(variables), a = rand(1, 9), b = rand(1, 9);
-  if (level === 0 && variant < 2) {
-    const category = pick(['difference', 'sum', 'subtract'] as const), expression = category === 'difference' ? `(${x} ＋ ${a})(${x} − ${a})` : `(${linear(x, 1, category === 'sum' ? a : -a)})²`;
-    return { ...base(level, variant, expression, '選擇適用的恆等式', '選出可直接使用的公式。', '先看是兩個共軛因式相乘，還是一個和／差的平方。', [x]), kind: 'choice', expected: category,
-      choices: shuffle([{ value: 'difference', label: '(a ＋ b)(a − b)＝a² − b²', math: true }, { value: 'sum', label: '(a ＋ b)²＝a² ＋ 2ab ＋ b²', math: true }, { value: 'subtract', label: '(a − b)²＝a² − 2ab ＋ b²', math: true }, { value: 'wrong', label: '(a ＋ b)²＝a² ＋ b²', math: true }]) };
-  }
-  if (level === 0) return identityExpansion(pick(['difference-squares', 'square-sum', 'square-difference']), level, variant);
-  if (level === 1) {
-    const center = pick([10, 20, 30]), offset = rand(1, center === 30 ? 1 : 5);
-    let expression: string, answer: number;
-    if (variant % 3 === 0) { expression = `${center - offset} × ${center + offset}`; answer = center * center - offset * offset; }
-    else { const n = center + (variant % 3 === 1 ? offset : -offset); expression = `${n}²`; answer = n * n; }
-    return { ...base(level, variant, expression, '利用恆等式作數值速算', '輸入數式的值。', '把數字看成接近整十數的和或差，再選擇平方差或完全平方公式。', []), kind: 'numeric', answer };
-  }
-  const y = pick(variables.filter(v => v !== x)), c = rand(1, 4), first = variant === 3 ? frac(x, pick([2, 3, 4])) : `${c}${x}`, second = variant % 2 ? String(b) : `${rand(1, 4)}${y}`;
-  const sumSquare = `(${first} ＋ ${second})²`, differenceSquare = `(${first} − ${second})²`, product = `(${first} ＋ ${second})(${first} − ${second})`;
-  const expressions = [`${sumSquare} − ${differenceSquare}`, `${sumSquare} − (${product})`, `${product} ＋ ${differenceSquare}`, `${sumSquare} − ${a}${x}`, `${differenceSquare} − (${product}) ＋ ${a}${x}`];
-  return expansion(level, variant, expressions[variant], variant % 2 ? [x] : [x, y], '綜合運用恆等式', '先分別使用合適公式，再留意減括號的符號，最後合併同類項。');
-}
 function generate(game: GameId, level: number, variant: number): Question {
   if (game === 'constants') return constants(level, variant);
-  if (game === 'applications') return applications(level, variant);
   return identityExpansion(game, level, variant);
 }
 export const questionKey = (q: Question) => `${q.kind}|${q.prompt}|${q.expression}|${q.instruction}`;

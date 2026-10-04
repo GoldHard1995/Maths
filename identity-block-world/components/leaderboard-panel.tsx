@@ -18,8 +18,7 @@ const boards: { id: BoardId; label: string }[] = [
   { id: 'difference-squares', label: '平方差' },
   { id: 'square-sum', label: '和的完全平方' },
   { id: 'square-difference', label: '差的完全平方' },
-  { id: 'applications', label: '恆等式綜合應用' },
-  { id: 'overall', label: '五關總榜' },
+  { id: 'overall', label: '四關總榜' },
 ];
 
 export default function LeaderboardPanel({

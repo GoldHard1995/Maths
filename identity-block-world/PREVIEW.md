@@ -1,6 +1,6 @@
 # Cloudflare Preview 發佈
 
-目前來源已整合至 GitHub new-update；恆等式世界移除「恆等式辨識」後，平台包含 8 個世界、51 關及 74 枚可取得襟章。Apps Script 正式版本 16 已同步移除關卡，更新前成績及襟章原始紀錄保留。以下歷史發佈紀錄保留當時的版本資訊。
+目前來源已整合至 GitHub new-update；恆等式世界移除「恆等式辨識」及「恆等式綜合應用」後，平台包含 8 個世界、50 關及 73 枚可取得襟章。Apps Script 正式版本 17 已同步更新目錄，更新前成績及襟章原始紀錄保留。以下歷史發佈紀錄保留當時的版本資訊。
 
 - 日期：2026-10-04。
 - Preview：https://new-update-maths-static-site.kenk950503.workers.dev/。

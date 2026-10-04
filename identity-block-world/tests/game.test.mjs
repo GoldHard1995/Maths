@@ -16,7 +16,7 @@ test('answers must be expanded and like terms combined', () => {
   for (const raw of ['x²＋3x＋2', '2＋3x＋x²', 'frac{x²}{4}＋3x＋9', '−frac{3xy}{2}＋2']) assert.equal(isExpanded(raw), true, raw);
   for (const raw of ['(x＋1)(x＋2)', 'x＋x＋2', 'frac{x＋1}{2}', 'x*(x+1)']) assert.equal(isExpanded(raw), false, raw);
 });
-test('five stages generate unique 5-5-5 rounds, with bounded answers and valid choices', () => {
+test('four stages generate unique 5-5-5 rounds, with bounded answers and valid choices', () => {
   for (const game of gameIds) {
     let previous = [];
     for (let run = 0; run < 100; run++) {
