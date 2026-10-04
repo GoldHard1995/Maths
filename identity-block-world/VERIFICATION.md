@@ -14,4 +14,4 @@
 
 本機模擬伺服器亦已完成整局上傳及返回 Hub 驗證，確認未連接正式 Apps Script。
 
-已完成 Cloudflare Preview 發佈，詳見 PREVIEW.md；未更新正式 Apps Script。正式新世界排行榜及襟章需要獲准更新後端目錄後才可啟用。
+已完成 Cloudflare Preview 發佈，詳見 PREVIEW.md。正式 Apps Script 已於 2026-10-04 更新至版本 15；隔離試算表已驗證六關成績上傳、個人最佳、900 分總榜及 8 枚襟章。正式 Web App、Preview 代理及 Chrome 已驗證目錄、排行榜、個人最佳及襟章讀取，未提交任何正式測試成績。詳見 [後端更新紀錄](../google-apps-script/DEPLOYMENT-2026-10-04.md)。

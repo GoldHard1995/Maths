@@ -18,8 +18,10 @@ Cloudflare 路徑 `/identity/`；GitHub Pages 路徑 `/Maths/identity/`；所有
 
 此預覽使用同一份 Code.gs 的記憶體模擬成績、排行榜及襟章，重啟後清除；不會連接正式 Apps Script。
 
-## 發佈前
+## 發佈狀態
 
-共用 Apps Script 的 Code.gs 須經另行批准才更新。新世界上傳在後端目錄更新後才會有效。原有資料表及欄位維持不變；完美主義者當前在 GitHub new-update 的整合版本中，門檻為 46 關，歷史取得紀錄保留。
+完整來源已推送至 GitHub new-update，Preview 包含 8 個世界、52 關及 75 枚襟章。共用 Apps Script 已於 2026-10-04 更新至正式版本 15，沿用原有網址，恆等式的成績上傳、排行榜、襟章及個人最佳已啟用。
 
-本次 Preview 另保留已發佈但尚未推送的百分法遊戲，實際為 8 個世界、52 關。發佈版本與驗證詳見 PREVIEW.md。
+原有資料表、欄位及歷史取得紀錄保留；完美主義者的新取得門檻為 52 關。靜態網站未合併 main 或部署正式流量。
+
+發佈版本與驗證詳見 [PREVIEW.md](PREVIEW.md)；後端備份、隔離測試及正式驗證詳見 [更新紀錄](../google-apps-script/DEPLOYMENT-2026-10-04.md)。
