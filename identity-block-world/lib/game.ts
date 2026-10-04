@@ -55,7 +55,7 @@ function recognize(level: number, variant: number): ChoiceQuestion {
     right = canonical(left); expected = 'simplify'; prompt = '選擇有效證明'; instruction = '以下哪個方法足以證明這是恆等式？';
     choices.splice(0, choices.length, { value: 'simplify', label: '化簡兩方，確認每項係數及常數項完全相同' }, { value: 'once', label: '代入一個值，兩方相等' }, { value: 'three', label: '任意試三個值，兩方相等' }, { value: 'looks', label: '兩方外觀相似' });
   }
-  return { ...base(level, variant, `${left} ＝ ${right}`, prompt, instruction, hint, [x]), kind: 'choice', expected, choices: shuffle(choices) };
+  return { ...base(level, variant, `${left} ＝ ${right}`, prompt, instruction, hint, [x]), kind: 'choice', expected, choices: level < 2 ? choices : shuffle(choices) };
 }
 function constants(level: number, variant: number): NumericQuestion {
   const x = pick(variables), a = nz(-6, 6), b = rand(-6, 6), c = rand(-12, 12), d = nz(-6, 6);
