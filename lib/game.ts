@@ -1,3 +1,4 @@
+export const GAME_TIME_LIMIT_SECONDS = 3600;
 export type GameId = 'locate'|'compare'|'move'|'brackets'|'multiply'|'divide'|'mixed';
 export type LegacyQuestion={kind:'legacy';a:number;b:number;op:'+'|'-';third?:{op:'+'|'-';value:number}};
 export type LocateQuestion={kind:'locate';a:number;step:0.5|1|2;mode:'pick'|'read';labels:number[]};
@@ -5,7 +6,7 @@ export type SignedQuestion={kind:'signed';operation:'multiply'|'divide';values:n
 export type MixedStep={display:string;target:string;choices:string[];result:number};
 export type MixedQuestion={kind:'mixed';level:number;steps:MixedStep[];answer:number};
 export type Question=LegacyQuestion|LocateQuestion|SignedQuestion|MixedQuestion;
-export type Session={game:GameId;questions:Question[];index:number;stage:number;errors:number;stageErrors:number;firstTry:number;questionErrors:number;skipped:number;currentFirstTryStreak:number;longestFirstTryStreak:number;solved:boolean;finished:boolean;feedback:string;startedAt:number;completedAt:number|null};
+export type Session={game:GameId;questions:Question[];index:number;stage:number;errors:number;stageErrors:number;firstTry:number;questionErrors:number;skipped:number;currentFirstTryStreak:number;longestFirstTryStreak:number;solved:boolean;finished:boolean;expired:boolean;feedback:string;startedAt:number;completedAt:number|null};
 export const gameIds:GameId[]=['locate','compare','move','brackets','multiply','divide','mixed'];
 export const signed=(n:number)=>n<0?`−${Math.abs(n)}`:n>0?`+${n}`:'0';
 export const plain=(n:number)=>String(n).replace('-','−');
@@ -93,7 +94,7 @@ export function makeQuestions(game:GameId,previous:Question[]=[]):Question[]{
  if(game==='move')return [0,1,2,3].flatMap(category=>{const op=category%2===0?'+':'-';const pool:Question[]=[];for(let a=-10;a<=10;a++)for(let m=1;m<=8;m++){const b=m*(category>=2?-1:1),q=legacyQ(a,b,op);if(Math.abs(result(q))<=10)pool.push(q)}return draw(pool,category===3?3:4,used)});
  return [0,1,2].flatMap(level=>shuffle([...([0,1,2,3] as number[]),choose([0,1,2,3])].flatMap(category=>{const op=category%2===0?'+':'-';const pool:Question[]=[];for(let a=level===0?1:-20;a<=(level===0?10:level===1?-1:20);a++)for(let m=level===0?1:6;m<=(level===0?9:15);m++){const b=m*(category>=2?-1:1),q=legacyQ(a,b,op);if(Math.abs(result(q))>20)continue;if(level<2)pool.push(q);else for(let n=1;n<=12;n++){const candidate=legacyQ(a,b,op,{op:category<2?'+':'-',value:n*(category%2===0?-1:1)});if(Math.abs(result(candidate))<=20&&result(candidate)!==a)pool.push(candidate)}}return draw(pool,1,used)})));
 }
-export function startSession(game:GameId,questions=makeQuestions(game),now=Date.now()):Session{return {game,questions,index:0,stage:0,errors:0,stageErrors:0,firstTry:0,questionErrors:0,skipped:0,currentFirstTryStreak:0,longestFirstTryStreak:0,solved:false,finished:false,feedback:'',startedAt:now,completedAt:null}}
+export function startSession(game:GameId,questions=makeQuestions(game),now=Date.now()):Session{return {game,questions,index:0,stage:0,errors:0,stageErrors:0,firstTry:0,questionErrors:0,skipped:0,currentFirstTryStreak:0,longestFirstTryStreak:0,solved:false,finished:false,expired:false,feedback:'',startedAt:now,completedAt:null}}
 export function expected(s:Session):string{const q=s.questions[s.index];if(s.game==='locate')return String((q as LocateQuestion|LegacyQuestion).a);if(s.game==='compare')return relation(q);if(s.game==='move')return s.stage===0?(delta(q)<0?'left':'right'):s.stage===1?String(Math.abs(legacy(q).b)):String(result(q));if(s.game==='brackets')return s.stage===0?bracketAnswer(legacy(q)):String(result(q));if(s.game==='multiply'||s.game==='divide')return s.stage===0?(result(q)<0?'negative':'positive'):String(result(q));const m=q as MixedQuestion,step=m.steps[Math.floor(s.stage/2)];return s.stage%2===0?step.target:String(step.result)}
 function ruleHint(q:SignedQuestion){if(q.values.length===3)return '三個數要逐個判斷符號；每次套用兩數的正負號規則。';const [a,b]=q.values;return a>0&&b>0?'正正得正。':a>0?'正負得負。':b>0?'負正得負。':'負負得正。'}
 function lastStage(s:Session){if(s.game==='move')return 2;if(s.game==='brackets'||s.game==='multiply'||s.game==='divide')return 1;if(s.game==='mixed')return (s.questions[s.index] as MixedQuestion).steps.length*2-1;return 0}
@@ -102,5 +103,7 @@ export function skipQuestion(s:Session,now=Date.now()):Session{if(s.finished||s.
 export const score=(s:Session)=>{const completed=s.index+(s.solved?1:0);return s.firstTry*10+Math.max(0,completed-s.firstTry-s.skipped)*5};
 export const elapsedSeconds=(s:Session,now:number)=>Math.max(0,Math.floor(((s.completedAt??now)-s.startedAt)/1000));
 export function nextQuestion(s:Session):Session{if(!s.solved||s.finished)return s;return {...s,index:s.index+1,stage:0,stageErrors:0,questionErrors:0,solved:false,feedback:''}}
-export type Action={type:'start';session:Session}|{type:'answer';value:string}|{type:'next'}|{type:'skip'}|{type:'home'};
-export function reducer(s:Session|null,a:Action):Session|null{if(a.type==='home')return null;if(a.type==='start')return a.session;if(!s)return s;if(a.type==='answer')return submit(s,a.value);if(a.type==='skip')return skipQuestion(s);return nextQuestion(s)}
+export type Action={type:'start';session:Session}|{type:'answer';value:string}|{type:'next'}|{type:'skip'}|{type:'timeout'}|{type:'home'};
+export function reducer(s:Session|null,a:Action):Session|null{if(a.type==='home')return null;if(a.type==='start')return a.session;if(!s)return s;if(!s.finished&&elapsedSeconds(s,Date.now())>=GAME_TIME_LIMIT_SECONDS)return expireSession(s);if(a.type==='timeout')return expireSession(s);if(a.type==='answer')return submit(s,a.value);if(a.type==='skip')return skipQuestion(s);return nextQuestion(s)}
+
+export function expireSession(s:Session,now=Date.now()):Session{return s.finished?s:{...s,finished:true,expired:true,completedAt:now,feedback:'遊戲時間已達 1 小時，本局已結束。'}}

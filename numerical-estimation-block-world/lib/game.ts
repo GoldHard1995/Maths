@@ -797,7 +797,6 @@ export function expireSession(s: Session, now = Date.now()): Session {
     ? s
     : {
         ...s,
-        solved: false,
         finished: true,
         expired: true,
         completedAt: now,
@@ -808,6 +807,7 @@ export function reducer(s: Session | null, a: Action): Session | null {
   if (a.type === 'home') return null;
   if (a.type === 'start') return a.session;
   if (!s) return s;
+  if (!s.finished && elapsedSeconds(s, Date.now()) >= GAME_TIME_LIMIT_SECONDS) return expireSession(s);
   if (a.type === 'answer') return submit(s, a.value);
   if (a.type === 'skip') return skipQuestion(s);
   if (a.type === 'timeout') return expireSession(s);

@@ -86,16 +86,60 @@ test('perfect-master badges require every registered stage to have a strict full
   assert.equal(complete.badges.find(item => item.id === 'ultimate-perfectionist').earned, false);
 });
 
-test('all five perfect masters and ultimate perfectionist require all 31 stages', () => {
+test('all eight perfect masters and ultimate perfectionist require all 50 active stages', () => {
   let index = 0;
   const records = run('CATALOG').flatMap(world => world.stages.map(stage => ({submissionId:`all-perfect-${index++}`,roundId:index%3===0?'OLD':'CURRENT',worldId:world.id,gameId:stage[0],questionCount:world.questionCount,maxScore:world.maxScore,score:world.maxScore,firstTryCorrect:world.questionCount,skippedQuestions:0,longestFirstTryStreak:world.questionCount})));
   records.push({...records[0]});
   const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
-  assert.equal(profile.summary.totalBadges, 48);
-  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','numerical-estimation-perfect-master','ultimate-perfectionist']) {
+  assert.equal(profile.summary.totalBadges, 73);
+  for (const id of ['directed-perfect-master','algebra-perfect-master','linear-equation-perfect-master','polynomial-perfect-master','numerical-estimation-perfect-master','coordinate-perfect-master','percentage-perfect-master','identity-perfect-master','ultimate-perfectionist']) {
     assert.equal(profile.badges.find(item => item.id === id).earned, true, id);
   }
-  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 31);
+  assert.equal(profile.badges.find(item => item.id === 'ultimate-perfectionist').progress, 50);
+});
+
+test('an already awarded perfectionist badge remains earned under the new 50-stage target', () => {
+  const profile = context.profileFromRecords_('2026-27','1A',1,[],[{badgeId:'ultimate-perfectionist',earnedAt:'2026-09-01'}]);
+  const badge = profile.badges.find(item => item.id === 'ultimate-perfectionist');
+  assert.equal(badge.earned, true);
+  assert.equal(badge.earnedAt, '2026-09-01');
+});
+
+test('46 old perfect stages do not earn the new 50-stage perfectionist target', () => {
+  const records = run('CATALOG').filter(world => world.id !== 'percentage').flatMap(world => world.stages.map(stage => ({submissionId:`old-perfect-${world.id}-${stage[0]}`,worldId:world.id,gameId:stage[0],questionCount:15,maxScore:150,score:150,firstTryCorrect:15,skippedQuestions:0,wrongAttempts:0})));
+  const badge = context.profileFromRecords_('2026-27','1A',1,records,[]).badges.find(b => b.id === 'ultimate-perfectionist');
+  assert.equal(badge.earned, false); assert.equal(badge.progress, 44); assert.equal(badge.target, 50);
+});
+
+test('percentage has six isolated stages and awards all eight badges only on valid records', () => {
+  const stages = ['conversion','applications','increase','decrease','profit-loss','discount'];
+  const records = stages.map((gameId,index) => ({submissionId:`percentage-${index}`,worldId:'percentage',gameId,questionCount:15,maxScore:150,score:150,firstTryCorrect:15,longestFirstTryStreak:15,skippedQuestions:0,wrongAttempts:0}));
+  const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
+  assert.equal(profile.worldProgress.find(w => w.worldId === 'percentage').completed, 6);
+  assert.ok(profile.worldProgress.filter(w => w.worldId !== 'percentage').every(w => w.completed === 0));
+  const badges = profile.badges.filter(b => b.id.startsWith('stage-percentage-') || ['percentage-master','percentage-perfect-master'].includes(b.id));
+  assert.equal(badges.length, 8); assert.ok(badges.every(b => b.earned));
+  const imperfect = context.profileFromRecords_('2026-27','1A',1,records.map((r,i)=>i===0?{...r,score:145,firstTryCorrect:14,wrongAttempts:1}:r),[]);
+  assert.equal(imperfect.badges.find(b => b.id === 'percentage-perfect-master').earned, false);
+  assert.equal(imperfect.badges.find(b => b.id === 'percentage-master').earned, true);
+  context.currentSchoolYear_ = () => '2026-27';
+  const valid = {submissionId:'percentage-submit-1',schoolYear:'2026-27',worldId:'percentage',className:'1A',studentNo:1,gameId:'applications',score:150,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:15,longestFirstTryStreak:15,skippedQuestions:0,wrongAttempts:0};
+  assert.doesNotThrow(() => context.validateSubmission_(valid));
+  assert.throws(() => context.validateSubmission_({...valid,worldId:'polynomial'}));
+  const best = context.personalBestFromRecords_(run("world_('percentage')"),'applications',[{...valid},{...valid,worldId:'linear-equation',score:999}]);
+  assert.equal(best.score, 150);
+});
+
+test('percentage overall leaderboard requires six stages and totals 900 with score-first ordering', () => {
+  const world = run("world_('percentage')");
+  const records = [];
+  for (let studentNo=1; studentNo<=3; studentNo++) for (let index=0; index<(studentNo===3?5:6); index++) records.push({roundId:'PERCENTAGE-ROUND',worldId:'percentage',className:'1A',studentNo,gameId:world.stages[index][0],score:studentNo===2?150:145,maxScore:150,elapsedSeconds:studentNo===2?150:10,submittedAt:index});
+  records.push({...records[0],worldId:'linear-equation',score:999});
+  context.currentRound_ = () => 'PERCENTAGE-ROUND'; context.readRecords_ = () => records;
+  const board = context.leaderboard_('overall','ALL',{className:'1A',studentNo:1},'percentage');
+  assert.equal(board.rankings.length, 2); assert.equal(board.rankings[0].studentNo, 2);
+  assert.equal(board.rankings[0].score, 900); assert.equal(board.rankings[0].maxScore, 900);
+  assert.equal(board.self.rank, 2);
 });
 
 test('replays can reach the hidden 500 goal without duplicating a submission', () => {
@@ -162,6 +206,19 @@ test('numerical-estimation world is isolated and awards five stage badges plus i
   context.currentSchoolYear_ = () => '2026-27';
   assert.throws(() => context.validateSubmission_({submissionId:'numerical-estimation-submit-1',schoolYear:'2026-27',worldId:'numerical-estimation',className:'1A',studentNo:1,gameId:'desert-expedition',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
   assert.throws(() => context.validateSubmission_({submissionId:'numerical-estimation-submit-2',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'desert-expedition',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
+});
+
+test('coordinate world is isolated and awards nine stage badges plus its master badge', () => {
+  const stages = ['read-coordinates','plot-points','quadrants','horizontal-vertical','distance','area','translation','reflection','rotation'];
+  const records = stages.map((gameId,index) => ({submissionId:`coordinate-${index}`,worldId:'coordinate',gameId,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4}));
+  const profile = context.profileFromRecords_('2026-27','1A',1,records,[]);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'coordinate').completed, 9);
+  assert.equal(profile.worldProgress.find(item => item.worldId === 'polynomial').completed, 0);
+  assert.equal(profile.badges.find(item => item.id === 'coordinate-master').earned, true);
+  stages.forEach(gameId => assert.equal(profile.badges.find(item => item.id === `stage-coordinate-${gameId}`).earned, true));
+  context.currentSchoolYear_ = () => '2026-27';
+  assert.doesNotThrow(() => context.validateSubmission_({submissionId:'coordinate-submit-1',schoolYear:'2026-27',worldId:'coordinate',className:'1A',studentNo:1,gameId:'rotation',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
+  assert.throws(() => context.validateSubmission_({submissionId:'coordinate-submit-2',schoolYear:'2026-27',worldId:'polynomial',className:'1A',studentNo:1,gameId:'rotation',score:125,maxScore:150,elapsedSeconds:90,questionCount:15,firstTryCorrect:10,longestFirstTryStreak:4,wrongAttempts:2}));
 });
 
 test('personal bests span leaderboard rounds but stay inside one school year, student, world, and stage', () => {

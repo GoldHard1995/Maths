@@ -184,8 +184,8 @@ test('comprehensive questions can be skipped without errors or points', () => {
   const questions = makeQuestions('simple');
   let s = { ...startSession('simple', questions, 0), index: 10, firstTry: 10 };
   s = skipQuestion(s, 5000);
-  assert.equal(s.index, 11);
-  assert.equal(s.solved, false);
+  assert.equal(s.index, 10);
+  assert.equal(s.solved, true);
   assert.equal(s.finished, false);
   assert.equal(s.skipped, 1);
   assert.equal(s.errors, 0);
@@ -194,7 +194,12 @@ test('comprehensive questions can be skipped without errors or points', () => {
   assert.equal(s.firstTry, 10);
   assert.equal(s.currentFirstTryStreak, 0);
   assert.equal(score(s), 100);
-  assert.equal(nextQuestion(s), s);
+  assert.match(s.feedback, /已放棄/);
+  const next = nextQuestion(s);
+  assert.equal(next.index, 11);
+  assert.equal(next.solved, false);
+  assert.equal(next.feedback, '');
+  assert.equal(score(next), 100);
 });
 
 test('skipping the final comprehensive question completes the round', () => {
