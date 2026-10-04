@@ -1,4 +1,5 @@
 'use client';
+import { replayQuestions } from '@/lib/replay';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
@@ -25,7 +26,6 @@ import {
   elapsedSeconds,
   GAME_TIME_LIMIT_SECONDS,
   gameIds,
-  makeQuestions,
   reducer,
   score,
   startSession,
@@ -103,7 +103,7 @@ export default function Home() {
   const previous = useRef<Partial<Record<GameId, Question[]>>>({}),
     connected = Boolean(leaderboardUrl);
   const start = (game: GameId) => {
-    const questions = makeQuestions(game, previous.current[game]);
+    let storage: Storage | undefined; try { storage = window.sessionStorage; } catch { /* Storage may be disabled. */ } const questions = replayQuestions(game, window.location.search, storage, previous.current[game]);
     previous.current[game] = questions;
     const next = startSession(game, questions);
     setUploaded(false);
@@ -112,7 +112,7 @@ export default function Home() {
     dispatch({ type: 'start', session: next });
   };
   const goHome = () => {
-    if (session?.finished && connected && !uploaded) return;
+    if (session?.finished && !session.expired && connected && !uploaded) return;
     dispatch({ type: 'home' });
     setShowLeaderboard(false);
   };
@@ -213,7 +213,7 @@ export default function Home() {
         </a>
         <button
           className="brand"
-          disabled={Boolean(session?.finished && connected && !uploaded)}
+          disabled={Boolean(session?.finished && !session.expired && connected && !uploaded)}
           onClick={goHome}
         >
           <span className="brand-icon">
@@ -291,7 +291,7 @@ export default function Home() {
             })}
           </div>
           <footer className="menu-footer">
-            <span>自由選關 · 隨時重玩</span>
+            <span>自由選關 · 每局限時 1 小時 · 隨時重玩</span>
           </footer>
         </section>
       ) : (
@@ -300,7 +300,7 @@ export default function Home() {
             <Button
               variant="secondary"
               className="block-btn secondary"
-              disabled={Boolean(session.finished && connected && !uploaded)}
+              disabled={Boolean(session.finished && !session.expired && connected && !uploaded)}
               onClick={goHome}
             >
               <ArrowLeft />
@@ -328,7 +328,7 @@ export default function Home() {
               </h2>
               <p>
                 {session.expired
-                  ? '本局已達 1 小時時間限制。'
+                  ? `本局已達 1 小時時間限制，已完成 ${session.index + Number(session.solved)} 題。未完成的局數不會上傳排行榜。`
                   : `你完成了「${active?.title}」的全部 ${session.questions.length} 個任務。`}
               </p>
               <p></p>
@@ -346,7 +346,7 @@ export default function Home() {
                 </div>
                 <div>
                   <strong>
-                    {session.questions.length -
+                    {(session.expired ? session.index + Number(session.solved) : session.questions.length) -
                       session.firstTry -
                       session.skipped}
                   </strong>
@@ -361,7 +361,7 @@ export default function Home() {
                 每題首次全對 10 分，重試後完成 5 分；放棄 {session.skipped}{' '}
                 題不計分。
               </p>
-              <ScoreUpload
+              {!session.expired && <ScoreUpload
                 gameId={session.game}
                 score={score(session)}
                 maxScore={session.questions.length * 10}
@@ -382,11 +382,11 @@ export default function Home() {
                     setPersonalBestStatus('ready');
                   }
                 }}
-              />
+              />}
               <div className="answer-options">
                 <Button
                   className="block-btn"
-                  disabled={connected && !uploaded}
+                  disabled={connected && !uploaded && !session.expired}
                   onClick={() => start(session.game)}
                 >
                   <RotateCcw />
@@ -395,7 +395,7 @@ export default function Home() {
                 <Button
                   className="block-btn secondary"
                   variant="secondary"
-                  disabled={connected && !uploaded}
+                  disabled={connected && !uploaded && !session.expired}
                   onClick={goHome}
                 >
                   選其他遊戲
@@ -415,7 +415,7 @@ export default function Home() {
                 </span>
                 <span>
                   {session.game === 'place-value'
-                    ? '8 基礎 · 7 核心'
+                    ? '8 基礎 · 7 核心 · 不可放棄'
                     : '5 基礎 · 5 核心 · 5 綜合'}
                 </span>
               </div>

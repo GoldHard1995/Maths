@@ -23,7 +23,7 @@ test('identity score validates active stages and rejects cancelled stages', () =
   assert.throws(() => context.validateSubmission_({ ...p, score:149 }), /分數/);
 });
 test('four-stage overall board, class filter and personal bests are isolated by world and student', () => {
-  const records = [...recordsFor(world), ...recordsFor(world, 2).slice(0, 5), ...recordsFor(catalog.find(w => w.id === 'polynomial'))];
+  const records = [...recordsFor(world), ...recordsFor(world, 2).slice(0, world.stages.length - 1), ...recordsFor(catalog.find(w => w.id === 'polynomial'))];
   context.currentRound_ = () => 'R1'; context.readRecords_ = () => records;
   const board = context.leaderboard_('overall', 'ALL', { className:'1A', studentNo:1 }, 'identity');
   assert.equal(board.rankings.length, 1); assert.equal(board.self.score, 600); assert.equal(board.self.maxScore, 600);
@@ -48,7 +48,7 @@ test('50-stage perfection retains earned historical awards and their dates', () 
   const oldRecords = catalog.filter(w => w.id !== 'identity').flatMap(w => recordsFor(w));
   const awards = [{badgeId:'ultimate-perfectionist',earnedAt:'2026-09-18'}];
   const profile = context.profileFromRecords_('2026-27','1A',1,oldRecords,awards), badge = profile.badges.find(b => b.id === 'ultimate-perfectionist');
-  assert.equal(badge.earned, true); assert.equal(badge.progress, 44); assert.equal(badge.target, 50); assert.equal(badge.earnedAt, '2026-09-18');
+  assert.equal(badge.earned, true); assert.equal(badge.progress, 46); assert.equal(badge.target, 50); assert.equal(badge.earnedAt, '2026-09-18');
   const complete = context.profileFromRecords_('2026-27','1A',1,[...oldRecords,...recordsFor(world)],awards);
   assert.equal(complete.badges.find(b => b.id === 'ultimate-perfectionist').earned, true);
 });

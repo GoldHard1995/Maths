@@ -287,5 +287,6 @@ export function reducer(s: Session | null, a: Action): Session | null {
   if (a.type === 'home') return null;
   if (a.type === 'start') return a.session;
   if (!s) return s;
+  if (!s.finished && elapsedSeconds(s, Date.now()) >= GAME_TIME_LIMIT_SECONDS) return expireSession(s);
   return a.type === 'answer' ? submit(s, a.value) : a.type === 'skip' ? skipQuestion(s) : a.type === 'timeout' ? expireSession(s) : nextQuestion(s);
 }

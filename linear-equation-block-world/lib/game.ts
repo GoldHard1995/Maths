@@ -1,3 +1,4 @@
+export const GAME_TIME_LIMIT_SECONDS = 3600;
 import { equationEquivalent, parseFraction, type Fraction } from './algebra.ts';
 
 export type GameId =
@@ -61,6 +62,7 @@ export type Session = {
   longestFirstTryStreak: number;
   solved: boolean;
   finished: boolean;
+  expired: boolean;
   feedback: string;
   selectedEquation: string;
   startedAt: number;
@@ -569,6 +571,7 @@ export function startSession(
     longestFirstTryStreak: 0,
     solved: false,
     finished: false,
+    expired: false,
     feedback: '',
     selectedEquation: '',
     startedAt: now,
@@ -669,39 +672,33 @@ export function nextQuestion(s: Session): Session {
 export function skipQuestion(s: Session, now = Date.now()): Session {
   if (s.finished || s.solved || s.index < 10) return s;
   const finished = s.index === s.questions.length - 1;
-  return finished
-    ? {
-        ...s,
-        stage: s.questions[s.index].kind === 'application' ? 2 : 0,
-        skipped: s.skipped + 1,
-        solved: true,
-        finished: true,
-        completedAt: now,
-        currentFirstTryStreak: 0,
-        feedback: '已放棄本題，本題不計分。',
-      }
-    : {
-        ...s,
-        index: s.index + 1,
-        stage: 0,
-        stageErrors: 0,
-        questionErrors: 0,
-        skipped: s.skipped + 1,
-        currentFirstTryStreak: 0,
-        feedback: '',
-        selectedEquation: '',
-      };
+  return {
+    ...s,
+    stage: s.questions[s.index].kind === 'application' ? 2 : 0,
+    skipped: s.skipped + 1,
+    solved: true,
+    finished,
+    completedAt: finished ? now : null,
+    currentFirstTryStreak: 0,
+    feedback: '已放棄本題，這題不計分。',
+  };
+}
+export function expireSession(s: Session, now = Date.now()): Session {
+  return s.finished ? s : { ...s, finished: true, expired: true, completedAt: now, feedback: '遊戲時間已達 1 小時，本局已結束。' };
 }
 export type Action =
   | { type: 'start'; session: Session }
   | { type: 'answer'; value: string }
   | { type: 'next' }
   | { type: 'skip' }
+  | { type: 'timeout' }
   | { type: 'home' };
 export function reducer(s: Session | null, a: Action): Session | null {
   if (a.type === 'home') return null;
   if (a.type === 'start') return a.session;
   if (!s) return s;
+  if (!s.finished && elapsedSeconds(s, Date.now()) >= GAME_TIME_LIMIT_SECONDS) return expireSession(s);
+  if (a.type === 'timeout') return expireSession(s);
   if (a.type === 'answer') return submit(s, a.value);
   if (a.type === 'skip') return skipQuestion(s);
   return nextQuestion(s);

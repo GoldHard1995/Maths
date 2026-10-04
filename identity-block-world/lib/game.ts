@@ -119,5 +119,6 @@ export function nextQuestion(s: Session): Session { return !s.solved || s.finish
 export type Action = { type: 'start'; session: Session } | { type: 'answer'; value: string } | { type: 'next' } | { type: 'skip' } | { type: 'timeout' } | { type: 'home' };
 export function reducer(s: Session | null, a: Action): Session | null {
   if (a.type === 'home') return null; if (a.type === 'start') return a.session; if (!s) return s;
+  if (!s.finished && elapsedSeconds(s, Date.now()) >= GAME_TIME_LIMIT_SECONDS) return expireSession(s);
   if (a.type === 'answer') return submit(s, a.value); if (a.type === 'skip') return skipQuestion(s); if (a.type === 'timeout') return expireSession(s); return nextQuestion(s);
 }

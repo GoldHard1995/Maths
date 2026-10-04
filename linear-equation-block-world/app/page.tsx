@@ -1,4 +1,5 @@
 'use client';
+import { replayQuestions } from '@/lib/replay';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
@@ -23,9 +24,9 @@ import GameBoard, { MathText } from '@/components/game-board';
 import LeaderboardPanel from '@/components/leaderboard-panel';
 import ScoreUpload from '@/components/score-upload';
 import {
+  GAME_TIME_LIMIT_SECONDS,
   elapsedSeconds,
   gameIds,
-  makeQuestions,
   reducer,
   score,
   startSession,
@@ -107,7 +108,7 @@ export default function Home() {
   const previous = useRef<Partial<Record<GameId, Question[]>>>({}),
     connected = Boolean(leaderboardUrl);
   const start = (game: GameId) => {
-    const questions = makeQuestions(game, previous.current[game]);
+    let storage: Storage | undefined; try { storage = window.sessionStorage; } catch { /* Storage may be disabled. */ } const questions = replayQuestions(game, window.location.search, storage, previous.current[game]);
     previous.current[game] = questions;
     const next = startSession(game, questions);
     setUploaded(false);
@@ -116,13 +117,13 @@ export default function Home() {
     dispatch({ type: 'start', session: next });
   };
   const goHome = () => {
-    if (session?.finished && connected && !uploaded) return;
+    if (session?.finished && !session.expired && connected && !uploaded) return;
     dispatch({ type: 'home' });
     setShowLeaderboard(false);
   };
   useEffect(() => {
     if (!session || session.finished) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
+    const timer = setInterval(() => { const current = Date.now(); setNow(current); if (elapsedSeconds(session, current) >= GAME_TIME_LIMIT_SECONDS) dispatch({ type: 'timeout' }); }, 1000);
     return () => clearInterval(timer);
   }, [session]);
   useEffect(() => {
@@ -205,7 +206,7 @@ export default function Home() {
         </a>
         <button
           className="brand"
-          disabled={Boolean(session?.finished && connected && !uploaded)}
+          disabled={Boolean(session?.finished && !session.expired && connected && !uploaded)}
           onClick={goHome}
         >
           <span className="brand-icon">
@@ -281,7 +282,7 @@ export default function Home() {
             })}
           </div>
           <footer className="menu-footer">
-            <span>自由選關 · 隨時重玩</span>
+            <span>自由選關 · 每局限時 1 小時 · 隨時重玩</span>
           </footer>
         </section>
       ) : (
@@ -290,7 +291,7 @@ export default function Home() {
             <Button
               variant="secondary"
               className="block-btn secondary"
-              disabled={Boolean(session.finished && connected && !uploaded)}
+              disabled={Boolean(session.finished && !session.expired && connected && !uploaded)}
               onClick={goHome}
             >
               <ArrowLeft />
@@ -310,11 +311,10 @@ export default function Home() {
               <div className="finish-check">
                 <Check />
               </div>
-              <span className="task-label">這次探索完成了</span>
-              <h2>每一步，都更有把握。</h2>
+              <span className="task-label">{session.expired ? '時間到' : '這次探索完成了'}</span>
+              <h2>{session.expired ? '遊戲時間已結束' : '每一步，都更有把握。'}</h2>
               <p>
-                你完成了「{active?.title}」的全部 {session.questions.length}{' '}
-                個任務。
+                {session.expired ? `本局已達 1 小時時間限制，已完成 ${session.index + Number(session.solved)} 題。未完成的局數不會上傳排行榜。` : `你完成了「${active?.title}」的全部 ${session.questions.length} 個任務。`}
               </p>
               <div className="final-score">
                 <span>本次得分</span>
@@ -330,7 +330,7 @@ export default function Home() {
                 </div>
                 <div>
                   <strong>
-                    {session.questions.length - session.firstTry - session.skipped}
+                    {(session.expired ? session.index + Number(session.solved) : session.questions.length) - session.firstTry - session.skipped}
                   </strong>
                   <span>練習後答對</span>
                 </div>
@@ -343,7 +343,7 @@ export default function Home() {
                 每題首次全對 10 分，重試後完成 5 分；放棄 {session.skipped}{' '}
                 題不計分。
               </p>
-              <ScoreUpload
+              {!session.expired && <ScoreUpload
                 gameId={session.game}
                 score={score(session)}
                 maxScore={session.questions.length * 10}
@@ -361,11 +361,11 @@ export default function Home() {
                     setPersonalBestStatus('ready');
                   }
                 }}
-              />
+              />}
               <div className="answer-options">
                 <Button
                   className="block-btn"
-                  disabled={connected && !uploaded}
+                  disabled={connected && !uploaded && !session.expired}
                   onClick={() => start(session.game)}
                 >
                   <RotateCcw />
@@ -374,7 +374,7 @@ export default function Home() {
                 <Button
                   className="block-btn secondary"
                   variant="secondary"
-                  disabled={connected && !uploaded}
+                  disabled={connected && !uploaded && !session.expired}
                   onClick={goHome}
                 >
                   選其他遊戲
