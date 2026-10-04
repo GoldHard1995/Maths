@@ -20,4 +20,6 @@ Cloudflare 路徑 `/identity/`；GitHub Pages 路徑 `/Maths/identity/`；所有
 
 ## 發佈前
 
-須經另行批准，才更新共用 Apps Script 的 Code.gs，以及推送或部署。新世界上傳在後端目錄更新後才會有效。原有資料表及欄位維持不變；完美主義者當前門檻改為 37 關，歷史取得紀錄保留。
+共用 Apps Script 的 Code.gs 須經另行批准才更新。新世界上傳在後端目錄更新後才會有效。原有資料表及欄位維持不變；完美主義者當前在 GitHub new-update 的整合版本中，門檻為 46 關，歷史取得紀錄保留。
+
+本次 Preview 另保留已發佈但尚未推送的百分法遊戲，實際為 8 個世界、52 關。發佈版本與驗證詳見 PREVIEW.md。
