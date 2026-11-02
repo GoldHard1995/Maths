@@ -92,6 +92,8 @@ jobs:
           mv _site/percentage/github-game.html _site/percentage/index.html
           cp -R identity-block-world/dist-github/. _site/identity/
           mv _site/identity/github-game.html _site/identity/index.html
+          mkdir -p _site/quadratic-delta
+          cp quadratic-delta-lab/index.html quadratic-delta-lab/styles.css quadratic-delta-lab/app.js _site/quadratic-delta/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

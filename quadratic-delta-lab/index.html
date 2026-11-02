@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f6f7fc" />
+  <meta name="description" content="中四數學互動課堂：透過二次函數的圖像，探索判別式 Δ 與實根數目的關係。" />
+  <title>圖解法 × 判別式 Δ｜中四數學互動教室</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="圖解法與判別式互動教室首頁">
+        <span class="brand-mark">Δ</span>
+        <span class="brand-text"><strong>數學探索室</strong><small>QUADRATIC LAB · S4</small></span>
+      </a>
+      <div class="topbar-right">
+        <span class="course-pill">中四數學 · 二次方程</span>
+        <button class="icon-btn" id="fullscreen-btn" type="button" title="進入全螢幕" aria-label="切換全螢幕">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H4a1 1 0 0 0-1 1v4M16 3h4a1 1 0 0 1 1 1v4M3 16v4a1 1 0 0 0 1 1h4M21 16v4a1 1 0 0 1-1 1h-4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="lesson-header">
+      <div class="intro-copy">
+        <div class="eyebrow"><span class="eyebrow-bar"></span> VISUAL MATH EXPLORER</div>
+        <h1>看見圖像，<span>理解判別式。</span></h1>
+        <p>一條拋物線，幾個實數解？由觀察交點開始，發現 <strong>Δ = b² − 4ac</strong> 的秘密。</p>
+      </div>
+      <nav class="steps" aria-label="教學環節">
+        <button type="button" class="step active" data-stage="observe" aria-current="step"><span class="step-no">01</span><span>觀察圖像</span></button>
+        <button type="button" class="step" data-stage="connect"><span class="step-no">02</span><span>連繫 Δ</span></button>
+        <button type="button" class="step" data-stage="explore"><span class="step-no">03</span><span>自由探索</span></button>
+        <button type="button" class="step" data-stage="challenge"><span class="step-no">04</span><span>課堂挑戰</span></button>
+      </nav>
+    </div>
+
+    <main class="workspace">
+      <section class="graph-card" aria-label="二次函數圖像">
+        <div class="graph-head">
+          <div>
+            <div class="section-kicker">LIVE GRAPH <span class="live-dot"></span></div>
+            <h2 id="equation-title">y = x² − 4x + 3</h2>
+          </div>
+          <div class="graph-head-tools">
+            <span class="graph-pill" id="orientation-pill">開口向上</span>
+            <button class="subtle-btn" id="reset-view" type="button" title="重設例子">↺ <span>重設</span></button>
+          </div>
+        </div>
+        <div class="plot-wrap" id="plot-wrap">
+          <svg id="graph" viewBox="0 0 800 520" role="img" aria-label="顯示二次函數、坐標軸，以及可選擇顯示的交點和頂點" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="plot-overlay hidden" id="challenge-curtain" aria-live="polite">
+            <span class="curtain-icon">?</span><strong>你能在畫圖前，預測交點數目嗎？</strong><span>先計算 Δ，再選擇答案。</span>
+          </div>
+          <div class="axis-legend"><span class="legend-line"></span>拋物線 <span class="legend-dot"></span>與 x 軸的交點</div>
+        </div>
+        <div class="graph-footer">
+          <div class="footer-switches">
+            <label class="switch-label"><input id="toggle-roots" type="checkbox" /><span class="switch-ui"></span><span>顯示交點</span></label>
+            <label class="switch-label"><input id="toggle-vertex" type="checkbox" /><span class="switch-ui"></span><span>顯示頂點</span></label>
+          </div>
+          <div class="graph-count" id="intersection-chip">交點數目：<strong>？</strong></div>
+        </div>
+      </section>
+
+      <aside class="side-area">
+        <section class="side-card stage-panel" id="panel-observe">
+          <div class="card-kicker">STEP 01 <span class="kicker-line"></span> 發現規律</div>
+          <h2>改變一個數字，<br />圖像會怎樣？</h2>
+          <p class="support-text">三條方程只有常數項 <strong>c</strong> 不同。先讓學生猜測，再揭示圖像上的交點。</p>
+          <div class="mini-heading">選擇一條拋物線</div>
+          <div class="preset-grid" id="observe-presets">
+            <button class="preset-btn selected" data-k="3" type="button"><span>例子 A</span><strong>+ 3</strong></button>
+            <button class="preset-btn" data-k="4" type="button"><span>例子 B</span><strong>+ 4</strong></button>
+            <button class="preset-btn" data-k="5" type="button"><span>例子 C</span><strong>+ 5</strong></button>
+          </div>
+          <div class="teacher-prompt"><span class="prompt-symbol">?</span><div><strong>先問學生</strong><p id="observe-question">這條拋物線與 x 軸有多少個交點？這代表方程有多少個不同的實數解？</p></div></div>
+          <button class="primary-action" id="reveal-observe" type="button">揭示交點與答案 <span>→</span></button>
+          <div class="result-panel hidden" id="observe-result" aria-live="polite"></div>
+        </section>
+
+        <section class="side-card stage-panel hidden" id="panel-connect">
+          <div class="card-kicker">STEP 02 <span class="kicker-line"></span> 從圖像到代數</div>
+          <h2>不用畫圖，也能<br />預測交點數目。</h2>
+          <p class="support-text">判別式的正負，決定二次方程有多少個不同的實數解。</p>
+          <div class="formula-hero"><span>判別式</span><strong>Δ = b² − 4ac</strong></div>
+          <div class="mini-heading">按例子，比較 Δ 與交點</div>
+          <div class="case-selector" id="connect-presets">
+            <button type="button" data-k="3" class="case-btn selected">Δ &gt; 0</button>
+            <button type="button" data-k="4" class="case-btn">Δ = 0</button>
+            <button type="button" data-k="5" class="case-btn">Δ &lt; 0</button>
+          </div>
+          <div class="working" id="connect-working"></div>
+          <div class="conclusion" id="connect-conclusion"></div>
+          <details class="formula-details"><summary>為甚麼 Δ 可以判斷解的數目？</summary><p>由二次公式 x = (−b ± √Δ) / 2a 可見：Δ &gt; 0 時有兩個不同實根；Δ = 0 時兩個答案重合；Δ &lt; 0 時在實數範圍內不能開平方。</p></details>
+        </section>
+
+        <section class="side-card stage-panel hidden" id="panel-explore">
+          <div class="card-kicker">STEP 03 <span class="kicker-line"></span> 動手驗證</div>
+          <h2>由你控制<br />a、b、c。</h2>
+          <p class="support-text">拖動滑桿，觀察開口方向、交點與 Δ 的變化。特別試試 <strong>a &lt; 0</strong> 的情況。</p>
+          <div class="slider-list">
+            <div class="slider-row"><div><label for="slider-a">二次項係數 <em>a</em></label><output id="val-a" for="slider-a">1</output></div><input id="slider-a" type="range" min="-3" max="3" step="0.5" value="1" /></div>
+            <div class="slider-row"><div><label for="slider-b">一次項係數 <em>b</em></label><output id="val-b" for="slider-b">−4</output></div><input id="slider-b" type="range" min="-8" max="8" step="1" value="-4" /></div>
+            <div class="slider-row"><div><label for="slider-c">常數項 <em>c</em></label><output id="val-c" for="slider-c">3</output></div><input id="slider-c" type="range" min="-8" max="8" step="1" value="3" /></div>
+          </div>
+          <div class="delta-readout"><span>Δ = b² − 4ac</span><strong id="explore-delta">4</strong><small id="explore-description">Δ &gt; 0，兩個不同實根</small></div>
+          <div class="quick-examples"><span>快速試驗</span><button type="button" class="chip-btn" data-example="negative">a &lt; 0</button><button type="button" class="chip-btn" data-example="tangent">Δ = 0</button><button type="button" class="chip-btn" data-example="none">沒有實根</button></div>
+        </section>
+
+        <section class="side-card stage-panel hidden" id="panel-challenge">
+          <div class="card-kicker">STEP 04 <span class="kicker-line"></span> 即時練習</div>
+          <div class="quiz-progress"><span id="quiz-step">題目 1 / 8</span><span id="quiz-score">答對 0 題</span></div>
+          <div class="progress-bar"><span id="quiz-progress-fill"></span></div>
+          <h2>先計算 Δ，<br />再預測圖像。</h2>
+          <div class="quiz-equation" id="quiz-equation"></div>
+          <p class="support-text quiz-instruction">這條拋物線與 x 軸有多少個交點？</p>
+          <div class="quiz-options" id="quiz-options">
+            <button type="button" data-answer="2">2 個交點 <small>兩個不同實根</small></button>
+            <button type="button" data-answer="1">1 個交點 <small>重根</small></button>
+            <button type="button" data-answer="0">沒有交點 <small>沒有實根</small></button>
+          </div>
+          <div id="quiz-feedback" class="quiz-feedback hidden" aria-live="polite"></div>
+          <button id="next-question" type="button" class="primary-action hidden">下一題 <span>→</span></button>
+          <div id="quiz-finish" class="quiz-finish hidden" aria-live="polite"></div>
+        </section>
+
+        <div class="pedagogy-tip" id="pedagogy-tip"><span class="tip-star">✳</span><div><strong>教學提示</strong><p id="tip-text">暫時不要展示 Δ。讓學生先從圖像回答「有多少個實數解」，再進入第二階段。</p></div></div>
+      </aside>
+    </main>
+    <footer class="footer"><span>圖解法 × 判別式 Δ｜中四數學互動教材</span><span>無需登入 · 可離線使用 · 適合大屏幕投影</span></footer>
+  </div>
+</body>
+</html>
